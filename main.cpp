@@ -38,7 +38,7 @@ int main (void){
   };
 
   Matrix n(M, N, input_vals);
-  //cout << n << endl;
+  cout << n << endl;
 
   return EXIT_SUCCESS;
 }
