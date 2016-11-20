@@ -23,11 +23,10 @@ cublasHandle_t handle;
 int main (void){ 
 
   cublasStatus_t custat;
-  Graph a = FloatNode(1.0);
+  FloatNode a(1.0);
   FloatNode b(2.0);
-  //Graph c = a + b;
-  //cout << c << endl;
-  cout << a << endl;
+  AddNode c = a + b;
+  cout << c.eval() << endl;
 
   return EXIT_SUCCESS;
 }
