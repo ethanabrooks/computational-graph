@@ -5,13 +5,13 @@
 #include <iostream>
 #include <cuda_runtime.h> 
 #include "cublas_v2.h" 
-#include "util.h" 
-#include "matrix.h" 
+#include "util.hpp" 
+#include "cout-test.hpp" 
+#include "matrix.hpp" 
+#include "graph.hpp" 
 
 #define M 2
 #define N 2
-
-using namespace std;
 
 // globals
 float *input;
@@ -23,7 +23,16 @@ cublasHandle_t handle;
 int main (void){ 
 
   cublasStatus_t custat;
+  Graph a = FloatNode(1.0);
+  FloatNode b(2.0);
+  //Graph c = a + b;
+  //cout << c << endl;
+  cout << a << endl;
 
+  return EXIT_SUCCESS;
+}
+
+/*
   // set values of input matrix
   float input_vals [] = {
     1, 2, 
@@ -39,6 +48,4 @@ int main (void){
 
   Matrix n(M, N, input_vals);
   cout << n << endl;
-
-  return EXIT_SUCCESS;
-}
+ */

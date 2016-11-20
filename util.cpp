@@ -1,6 +1,6 @@
 #include <stdio.h> 
 #include <stdlib.h> 
-#include "util.h" 
+#include "util.hpp" 
 
 int idx2c(int i, int j, int width) {
  return j * width + i;
