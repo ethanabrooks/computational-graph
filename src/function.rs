@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::Neg;
 use std::ops::Add;
 use constant::Constant;
@@ -33,47 +34,67 @@ pub struct Function {
 	body: Expr,
 }
 
+impl fmt::Display for Box<Function> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "{:?}", self.body)
+	}
+}
 
-impl Neg for Function {
-    type Output = Function;
-    fn neg(self) -> Function {
-        Function {
+
+//impl fmt::Display for Expr {
+	//fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		//match *self {
+			//Expr::constant(x) => write!(f, "{:?}", x),
+			//Expr::variable(v) => write!(f, "{}", v.name),
+			//Expr::neg(f) => write!(f, "-{:?}", f),
+			//Expr::add(f1, f2) =>  write!(f, "{:?} + {:?}", f1, f2),
+		//}
+	//}
+//}
+
+
+
+
+impl Neg for Box<Function> {
+    type Output = Box<Function>;
+    fn neg(self) -> Box<Function> {
+        Box::new(Function {
             output: None,
             variables: vec![], //TODO!!
-            body: Expr::neg(Box::new(self)),
-        }
+            body: Expr::neg(self),
+        })
     }
 }
 
-impl Add for Function {
-    type Output = Function;
-    fn add(self, other: Function) -> Function {
-        Function {
+impl Add for Box<Function> {
+    type Output = Box<Function>;
+    fn add(self, other: Box<Function>) -> Box<Function> {
+        Box::new(Function {
             output: None,
             variables: vec![], //TODO!!
-            body: Expr::add(Box::new(self), Box::new(other)),
-        }
+            body: Expr::add(self, other),
+        })
     }
 }
 
-pub fn variable(n: &str) -> Function {
-    Function {
+pub fn variable(n: &str) -> Box<Function> {
+    Box::new(Function {
         output: None,
         variables: vec![String::from(n)],
         body: Expr::variable(Variable {
                 name: String::from(n),
                 gradient: None,
         })
-    }
+    })
 
 }
 
-pub fn scalar(x: f32) -> Function {
-    Function {
+pub fn scalar(x: f32) -> Box<Function> {
+    Box::new(Function {
         output: Some(Constant::scalar(x)),
         variables: vec![],
         body: Expr::constant(Constant::scalar(x)), 
-    }
+    })
 
 }
 

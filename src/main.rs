@@ -6,9 +6,11 @@ use function::variable;
 fn main() {
     let a = scalar(2.);
     let x = variable("x");
-    let f = a + x;
+    println!("{}", a);
+    println!("{}", x);
 
-    println!("{:?}", a);
-    println!("{:?}", x);
-    println!("Compiles");
+    let f = a + x;
+    println!("{}", f);
+
+
 }
