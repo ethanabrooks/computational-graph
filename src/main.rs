@@ -19,8 +19,8 @@ fn main() {
     let mut args = HashMap::new();
     args.insert(String::from("x"), constant::Constant::scalar(3.));
 
-    //println!("{:#?}", eval(*f, &args));
-    println!("{:#?}", grad(*f, &Variable { 
+    println!("{:#?}", eval(&f, &args));
+    println!("{:#?}", grad(&f, &Variable { 
         name: String::from("x"), 
         gradient: None 
     }));
