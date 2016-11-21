@@ -8,8 +8,8 @@ use std::cmp::PartialEq;
 
 #[derive(Debug)]
 pub struct Variable {
-    gradient: Option<Constant>,
-    name: String,
+    pub gradient: Option<Constant>,
+    pub name: String,
 }
 
 impl PartialEq for Variable {
@@ -60,7 +60,7 @@ impl Neg for Box<Function> {
     fn neg(self) -> Box<Function> {
         Box::new(Function {
             output: None,
-            variables: vec![], //TODO!!
+            variables: self.variables.clone(),
             body: Expr::neg(self),
         })
     }
@@ -69,9 +69,12 @@ impl Neg for Box<Function> {
 impl Add for Box<Function> {
     type Output = Box<Function>;
     fn add(self, other: Box<Function>) -> Box<Function> {
+        let mut vars = self.variables.clone();
+        vars.append(&mut other.variables.clone());
+
         Box::new(Function {
             output: None,
-            variables: vec![], //TODO!!
+            variables: vars,
             body: Expr::add(self, other),
         })
     }
@@ -99,7 +102,7 @@ pub fn scalar(x: f32) -> Box<Function> {
 }
 
 
-fn grad(f: Function, var: &Variable) -> Constant {
+pub fn grad(f: Function, var: &Variable) -> Constant {
     match f.variables.contains(&var.name) {
         false => Constant::scalar(0.),
         true => match f.body { 
@@ -111,7 +114,7 @@ fn grad(f: Function, var: &Variable) -> Constant {
     }
 }
 
-fn eval(f: Function, args: &HashMap<String, Constant>) -> Option<Constant> {
+pub fn eval(f: Function, args: &HashMap<String, Constant>) -> Option<Constant> {
     match f.body { 
         Expr::constant(x) => Some(x),
         Expr::variable(var) => args.get(&var.name).map(|x| x.clone()),
