@@ -1,11 +1,14 @@
 mod function; 
 mod constant; 
-use constant::Constant;
-use constant::Constant::scalar;
+use function::scalar;
+use function::variable;
 
 fn main() {
-	//let x: Constant = scalar { value: 2.0 };
-	//let y: Constant = scalar { value: 3.0 };
-    //println!("{:?}", constant::tanh(x + y));
+    let a = scalar(2.);
+    let x = variable("x");
+    let f = a + x;
+
+    println!("{:?}", a);
+    println!("{:?}", x);
     println!("Compiles");
 }

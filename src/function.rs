@@ -1,13 +1,14 @@
 use std::ops::Neg;
+use std::ops::Add;
 use constant::Constant;
-use constant::Constant::scalar;
 use constant::Constant::matrix;
 use std::collections::HashMap;
 use std::cmp::PartialEq;
 
-struct Variable {
+#[derive(Debug)]
+pub struct Variable {
+    gradient: Option<Constant>,
     name: String,
-    gradient: Constant,
 }
 
 impl PartialEq for Variable {
@@ -16,6 +17,7 @@ impl PartialEq for Variable {
     }
 }
 
+#[derive(Debug)]
 enum Expr {
     constant(Constant),
     variable(Variable),
@@ -24,25 +26,64 @@ enum Expr {
     //sub(Expr, Expr),
 }
 
-//#[derive(Clone)]
-struct Function {
-	variables: Vec<Variable>,
-	body: Expr,
+#[derive(Debug)]
+pub struct Function {
 	output: Option<Constant>,
+	variables: Vec<String>,
+	body: Expr,
 }
 
-/*impl Clone for Function {
-    fn clone(&self) -> Function {
-        Function { variables: self.variables, self.body, self.output }
+
+impl Neg for Function {
+    type Output = Function;
+    fn neg(self) -> Function {
+        Function {
+            output: None,
+            variables: vec![], //TODO!!
+            body: Expr::neg(Box::new(self)),
+        }
     }
-}*/
+}
+
+impl Add for Function {
+    type Output = Function;
+    fn add(self, other: Function) -> Function {
+        Function {
+            output: None,
+            variables: vec![], //TODO!!
+            body: Expr::add(Box::new(self), Box::new(other)),
+        }
+    }
+}
+
+pub fn variable(n: &str) -> Function {
+    Function {
+        output: None,
+        variables: vec![String::from(n)],
+        body: Expr::variable(Variable {
+                name: String::from(n),
+                gradient: None,
+        })
+    }
+
+}
+
+pub fn scalar(x: f32) -> Function {
+    Function {
+        output: Some(Constant::scalar(x)),
+        variables: vec![],
+        body: Expr::constant(Constant::scalar(x)), 
+    }
+
+}
+
 
 fn grad(f: Function, var: &Variable) -> Constant {
-    match f.variables.contains(&var) {
-        false => scalar(0.),
+    match f.variables.contains(&var.name) {
+        false => Constant::scalar(0.),
         true => match f.body { 
-            Expr::constant(_) => scalar(0.),
-            Expr::variable(var) => scalar(1.),
+            Expr::constant(_) => Constant::scalar(0.),
+            Expr::variable(var) => Constant::scalar(1.),
             Expr::neg(f) => -grad(*f, var),
             Expr::add(f1, f2) => grad(*f1, var) + grad(*f2, var),
         }
