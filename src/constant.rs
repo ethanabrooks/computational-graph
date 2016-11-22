@@ -10,16 +10,24 @@ pub enum Constant {
 	matrix(Matrix)
 }
 
-impl Constant {
-    fn apply(self, f: &Fn(f32) -> f32) -> Constant {
+impl Clone for Constant {
+    fn clone(&self) -> Constant { 
         match self {
-            Constant::scalar(x) => Constant::scalar(f(x)),
-            Constant::matrix(m) => Constant::matrix(
-                m.iter() 
-                 .map(|&x| f(x)) 
-                 .collect::<Matrix>()
-            )
+            &Constant::scalar(ref x) => Constant::scalar(x.clone()),
+            &Constant::matrix(ref m) => Constant::matrix(m.clone())
         }
+    }
+}
+
+
+fn apply(f: &Fn(f32) -> f32, c: &Constant) -> Constant {
+    match c.clone() {
+        Constant::scalar(x) => Constant::scalar(f(x)),
+        Constant::matrix(m) => Constant::matrix(
+            m.iter() 
+                .map(|&x| f(x)) 
+                .collect::<Matrix>()
+        )
     }
 }
 
@@ -45,25 +53,12 @@ mod bin {
     }
 }
 
-impl Clone for Constant {
-    fn clone(&self) -> Constant { 
-        match self {
-            &Constant::scalar(ref x) => Constant::scalar(x.clone()),
-            &Constant::matrix(ref m) => Constant::matrix(m.clone())
-        }
-    }
-}
-
 impl Neg for Constant {
     type Output = Constant;
     fn neg(self) -> Constant {
-        self.apply(&|x| -x)
+        apply(&|x| -x, &self)
     }
 }
-
-//pub fn tanh(constant: Constant) -> Constant {
-    //constant.apply(&|x| x.tanh())
-//}
 
 impl Add for Constant {
     type Output = Constant;
@@ -71,11 +66,4 @@ impl Add for Constant {
         bin::apply(&|x1, x2| x1 + x2, self, other)
     }
 }
-
-//impl Sub for Constant {
-    //type Output = Constant;
-    //fn add(self, other: Constant) -> Constant {
-        //bin::apply(&|x1, x2| x1 + x2, self, other)
-    //}
-//}
 

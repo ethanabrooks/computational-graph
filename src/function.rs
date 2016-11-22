@@ -4,18 +4,13 @@ use std::ops::Add;
 use constant::Constant;
 use constant::Constant::matrix;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::cmp::PartialEq;
 
 #[derive(Debug)]
 pub struct Variable {
     pub gradient: Option<Constant>,
     pub name: String,
-}
-
-impl PartialEq for Variable {
-    fn eq(&self, other: &Variable) -> bool { 
-        self.name == other.name
-    }
 }
 
 #[derive(Debug)]
@@ -30,30 +25,9 @@ enum Expr {
 #[derive(Debug)]
 pub struct Function {
 	output: Option<Constant>,
-	variables: Vec<String>,
+	variables: HashSet<String>,
 	body: Expr,
 }
-
-//impl fmt::Display for Box<Function> {
-	//fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		//write!(f, "{:#?}", self.body)
-	//}
-//}
-
-
-//impl fmt::Display for Expr {
-	//fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		//match *self {
-			//Expr::constant(x) => write!(f, "{:?}", x),
-			//Expr::variable(v) => write!(f, "{}", v.name),
-			//Expr::neg(f) => write!(f, "-{:?}", f),
-			//Expr::add(f1, f2) =>  write!(f, "{:?} + {:?}", f1, f2),
-		//}
-	//}
-//}
-
-
-
 
 impl Neg for Box<Function> {
     type Output = Box<Function>;
@@ -70,7 +44,7 @@ impl Add for Box<Function> {
     type Output = Box<Function>;
     fn add(self, other: Box<Function>) -> Box<Function> {
         let mut vars = self.variables.clone();
-        vars.append(&mut other.variables.clone());
+        vars.union(&mut other.variables.clone());
 
         Box::new(Function {
             output: None,
@@ -80,12 +54,14 @@ impl Add for Box<Function> {
     }
 }
 
-pub fn variable(n: &str) -> Box<Function> {
+pub fn variable(s: &str) -> Box<Function> {
+    let mut vars = HashSet::new();
+    vars.insert(String::from(s));
     Box::new(Function {
         output: None,
-        variables: vec![String::from(n)],
+        variables: vars,
         body: Expr::variable(Variable {
-                name: String::from(n),
+                name: String::from(s),
                 gradient: None,
         })
     })
@@ -95,7 +71,7 @@ pub fn variable(n: &str) -> Box<Function> {
 pub fn scalar(x: f32) -> Box<Function> {
     Box::new(Function {
         output: Some(Constant::scalar(x)),
-        variables: vec![],
+        variables: HashSet::new(),
         body: Expr::constant(Constant::scalar(x)), 
     })
 
