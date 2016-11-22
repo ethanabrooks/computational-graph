@@ -2,23 +2,23 @@ use std::fmt;
 use std::ops::Neg;
 use std::ops::Add;
 use constant::Constant;
-use constant::Constant::matrix;
+use constant::Constant::Matrix;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::cmp::PartialEq;
 
 #[derive(Debug)]
-pub struct Variable {
-    pub gradient: Option<Constant>,
-    pub name: String,
+struct Variable {
+    gradient: Option<Constant>,
+    name: String,
 }
 
 #[derive(Debug)]
 enum Expr {
-    constant(Constant),
-    variable(Variable),
-    neg(Box<Function>),
-    add(Box<Function>, Box<Function>),
+    Constant(Constant),
+    Variable(Variable),
+    Neg(Box<Function>),
+    Add(Box<Function>, Box<Function>),
     //sub(Expr, Expr),
 }
 
@@ -35,7 +35,7 @@ impl Neg for Box<Function> {
         Box::new(Function {
             output: None,
             variables: self.variables.clone(),
-            body: Expr::neg(self),
+            body: Expr::Neg(self),
         })
     }
 }
@@ -49,7 +49,7 @@ impl Add for Box<Function> {
         Box::new(Function {
             output: None,
             variables: vars,
-            body: Expr::add(self, other),
+            body: Expr::Add(self, other),
         })
     }
 }
@@ -60,7 +60,7 @@ pub fn variable(s: &str) -> Box<Function> {
     Box::new(Function {
         output: None,
         variables: vars,
-        body: Expr::variable(Variable {
+        body: Expr::Variable(Variable {
                 name: String::from(s),
                 gradient: None,
         })
@@ -70,32 +70,31 @@ pub fn variable(s: &str) -> Box<Function> {
 
 pub fn scalar(x: f32) -> Box<Function> {
     Box::new(Function {
-        output: Some(Constant::scalar(x)),
+        output: Some(Constant::Scalar(x)),
         variables: HashSet::new(),
-        body: Expr::constant(Constant::scalar(x)), 
+        body: Expr::Constant(Constant::Scalar(x)), 
     })
-
 }
 
 
-pub fn grad(f: &Box<Function>, var: &Variable) -> Constant {
-    match f.variables.contains(&var.name) {
-        false => Constant::scalar(0.),
+pub fn grad(f: &Box<Function>, var: &str) -> Constant {
+    match f.variables.contains::<str>(&var) {
+        false => Constant::Scalar(0.),
         true => match f.body { 
-            Expr::constant(_) => Constant::scalar(0.), //TODO: accomodate matrices
-            Expr::variable(ref var) => Constant::scalar(1.),
-            Expr::neg(ref f) => -grad(&f, var),
-            Expr::add(ref f1, ref f2) => grad(&f1, var) + grad(&f2, var),
+            Expr::Constant(_) => Constant::Scalar(0.), //TODO: accomodate matrices
+            Expr::Variable(_) => Constant::Scalar(1.),  //TODO: accomodate matrices
+            Expr::Neg(ref f) => -grad(&f, var),
+            Expr::Add(ref f1, ref f2) => grad(&f1, var) + grad(&f2, var),
         }
     }
 }
 
-pub fn eval(f: &Box<Function>, args: &HashMap<String, Constant>) -> Option<Constant> {
+pub fn eval(f: &Box<Function>, args: &HashMap<&str, Constant>) -> Option<Constant> {
     match f.body { 
-        Expr::constant(ref x) => Some(x.clone()),
-        Expr::variable(ref var) => args.get(&var.name).map(|x| x.clone()),
-        Expr::neg(ref f) => eval(&f, args).map(|x| -x),
-        Expr::add(ref f1, ref f2) => 
+        Expr::Constant(ref x) => Some(x.clone()),
+        Expr::Variable(ref var) => args.get::<str>(&var.name).map(|x| x.clone()),
+        Expr::Neg(ref f) => eval(&f, args).map(|x| -x),
+        Expr::Add(ref f1, ref f2) => 
             match (eval(&f1, args), eval(&f2, args)) {
                 (Some(x1), Some(x2)) => Some(x1 + x2),
                 _ => None,

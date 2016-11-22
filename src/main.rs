@@ -1,10 +1,10 @@
 mod function; 
 mod constant; 
-use function::scalar;
 use function::variable;
-use function::Variable;
+use function::scalar;
 use function::eval;
 use function::grad;
+use constant::Constant::Scalar;
 use std::collections::HashMap;
 
 fn main() {
@@ -17,11 +17,14 @@ fn main() {
     println!("{:#?}", f);
 
     let mut args = HashMap::new();
-    args.insert(String::from("x"), constant::Constant::scalar(3.));
+    args.insert("x", Scalar(3.));
 
     println!("{:#?}", eval(&f, &args));
-    println!("{:#?}", grad(&f, &Variable { 
-        name: String::from("x"), 
-        gradient: None 
-    }));
+    println!("{:#?}", grad(&f, "x"));
 }
+
+
+/*TODO:
+ * add dim field to Var
+ * get grad to handle matrices
+ */
