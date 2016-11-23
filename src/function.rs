@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::Neg;
 use std::ops::Add;
 use constant::Constant;
@@ -26,6 +27,46 @@ pub struct Function<'a> {
     output: Option<Constant>,
     pub variables: HashSet<String>,
     body: Expr<'a>,
+}
+
+impl<'a> fmt::Display for Function<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.body)
+    }
+}
+
+impl<'a> fmt::Display for Expr<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Expr::Constant(ref c) => write!(f, "{}", c), 
+            &Expr::Variable(ref v) => write!(f, "{}", v),
+            &Expr::Neg(ref x) => match x.body {
+                Expr::Constant(_) | Expr::Variable(_)  => write!(f, "-{}", x),
+                _  => write!(f, "-({})", x),
+            },
+            &Expr::Add(ref a, ref b) => 
+                match a.body {
+                    Expr::Constant(_) | Expr::Variable(_) =>
+                        match b.body {
+                            Expr::Constant(_) | Expr::Variable(_) => 
+                                write!(f, "{} + {}", a, b),
+                            _ => write!(f, "{} + ({})", a, b),
+                        },
+                    _  =>
+                        match b.body {
+                            Expr::Constant(_) | Expr::Variable(_) => 
+                                write!(f, "({}) + {}", a, b),
+                            _ => write!(f, "({}) + ({})", a, b),
+                        }
+                }
+        }
+    }
+}
+
+impl fmt::Display for Variable {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.name)
+    }
 }
 
 impl<'a> Neg for &'a Function<'a> {

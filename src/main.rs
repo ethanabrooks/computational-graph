@@ -12,17 +12,17 @@ fn main() {
     let x = variable("x", vec![]);
     let a = &a;
     let x = &x;
-    println!("{:#?}", a);
-    println!("{:#?}", x);
+    println!("{}", a);
+    println!("{}", x);
 
     let f = a + x;
-    println!("{:#?}", f);
+    println!("{}", f);
 
     let mut args = HashMap::new();
     args.insert("x", Scalar(3.));
 
-    println!("{:#?}", eval(&f, &args));
-    println!("{:#?}", grad(&f, "x"));
+    println!("{:?}", eval(&f, &args));
+    println!("{:?}", grad(&f, "x"));
 }
 
 

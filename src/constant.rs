@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::Neg;
 use std::ops::Add;
 
@@ -14,6 +15,15 @@ impl Clone for Constant {
         match self {
             &Constant::Scalar(ref x) => Constant::Scalar(x.clone()),
             &Constant::Matrix(ref m) => Constant::Matrix(m.clone())
+        }
+    }
+}
+
+impl fmt::Display for Constant {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Constant::Scalar(x) => write!(f, "{}", x),
+            &Constant::Matrix(ref m) => write!(f, "{:?}", m),
         }
     }
 }
