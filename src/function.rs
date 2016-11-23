@@ -14,70 +14,70 @@ struct Variable {
 }
 
 #[derive(Debug)]
-enum Expr {
+enum Expr<'a> {
     Constant(Constant),
     Variable(Variable),
-    Neg(Box<Function>),
-    Add(Box<Function>, Box<Function>),
+    Neg(&'a Function),
+    Add(&'a Function, &'a Function),
     //sub(Expr, Expr),
 }
 
 #[derive(Debug)]
-pub struct Function {
+pub struct Function<'a> {
 	output: Option<Constant>,
 	variables: HashSet<String>,
-	body: Expr,
+	body: Expr<'a>,
 }
 
-impl Neg for Box<Function> {
-    type Output = Box<Function>;
-    fn neg(self) -> Box<Function> {
-        Box::new(Function {
+impl Neg for &'a Function {
+    type Output = &'a Function;
+    fn neg(self) -> &'a Function {
+        Function {
             output: None,
             variables: self.variables.clone(),
             body: Expr::Neg(self),
-        })
+        }
     }
 }
 
-impl Add for Box<Function> {
-    type Output = Box<Function>;
-    fn add(self, other: Box<Function>) -> Box<Function> {
+impl Add for &'a Function {
+    type Output = &'a Function;
+    fn add(self, other: &'a Function) -> &'a Function {
         let mut vars = self.variables.clone();
         vars.union(&mut other.variables.clone());
 
-        Box::new(Function {
+        Function {
             output: None,
             variables: vars,
             body: Expr::Add(self, other),
-        })
+        }
     }
 }
 
-pub fn variable(s: &str) -> Box<Function> {
+pub fn variable<'a>(s: &str) -> &'a Function> {
     let mut vars = HashSet::new();
     vars.insert(String::from(s));
-    Box::new(Function {
+    Function {
         output: None,
         variables: vars,
-        body: Expr::Variable(Variable {
+        body: Expr::Variable<'a>(Variable {
                 name: String::from(s),
                 gradient: None,
-        })
+        }
     })
 
 }
 
-pub fn scalar(x: f32) -> Box<Function> {
-    Box::new(Function {
+pub fn scalar(x: f32) -> &'a Function {
+    Function {
         output: Some(Constant::Scalar(x)),
         variables: HashSet::new(),
         body: Expr::Constant(Constant::Scalar(x)), 
-    })
+    }
 }
 
 
-pub fn grad(f: &Box<Function>, var: &str) -> Constant {
+pub fn grad<'a>(f: &'a Function>, var: &str) -> Constant {
     match f.variables.contains::<str>(&var) {
         false => Constant::Scalar(0.),
         true => match f.body { 
