@@ -9,7 +9,7 @@ use std::collections::HashMap;
 
 fn main() {
     let a = scalar(2.);
-    let x = variable("x");
+    let x = variable("x", vec![]);
     let a = &a;
     let x = &x;
     println!("{:#?}", a);
@@ -26,7 +26,3 @@ fn main() {
 }
 
 
-/*TODO:
- * add dim field to Var
- * get grad to handle matrices
- */

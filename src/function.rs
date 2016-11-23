@@ -1,12 +1,14 @@
 use std::ops::Neg;
 use std::ops::Add;
 use constant::Constant;
+use constant::copy_and_fill;
+use constant::new_constant;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
 #[derive(Debug)]
 struct Variable {
-    gradient: Option<Constant>,
+    dims: Vec<i32>, 
     name: String,
 }
 
@@ -21,9 +23,9 @@ enum Expr<'a> {
 
 #[derive(Debug)]
 pub struct Function<'a> {
-	output: Option<Constant>,
-	pub variables: HashSet<String>,
-	body: Expr<'a>,
+    output: Option<Constant>,
+    pub variables: HashSet<String>,
+    body: Expr<'a>,
 }
 
 impl<'a> Neg for &'a Function<'a> {
@@ -40,8 +42,6 @@ impl<'a> Neg for &'a Function<'a> {
 impl<'a> Add for &'a Function<'a>{
     type Output = Function<'a>;
     fn add(self, other: &'a Function<'a>) -> Function<'a> {
-        println!("HERE");
-        println!("{:?}", other.variables);
         let vars1 = self.variables.clone();
         let vars2 = other.variables.clone();
 
@@ -53,7 +53,7 @@ impl<'a> Add for &'a Function<'a>{
     }
 }
 
-pub fn variable<'a>(s: &str) -> Function<'a> {
+pub fn variable<'a>(s: &str, dims: Vec<i32>) -> Function<'a> {
     let mut vars = HashSet::new();
     vars.insert(String::from(s));
     Function {
@@ -61,7 +61,7 @@ pub fn variable<'a>(s: &str) -> Function<'a> {
         variables: vars,
         body: Expr::Variable(Variable {
                 name: String::from(s),
-                gradient: None,
+                dims: dims,
         })
     }
 
@@ -80,8 +80,8 @@ pub fn grad<'a>(f: &Function<'a>, var: &str) -> Constant {
     match f.variables.contains::<str>(&var) {
         false => Constant::Scalar(0.),
         true => match f.body { 
-            Expr::Constant(_) => Constant::Scalar(0.), //TODO: accomodate matrices
-            Expr::Variable(_) => Constant::Scalar(1.),  //TODO: accomodate matrices
+            Expr::Constant(ref c) => copy_and_fill(c, 0.), 
+            Expr::Variable(ref v) => new_constant(v.dims.clone(), 1.),
             Expr::Neg(ref f) => -grad(&f, var),
             Expr::Add(ref f1, ref f2) => grad(&f1, var) + grad(&f2, var),
         }
