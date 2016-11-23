@@ -1,6 +1,5 @@
 use std::ops::Neg;
 use std::ops::Add;
-use std::f32;
 
 type Matrix = Vec<f32>;
 

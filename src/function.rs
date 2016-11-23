@@ -1,11 +1,8 @@
-use std::fmt;
 use std::ops::Neg;
 use std::ops::Add;
 use constant::Constant;
-use constant::Constant::Matrix;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::cmp::PartialEq;
 
 #[derive(Debug)]
 struct Variable {
@@ -17,21 +14,21 @@ struct Variable {
 enum Expr<'a> {
     Constant(Constant),
     Variable(Variable),
-    Neg(&'a Function),
-    Add(&'a Function, &'a Function),
+    Neg(&'a Function<'a>),
+    Add(&'a Function<'a>, &'a Function<'a>),
     //sub(Expr, Expr),
 }
 
 #[derive(Debug)]
 pub struct Function<'a> {
 	output: Option<Constant>,
-	variables: HashSet<String>,
+	pub variables: HashSet<String>,
 	body: Expr<'a>,
 }
 
-impl Neg for &'a Function {
-    type Output = &'a Function;
-    fn neg(self) -> &'a Function {
+impl<'a> Neg for &'a Function<'a> {
+    type Output = Function<'a>;
+    fn neg(self) -> Function<'a> {
         Function {
             output: None,
             variables: self.variables.clone(),
@@ -40,35 +37,37 @@ impl Neg for &'a Function {
     }
 }
 
-impl Add for &'a Function {
-    type Output = &'a Function;
-    fn add(self, other: &'a Function) -> &'a Function {
-        let mut vars = self.variables.clone();
-        vars.union(&mut other.variables.clone());
+impl<'a> Add for &'a Function<'a>{
+    type Output = Function<'a>;
+    fn add(self, other: &'a Function<'a>) -> Function<'a> {
+        println!("HERE");
+        println!("{:?}", other.variables);
+        let vars1 = self.variables.clone();
+        let vars2 = other.variables.clone();
 
         Function {
             output: None,
-            variables: vars,
+            variables: vars1.union(&vars2).cloned().collect(),
             body: Expr::Add(self, other),
         }
     }
 }
 
-pub fn variable<'a>(s: &str) -> &'a Function> {
+pub fn variable<'a>(s: &str) -> Function<'a> {
     let mut vars = HashSet::new();
     vars.insert(String::from(s));
     Function {
         output: None,
         variables: vars,
-        body: Expr::Variable<'a>(Variable {
+        body: Expr::Variable(Variable {
                 name: String::from(s),
                 gradient: None,
-        }
-    })
+        })
+    }
 
 }
 
-pub fn scalar(x: f32) -> &'a Function {
+pub fn scalar<'a>(x: f32) -> Function<'a> {
     Function {
         output: Some(Constant::Scalar(x)),
         variables: HashSet::new(),
@@ -77,7 +76,7 @@ pub fn scalar(x: f32) -> &'a Function {
 }
 
 
-pub fn grad<'a>(f: &'a Function>, var: &str) -> Constant {
+pub fn grad<'a>(f: &Function<'a>, var: &str) -> Constant {
     match f.variables.contains::<str>(&var) {
         false => Constant::Scalar(0.),
         true => match f.body { 
@@ -89,7 +88,7 @@ pub fn grad<'a>(f: &'a Function>, var: &str) -> Constant {
     }
 }
 
-pub fn eval(f: &Box<Function>, args: &HashMap<&str, Constant>) -> Option<Constant> {
+pub fn eval<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) -> Option<Constant> {
     match f.body { 
         Expr::Constant(ref x) => Some(x.clone()),
         Expr::Variable(ref var) => args.get::<str>(&var.name).map(|x| x.clone()),

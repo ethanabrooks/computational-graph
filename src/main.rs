@@ -10,6 +10,8 @@ use std::collections::HashMap;
 fn main() {
     let a = scalar(2.);
     let x = variable("x");
+    let a = &a;
+    let x = &x;
     println!("{:#?}", a);
     println!("{:#?}", x);
 
