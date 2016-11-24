@@ -148,15 +148,15 @@ pub fn assign_outputs<'a>(f: &mut Function, args: &HashMap<&str, Constant>) {
         Expr::Variable(_) => f.output = eval(f, args),
         Expr::Neg(ref mut f1) => {
             //assign_outputs(f, args);
-            //f.output = f.output; //f1.output.map(|x| -x);
+            f.output = f1.output.clone().map(|x| -x);
         }
         Expr::Add(ref mut f1, ref mut f2) => {
             //assign_outputs(f1, args);
             //assign_outputs(f2, args);
-            //match (f1.output, f2.output) {
-                //(Some(x1), Some(x2)) => f.output = Some(x1 + x2),
-                //_                    => f.output = None,
-            //};
+            match (f1.output.clone(), f2.output.clone()) {
+                (Some(x1), Some(x2)) => f.output = Some(x1 + x2),
+                _                    => f.output = None,
+            };
         }
     }
 }
