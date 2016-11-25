@@ -19,7 +19,7 @@ enum Expr {
     Variable(Variable),
     Neg(Function),
     Add(Function, Function),
-    //sub(Expr, Expr),
+    //mul(Expr, Expr),
 }
 
 #[derive(Debug)]
@@ -35,6 +35,23 @@ impl<'a> fmt::Display for Function {
     }
 }
 
+fn write_with_parens(a: &Function, 
+                     b: &Function,  
+                     f: &mut fmt::Formatter) -> fmt::Result {
+    match *a.body {
+        Expr::Constant(_) | Expr::Variable(_) => match *b.body {
+            Expr::Constant(_) | Expr::Variable(_) => 
+                    write!(f, "{} + {}", a, b),
+                _ => write!(f, "{} + ({})", a, b),
+        },
+        _  => match *b.body {
+                Expr::Constant(_) | Expr::Variable(_) => 
+                    write!(f, "({}) + {}", a, b),
+                _ => write!(f, "({}) + ({})", a, b),
+        }
+    }
+}
+
 impl<'a> fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -45,20 +62,7 @@ impl<'a> fmt::Display for Expr {
                 _  => write!(f, "-({})", x),
             },
             Expr::Add(ref a, ref b) => 
-                match *a.body {
-                    Expr::Constant(_) | Expr::Variable(_) =>
-                        match *b.body {
-                            Expr::Constant(_) | Expr::Variable(_) => 
-                                write!(f, "{} + {}", a, b),
-                            _ => write!(f, "{} + ({})", a, b),
-                        },
-                    _  =>
-                        match *b.body {
-                            Expr::Constant(_) | Expr::Variable(_) => 
-                                write!(f, "({}) + {}", a, b),
-                            _ => write!(f, "({}) + ({})", a, b),
-                        }
-                }
+                write_with_parens(a, b, f)
         }
     }
 }
