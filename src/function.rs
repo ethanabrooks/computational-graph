@@ -6,7 +6,6 @@ use constant::copy_and_fill;
 use constant::new_constant;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::cell::RefCell;
 
 #[derive(Debug)]
 struct Variable {
@@ -25,7 +24,7 @@ enum Expr {
 
 #[derive(Debug)]
 pub struct Function {
-    output: RefCell<Option<Constant>>,
+    output: Option<Constant>,
     pub variables: HashSet<String>,
     body: Box<Expr>,
 }
@@ -74,7 +73,7 @@ impl<'a> Neg for Function {
     type Output = Function;
     fn neg(self) -> Function {
         Function {
-            output: RefCell::new(None),
+            output: None,
             variables: self.variables.clone(),
             body: box Expr::Neg(self),
         }
@@ -88,7 +87,7 @@ impl<'a> Add for Function {
         let vars2 = other.variables.clone();
 
         Function {
-            output: RefCell::new(None),
+            output: None,
             variables: vars1.union(&vars2).cloned().collect(),
             body: box Expr::Add(self, other),
         }
@@ -99,7 +98,7 @@ pub fn variable<'a>(s: &str, dims: Vec<i32>) -> Function {
     let mut vars = HashSet::new();
     vars.insert(String::from(s));
     Function {
-        output: RefCell::new(None),
+        output: None,
         variables: vars,
         body: box Expr::Variable(Variable {
                 name: String::from(s),
@@ -111,7 +110,7 @@ pub fn variable<'a>(s: &str, dims: Vec<i32>) -> Function {
 
 pub fn scalar<'a>(x: f32) -> Function {
     Function {
-        output: RefCell::new(Some(Constant::Scalar(x))),
+        output: Some(Constant::Scalar(x)),
         variables: HashSet::new(),
         body: box Expr::Constant(Constant::Scalar(x)), 
     }
@@ -143,27 +142,25 @@ pub fn eval<'a>(f: &Function, args: &HashMap<&str, Constant>) -> Option<Constant
     }
 }
 
-fn clone_output(f: &Function) -> Option<Constant>{
-    f.output.borrow().clone()
-}
+//fn clone_output(f: &Function) -> Option<Constant>{
+    //f.output.borrow().clone()
+//}
 
 pub fn assign_outputs(f: &mut Function, args: &HashMap<&str, Constant>) {
-    f.output = RefCell::new(
-        match *(&mut *f.body) { 
-            Expr::Constant(ref x) => Some(x.clone()),
-            Expr::Variable(ref var) => args.get::<str>(&var.name).map(|x| x.clone()),
-            Expr::Neg(ref mut f1) => {
-                assign_outputs(f1, args);
-                clone_output(f1).map(|x| -x)
-            }
-            Expr::Add(ref mut f1, ref mut f2) => {
-                assign_outputs(f1, args);
-                assign_outputs(f2, args);
-                match (clone_output(f1), clone_output(f2)) {
-                    (Some(x1), Some(x2)) => Some(x1 + x2),
-                    _                    => None,
-                }
-            } 
+    f.output = match *(&mut *f.body) { 
+        Expr::Constant(ref x) => Some(x.clone()),
+        Expr::Variable(ref var) => args.get::<str>(&var.name).map(|x| x.clone()),
+        Expr::Neg(ref mut f1) => {
+            assign_outputs(f1, args);
+            f1.output.clone().map(|x| -x)
         }
-    )
+        Expr::Add(ref mut f1, ref mut f2) => {
+            assign_outputs(f1, args);
+            assign_outputs(f2, args);
+            match (f1.output.clone(), f2.output.clone()) {
+                (Some(x1), Some(x2)) => Some(x1 + x2),
+                _                    => None,
+            }
+        } 
+    }
 }
