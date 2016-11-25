@@ -12,17 +12,18 @@ fn main() {
     let x = variable("x", vec![]);
     let y = variable("y", vec![]);
 
-    let mut f = -x + a + b + y;
-    println!("{}", f);
+    //let mut f = -x + a + b + y;
+    //println!("{}", f);
+    //let mut g = -x;
 
-    let mut args = HashMap::new();
-    args.insert("x", Scalar(3.));
-    args.insert("y", Scalar(5.));
-    assign_outputs(&mut f, &args);
+    //let mut args = HashMap::new();
+    //args.insert("x", Scalar(3.));
+    //args.insert("y", Scalar(5.));
+    //assign_outputs(&mut f, &args);
 
-    if let Some(c) = eval(&f, &args) {
-        println!("{}", c);
-    }
-    println!("{}", grad(&f, "x"));
+    //if let Some(c) = eval(&f, &args) {
+        //println!("{}", c);
+    //}
+    //println!("{}", grad(&f, "x"));
 }
 

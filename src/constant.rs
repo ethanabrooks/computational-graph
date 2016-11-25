@@ -1,6 +1,5 @@
 use std::fmt;
-use std::ops::Neg;
-use std::ops::Add;
+use std::ops::{Neg, Add};
 
 type Matrix = Vec<f32>;
 
