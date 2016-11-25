@@ -60,7 +60,7 @@ impl<'a> fmt::Display for Expr<'a> {
                 _  => write!(f, "-({})", x),
             },
             Expr::Add(ref a, ref b) => write_with_parens(a, "+", b, f),
-            Expr::Mul(ref a, ref b) => write_with_parens(a, "x", b, f),
+            Expr::Mul(ref a, ref b) => write_with_parens(a, "*", b, f),
         }
     }
 }
@@ -121,7 +121,6 @@ pub fn variable<'a>(s: &str, dims: Vec<i32>) -> Function<'a> {
                 dims: dims,
         })
     }
-
 }
 
 pub fn scalar<'a>(x: f32) -> Function<'a> {
@@ -132,6 +131,10 @@ pub fn scalar<'a>(x: f32) -> Function<'a> {
     }
 }
 
+fn get_output(f: &Function) -> Constant {
+    // Can we avoid this clone?
+    f.output.clone().into_inner().expect("Need to run `assign_outputs` before `grad`")
+}
 
 pub fn grad<'a>(f: &Function<'a>, var: &str) -> Constant {
     match f.variables.contains::<str>(&var) {
@@ -141,7 +144,8 @@ pub fn grad<'a>(f: &Function<'a>, var: &str) -> Constant {
             Expr::Variable(ref v) => new_constant(v.dims.clone(), 1.),
             Expr::Neg(ref f) => -grad(&f, var),
             Expr::Add(ref f1, ref f2) => grad(&f1, var) + grad(&f2, var),
-            Expr::Mul(ref f1, ref f2) => grad(&f1, var) * grad(&f2, var),
+            Expr::Mul(ref f1, ref f2) => grad(&f1, var) * get_output(&f2) +
+                                         grad(&f2, var) * get_output(&f1),
         }
     }
 }
@@ -168,6 +172,15 @@ pub fn eval<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) -> Option<Cons
 }
 
 
+fn assign_and_apply<'a>(f: &Fn(Constant, Constant) -> Constant, 
+                                        args: &HashMap<&str, Constant>,
+                                        f1: &Function<'a>, 
+                                        f2: &Function<'a>) -> Option<Constant> {
+    assign_outputs(f1, args);
+    assign_outputs(f2, args);
+    apply_to_branches(f, args, f1, f2)
+}
+
 
 pub fn assign_outputs<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) {
     *f.output.borrow_mut() = match f.body { 
@@ -177,15 +190,7 @@ pub fn assign_outputs<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) {
             assign_outputs(f1, args);
             f1.output.borrow().clone().map(|x| -x)
         }
-        Expr::Add(ref f1, ref f2) => {
-            assign_outputs(f1, args);
-            assign_outputs(f2, args);
-            apply_to_branches(&|x, y| x + y, args, f1, f2)
-        } 
-        Expr::Mul(ref f1, ref f2) => {
-            assign_outputs(f1, args);
-            assign_outputs(f2, args);
-            apply_to_branches(&|x, y| x * y, args, f1, f2)
-        } 
+        Expr::Add(ref f1, ref f2) => assign_and_apply(&|x, y| x + y, args, f1, f2),
+        Expr::Mul(ref f1, ref f2) => assign_and_apply(&|x, y| x * y, args, f1, f2),
     }
 }

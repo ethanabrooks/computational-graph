@@ -13,9 +13,9 @@ fn main() {
     //let y = &variable("y", vec![]);
 
     let f1 = -x;
-    let f2 = &f1 + a;
-    let f = &f2 + a;
-    println!("{}", f);
+    let f2 = &f1 * a;
+    let f = &f2 * a;
+    println!("f: {}", f);
     //let mut g = -x;
 
     let mut args = HashMap::new();
@@ -24,8 +24,8 @@ fn main() {
     assign_outputs(&f, &args);
 
     if let Some(c) = eval(&f, &args) {
-        println!("{}", c);
+        println!("eval: {}", c);
     }
-    println!("{}", grad(&f, "x"));
+    println!("grad x: {}", grad(&f, "x"));
 }
 
