@@ -171,10 +171,6 @@ pub fn eval<'a>(f: &Function, args: &HashMap<&str, Constant>) -> Option<Constant
     }
 }
 
-//fn clone_output(f: &Function) -> Option<Constant>{
-    //f.output.borrow().clone()
-//}
-
 pub fn assign_outputs(f: &mut Function, args: &HashMap<&str, Constant>) {
     f.output = match *(&mut *f.body) { 
         Expr::Constant(ref x) => Some(x.clone()),
@@ -186,10 +182,7 @@ pub fn assign_outputs(f: &mut Function, args: &HashMap<&str, Constant>) {
         Expr::Add(ref mut f1, ref mut f2) => {
             assign_outputs(f1, args);
             assign_outputs(f2, args);
-            match (f1.output.clone(), f2.output.clone()) {
-                (Some(x1), Some(x2)) => Some(x1 + x2),
-                _                    => None,
-            }
+            apply_to_branches(&|x, y| x + y, args, f1, f2)
         } 
     }
 }
