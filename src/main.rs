@@ -7,23 +7,25 @@ use constant::Constant::Scalar;
 use std::collections::HashMap;
 
 fn main() {
-    let a = scalar(2.);
-    let b = scalar(3.);
-    let x = variable("x", vec![]);
-    let y = variable("y", vec![]);
+    let a = &scalar(2.);
+    //let b = &scalar(3.);
+    let x = &variable("x", vec![]);
+    //let y = &variable("y", vec![]);
 
-    //let mut f = -x + a + b + y;
-    //println!("{}", f);
+    let f1 = -x;
+    let f2 = &f1 + a;
+    let f = &f2 + a;
+    println!("{}", f);
     //let mut g = -x;
 
-    //let mut args = HashMap::new();
-    //args.insert("x", Scalar(3.));
-    //args.insert("y", Scalar(5.));
-    //assign_outputs(&mut f, &args);
+    let mut args = HashMap::new();
+    args.insert("x", Scalar(3.));
+    args.insert("y", Scalar(5.));
+    assign_outputs(&f, &args);
 
-    //if let Some(c) = eval(&f, &args) {
-        //println!("{}", c);
-    //}
-    //println!("{}", grad(&f, "x"));
+    if let Some(c) = eval(&f, &args) {
+        println!("{}", c);
+    }
+    println!("{}", grad(&f, "x"));
 }
 

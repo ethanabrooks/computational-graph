@@ -1,5 +1,5 @@
 use std::fmt;
-use std::ops::{Neg, Add};
+use std::ops::{Neg, Add, Mul};
 
 type Matrix = Vec<f32>;
 
@@ -103,3 +103,9 @@ impl Add for Constant {
     }
 }
 
+impl Mul for Constant {
+    type Output = Constant;
+    fn mul(self, other: Constant) -> Constant {
+        bin::apply(&|x1, x2| x1 * x2, self, other)
+    }
+}
