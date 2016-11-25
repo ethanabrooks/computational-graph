@@ -6,6 +6,7 @@ use constant::copy_and_fill;
 use constant::new_constant;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::cell::RefCell;
 
 #[derive(Debug)]
 struct Variable {
@@ -14,28 +15,28 @@ struct Variable {
 }
 
 #[derive(Debug)]
-enum Expr<'a> {
+enum Expr {
     Constant(Constant),
     Variable(Variable),
-    Neg(&'a Function<'a>),
-    Add(&'a Function<'a>, &'a Function<'a>),
+    Neg(Function),
+    Add(Function, Function),
     //sub(Expr, Expr),
 }
 
 #[derive(Debug)]
-pub struct Function<'a> {
-    output: Option<Constant>,
+pub struct Function {
+    output: RefCell<Option<Constant>>,
     pub variables: HashSet<String>,
-    body: Expr<'a>,
+    body: Box<Expr>,
 }
 
-impl<'a> fmt::Display for Function<'a> {
+impl<'a> fmt::Display for Function {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.body)
     }
 }
 
-impl<'a> fmt::Display for Expr<'a> {
+impl<'a> fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &Expr::Constant(ref c) => write!(f, "{}", c), 
@@ -69,9 +70,9 @@ impl fmt::Display for Variable {
     }
 }
 
-impl<'a> Neg for &'a Function<'a> {
-    type Output = Function<'a>;
-    fn neg(self) -> Function<'a> {
+impl<'a> Neg for Function {
+    type Output = Function;
+    fn neg(self) -> Function {
         Function {
             output: None,
             variables: self.variables.clone(),
@@ -80,9 +81,9 @@ impl<'a> Neg for &'a Function<'a> {
     }
 }
 
-impl<'a> Add for &'a Function<'a>{
-    type Output = Function<'a>;
-    fn add(self, other: &'a Function<'a>) -> Function<'a> {
+impl<'a> Add for Function {
+    type Output = Function;
+    fn add(self, other: Function) -> Function {
         let vars1 = self.variables.clone();
         let vars2 = other.variables.clone();
 
@@ -94,7 +95,7 @@ impl<'a> Add for &'a Function<'a>{
     }
 }
 
-pub fn variable<'a>(s: &str, dims: Vec<i32>) -> Function<'a> {
+pub fn variable<'a>(s: &str, dims: Vec<i32>) -> Function {
     let mut vars = HashSet::new();
     vars.insert(String::from(s));
     Function {
@@ -108,7 +109,7 @@ pub fn variable<'a>(s: &str, dims: Vec<i32>) -> Function<'a> {
 
 }
 
-pub fn scalar<'a>(x: f32) -> Function<'a> {
+pub fn scalar<'a>(x: f32) -> Function {
     Function {
         output: Some(Constant::Scalar(x)),
         variables: HashSet::new(),
@@ -117,7 +118,7 @@ pub fn scalar<'a>(x: f32) -> Function<'a> {
 }
 
 
-pub fn grad<'a>(f: &Function<'a>, var: &str) -> Constant {
+pub fn grad<'a>(f: &Function, var: &str) -> Constant {
     match f.variables.contains::<str>(&var) {
         false => Constant::Scalar(0.),
         true => match f.body { 
@@ -129,7 +130,7 @@ pub fn grad<'a>(f: &Function<'a>, var: &str) -> Constant {
     }
 }
 
-pub fn eval<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) -> Option<Constant> {
+pub fn eval<'a>(f: &Function, args: &HashMap<&str, Constant>) -> Option<Constant> {
     match f.body { 
         Expr::Constant(ref x) => Some(x.clone()),
         Expr::Variable(ref var) => args.get::<str>(&var.name).map(|x| x.clone()),
@@ -142,19 +143,27 @@ pub fn eval<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) -> Option<Cons
     }
 }
 
+//pub fn assign_outputs_<'a>(f: &mut Function) { //, args: &HashMap<&str, f32>) {
+    //match f.body { 
+          //Expr::Constant(_) => println!("{:?}", f.body),
+          //Expr::Neg(ref mut ff) => 
+              //assign_outputs_(ff),
+    //}
+//}
+
 pub fn assign_outputs<'a>(f: &mut Function, args: &HashMap<&str, Constant>) {
     match f.body { 
         Expr::Constant(_) => f.output = eval(f, args),
         Expr::Variable(_) => f.output = eval(f, args),
         Expr::Neg(ref mut f1) => {
-            //assign_outputs(f, args);
+            assign_outputs(f1, args);
             f.output = f1.output.clone().map(|x| -x);
         }
         Expr::Add(ref mut f1, ref mut f2) => {
             //assign_outputs(f1, args);
             //assign_outputs(f2, args);
             match (f1.output.clone(), f2.output.clone()) {
-                (Some(x1), Some(x2)) => f.output = Some(x1 + x2),
+                (Some(x1), Some(x2)) => *f.output.borrow_mut() = Some(x1 + x2),
                 _                    => f.output = None,
             };
         }
