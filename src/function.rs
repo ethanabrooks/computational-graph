@@ -35,6 +35,24 @@ impl<'a> fmt::Display for Function {
     }
 }
 
+fn write_with_parens(a: &Function, 
+                     operator: &str,
+                     b: &Function,  
+                     f: &mut fmt::Formatter) -> fmt::Result {
+    match *a.body {
+        Expr::Constant(_) | Expr::Variable(_) => match *b.body {
+            Expr::Constant(_) | Expr::Variable(_) => 
+                    write!(f, "{} {} {}", a, operator, b),
+                _ => write!(f, "{} {} ({})", a, operator, b),
+        },
+        _  => match *b.body {
+                Expr::Constant(_) | Expr::Variable(_) => 
+                    write!(f, "({}) {} {}", a, operator, b),
+                _ => write!(f, "({}) {} ({})", a, operator, b),
+        }
+    }
+}
+
 impl<'a> fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
