@@ -38,23 +38,23 @@ impl<'a> fmt::Display for Function {
 
 impl<'a> fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &Expr::Constant(ref c) => write!(f, "{}", c), 
-            &Expr::Variable(ref v) => write!(f, "{}", v),
-            &Expr::Neg(ref x) => match x.body {
+        match *self {
+            Expr::Constant(ref c) => write!(f, "{}", c), 
+            Expr::Variable(ref v) => write!(f, "{}", v),
+            Expr::Neg(ref x) => match *x.body {
                 Expr::Constant(_) | Expr::Variable(_)  => write!(f, "-{}", x),
                 _  => write!(f, "-({})", x),
             },
-            &Expr::Add(ref a, ref b) => 
-                match a.body {
+            Expr::Add(ref a, ref b) => 
+                match *a.body {
                     Expr::Constant(_) | Expr::Variable(_) =>
-                        match b.body {
+                        match *b.body {
                             Expr::Constant(_) | Expr::Variable(_) => 
                                 write!(f, "{} + {}", a, b),
                             _ => write!(f, "{} + ({})", a, b),
                         },
                     _  =>
-                        match b.body {
+                        match *b.body {
                             Expr::Constant(_) | Expr::Variable(_) => 
                                 write!(f, "({}) + {}", a, b),
                             _ => write!(f, "({}) + ({})", a, b),
@@ -74,9 +74,9 @@ impl<'a> Neg for Function {
     type Output = Function;
     fn neg(self) -> Function {
         Function {
-            output: None,
+            output: RefCell::new(None),
             variables: self.variables.clone(),
-            body: Expr::Neg(self),
+            body: box Expr::Neg(self),
         }
     }
 }
@@ -88,9 +88,9 @@ impl<'a> Add for Function {
         let vars2 = other.variables.clone();
 
         Function {
-            output: None,
+            output: RefCell::new(None),
             variables: vars1.union(&vars2).cloned().collect(),
-            body: Expr::Add(self, other),
+            body: box Expr::Add(self, other),
         }
     }
 }
@@ -99,9 +99,9 @@ pub fn variable<'a>(s: &str, dims: Vec<i32>) -> Function {
     let mut vars = HashSet::new();
     vars.insert(String::from(s));
     Function {
-        output: None,
+        output: RefCell::new(None),
         variables: vars,
-        body: Expr::Variable(Variable {
+        body: box Expr::Variable(Variable {
                 name: String::from(s),
                 dims: dims,
         })
@@ -111,9 +111,9 @@ pub fn variable<'a>(s: &str, dims: Vec<i32>) -> Function {
 
 pub fn scalar<'a>(x: f32) -> Function {
     Function {
-        output: Some(Constant::Scalar(x)),
+        output: RefCell::new(Some(Constant::Scalar(x))),
         variables: HashSet::new(),
-        body: Expr::Constant(Constant::Scalar(x)), 
+        body: box Expr::Constant(Constant::Scalar(x)), 
     }
 }
 
@@ -121,7 +121,7 @@ pub fn scalar<'a>(x: f32) -> Function {
 pub fn grad<'a>(f: &Function, var: &str) -> Constant {
     match f.variables.contains::<str>(&var) {
         false => Constant::Scalar(0.),
-        true => match f.body { 
+        true => match *f.body { 
             Expr::Constant(ref c) => copy_and_fill(c, 0.), 
             Expr::Variable(ref v) => new_constant(v.dims.clone(), 1.),
             Expr::Neg(ref f) => -grad(&f, var),
@@ -131,7 +131,7 @@ pub fn grad<'a>(f: &Function, var: &str) -> Constant {
 }
 
 pub fn eval<'a>(f: &Function, args: &HashMap<&str, Constant>) -> Option<Constant> {
-    match f.body { 
+    match *f.body { 
         Expr::Constant(ref x) => Some(x.clone()),
         Expr::Variable(ref var) => args.get::<str>(&var.name).map(|x| x.clone()),
         Expr::Neg(ref f) => eval(&f, args).map(|x| -x),
@@ -143,29 +143,27 @@ pub fn eval<'a>(f: &Function, args: &HashMap<&str, Constant>) -> Option<Constant
     }
 }
 
-//pub fn assign_outputs_<'a>(f: &mut Function) { //, args: &HashMap<&str, f32>) {
-    //match f.body { 
-          //Expr::Constant(_) => println!("{:?}", f.body),
-          //Expr::Neg(ref mut ff) => 
-              //assign_outputs_(ff),
-    //}
-//}
+fn clone_output(f: &Function) -> Option<Constant>{
+    f.output.borrow().clone()
+}
 
-pub fn assign_outputs<'a>(f: &mut Function, args: &HashMap<&str, Constant>) {
-    match f.body { 
-        Expr::Constant(_) => f.output = eval(f, args),
-        Expr::Variable(_) => f.output = eval(f, args),
-        Expr::Neg(ref mut f1) => {
-            assign_outputs(f1, args);
-            f.output = f1.output.clone().map(|x| -x);
+pub fn assign_outputs(f: &mut Function, args: &HashMap<&str, Constant>) {
+    f.output = RefCell::new(
+        match *(&mut *f.body) { 
+            Expr::Constant(ref x) => Some(x.clone()),
+            Expr::Variable(ref var) => args.get::<str>(&var.name).map(|x| x.clone()),
+            Expr::Neg(ref mut f1) => {
+                assign_outputs(f1, args);
+                clone_output(f1).map(|x| -x)
+            }
+            Expr::Add(ref mut f1, ref mut f2) => {
+                assign_outputs(f1, args);
+                assign_outputs(f2, args);
+                match (clone_output(f1), clone_output(f2)) {
+                    (Some(x1), Some(x2)) => Some(x1 + x2),
+                    _                    => None,
+                }
+            } 
         }
-        Expr::Add(ref mut f1, ref mut f2) => {
-            //assign_outputs(f1, args);
-            //assign_outputs(f2, args);
-            match (f1.output.clone(), f2.output.clone()) {
-                (Some(x1), Some(x2)) => *f.output.borrow_mut() = Some(x1 + x2),
-                _                    => f.output = None,
-            };
-        }
-    }
+    )
 }
