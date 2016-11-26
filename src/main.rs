@@ -1,6 +1,3 @@
-#![feature(box_syntax, box_patterns)]
-#![crate_type = "staticlib"]
-
 extern crate libc;
 mod function; 
 mod constant; 

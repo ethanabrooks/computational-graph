@@ -141,7 +141,7 @@ pub fn grad<'a>(f: &Function<'a>, var: &str) -> Constant {
         false => Constant::Scalar(0.),
         true => match f.body { 
             Expr::Constant(ref c) => copy_and_fill(c, 0.), 
-            Expr::Variable(ref v) => new_constant(v.dims.clone(), 1.),
+            Expr::Variable(ref v) => new_constant(&v.dims, 1.),
             Expr::Neg(ref f) => -grad(&f, var),
             Expr::Add(ref f1, ref f2) => grad(&f1, var) + grad(&f2, var),
             Expr::Mul(ref f1, ref f2) => grad(&f1, var) * get_output(&f2) +

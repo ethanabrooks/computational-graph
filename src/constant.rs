@@ -3,30 +3,25 @@ use std::ops::{Neg, Add, Mul};
 
 type Matrix = Vec<f32>;
 
-//type cMatrix = extern {
-    //Matrix
-//}
+#[derive(Clone)]
+struct cMatrix<'a> {
+    width: i32,
+    height: i32,
+    devArray: &'a [f32],
+    array: &'a [f32],
+}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Constant {
     Scalar(f32),
     Matrix(Matrix)
 }
 
-impl Clone for Constant {
-    fn clone(&self) -> Constant { 
-        match self {
-            &Constant::Scalar(ref x) => Constant::Scalar(x.clone()),
-            &Constant::Matrix(ref m) => Constant::Matrix(m.clone())
-        }
-    }
-}
-
 impl fmt::Display for Constant {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &Constant::Scalar(x) => write!(f, "{}", x),
-            &Constant::Matrix(ref m) => write!(f, "{:?}", m),
+        match *self {
+            Constant::Scalar(x) => write!(f, "{}", x),
+            Constant::Matrix(ref m) => write!(f, "{:?}", m),
         }
     }
 }
@@ -40,16 +35,18 @@ fn new_vec(size: usize, val: f32) -> Vec<f32> {
 }
 
 pub fn copy_and_fill(c: &Constant, val: f32) -> Constant {
-    match c {
-        &Constant::Scalar(_) => Constant::Scalar(val),
-        &Constant::Matrix(ref m) => Constant::Matrix(new_vec(m.len(), val)),
+    match *c {
+        Constant::Scalar(_) => Constant::Scalar(val),
+        Constant::Matrix(ref m) => Constant::Matrix(new_vec(m.len(), val)),
+        // TODO: set_matrix
     }
 }
 
-pub fn new_constant(vec: Vec<i32>, val: f32) -> Constant {
-    match vec.len() {
+pub fn new_constant(dims: &Vec<i32>, val: f32) -> Constant {
+    match dims.len() {
         0 => Constant::Scalar(val),
-        2 => Constant::Matrix(new_vec((vec[0] * vec[1]) as usize, val)),
+        2 => Constant::Matrix(new_vec((dims[0] * dims[1]) as usize, val)),
+        // TODO: set_matrix
         _ => panic!("not supported"),
     }
 }
@@ -63,6 +60,7 @@ fn apply(f: &Fn(f32) -> f32, c: &Constant) -> Constant {
                 .map(|&x| f(x)) 
                 .collect::<Matrix>()
         )
+        // TODO: CUBLAS integration
     }
 }
 
@@ -81,6 +79,7 @@ mod bin {
                     .map(|(&x1, &x2)| f(x1, x2)) 
                     .collect::<Matrix>()
                 ),
+        // TODO: CUBLAS integration
             (Constant::Scalar(x), Constant::Matrix(m)) 
                 | (Constant::Matrix(m), Constant::Scalar(x)) =>
                 Constant::Matrix(
@@ -88,7 +87,7 @@ mod bin {
                     .map(|e| f(*e, x))
                     .collect::<Matrix>()
                 ),
-
+        // TODO: CUBLAS integration
         }
     }
 }
