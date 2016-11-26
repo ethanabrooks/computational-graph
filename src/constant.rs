@@ -3,6 +3,10 @@ use std::ops::{Neg, Add, Mul};
 
 type Matrix = Vec<f32>;
 
+//type cMatrix = extern {
+    //Matrix
+//}
+
 #[derive(Debug)]
 pub enum Constant {
     Scalar(f32),
