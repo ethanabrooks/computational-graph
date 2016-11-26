@@ -1,5 +1,6 @@
 #![feature(box_syntax, box_patterns)]
 
+extern crate libc;
 mod function; 
 mod constant; 
 use function::{variable, scalar, eval, grad, assign_outputs};
@@ -12,9 +13,9 @@ fn main() {
     let x = &variable("x", vec![]);
     //let y = &variable("y", vec![]);
 
-    let f1 = -x;
-    let f2 = &f1 * a;
-    let f = &f2 * a;
+    let f1 = x * x;
+    let f = &f1 + a;
+    //let f = &f2 * a;
     println!("f: {}", f);
     //let mut g = -x;
 
@@ -22,6 +23,7 @@ fn main() {
     args.insert("x", Scalar(3.));
     args.insert("y", Scalar(5.));
     assign_outputs(&f, &args);
+    println!("args x: {:#?}", args);
 
     if let Some(c) = eval(&f, &args) {
         println!("eval: {}", c);
