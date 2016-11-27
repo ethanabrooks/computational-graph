@@ -4,6 +4,7 @@ use std::ops::{Neg, Add, Mul};
 type Matrix = Vec<f32>;
 
 #[derive(Clone)]
+#[repr(C)]
 struct cMatrix<'a> {
     width: i32,
     height: i32,
@@ -45,7 +46,11 @@ pub fn copy_and_fill(c: &Constant, val: f32) -> Constant {
 pub fn new_constant(dims: &Vec<i32>, val: f32) -> Constant {
     match dims.len() {
         0 => Constant::Scalar(val),
-        2 => Constant::Matrix(new_vec((dims[0] * dims[1]) as usize, val)),
+        2 => {
+            let m = Matrix { ... };
+            unsafe { new_matrix(m) };
+            m
+          }
         // TODO: set_matrix
         _ => panic!("not supported"),
     }
