@@ -55,16 +55,13 @@ int main (void){
   stat = cublasCreate(&handle);
   check(stat != CUBLAS_STATUS_SUCCESS, "CUBLAS initialization failed"); 
 
-  new_matrix(&matrix, array, M, N);
-  new_matrix(&m1, array, M, N);
-  new_matrix(&m2, array, M, N);
+  init_matrix(&matrix, array, M, N);
+  alloc_matrix(&m1, M, N);
+  alloc_matrix(&m2, M, N);
   fill_matrix(&m1, 2);
   fill_matrix(&m2, 3);
-  elemwise_multiply(&m1, &m2, &matrix);
+  matrix_neg(&m1, &matrix);
   print_matrix(&matrix);
 
-  elemwise_add(&m1, &m2, &matrix);
-
-  print_matrix(&matrix);
   return EXIT_SUCCESS;
 }

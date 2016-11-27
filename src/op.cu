@@ -39,3 +39,7 @@ void elemwise_add(Matrix *m1, Matrix *m2, Matrix *result) {
   DEFAULT_LAUNCH(_array_add, result, m1->devArray, m2->devArray);
 }
 
+void matrix_neg(Matrix *m, Matrix *result) { 
+  DEFAULT_LAUNCH(_array_neg, result, m->devArray);
+}
+

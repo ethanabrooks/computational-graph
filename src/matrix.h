@@ -28,13 +28,12 @@ typedef struct matrix_struct {
 } Matrix;
 
 void check(int condition, const char *msg);
-void new_empty_matrix(Matrix *matrix, int width, int height);
-void copy_matrix(Matrix *src, Matrix *dst);
-void new_matrix(Matrix *matrix, float *array, int width, int height);
-void print_matrix(Matrix *matrix);
-void fill_matrix(Matrix *matrix, float value);
-void elemwise_multiply(Matrix *m1, Matrix *m2, Matrix *result);
 int size(Matrix m);
 dim3 blockcount(int count);
+void alloc_matrix(Matrix *matrix, int width, int height);
+void init_matrix(Matrix *matrix, float *array, int width, int height);
+void copy_matrix(Matrix *src, Matrix *dst);
+void fill_matrix(Matrix *matrix, float value);
+void print_matrix(Matrix *matrix);
 
 #endif

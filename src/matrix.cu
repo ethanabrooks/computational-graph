@@ -27,7 +27,7 @@ void _memset(int len, float *array, float value) {
   SET(array, value);
 }
 
-void new_empty_matrix(Matrix *matrix, int height, int width) {
+void alloc_matrix(Matrix *matrix, int height, int width) {
   matrix->width = width;
   matrix->height = height;
 
@@ -37,8 +37,8 @@ void new_empty_matrix(Matrix *matrix, int height, int width) {
   check(cudaStat != cudaSuccess, "device memory allocation failed"); 
 }
 
-void new_matrix(Matrix *matrix, float *array, int height, int width) {
-  new_empty_matrix(matrix, height, width);
+void init_matrix(Matrix *matrix, float *array, int height, int width) {
+  alloc_matrix(matrix, height, width);
 
   // copy matrix to GPU 
   cublasStatus_t stat = cublasSetMatrix(width, height, sizeof(*array), 
@@ -49,7 +49,7 @@ void new_matrix(Matrix *matrix, float *array, int height, int width) {
 }
 
 void copy_matrix(Matrix *src, Matrix *dst) {
-  new_empty_matrix(dst, src->height, src->width);
+  alloc_matrix(dst, src->height, src->width);
 
   // copy matrix from src
   cudaMemcpy(dst->devArray, src->devArray, 
