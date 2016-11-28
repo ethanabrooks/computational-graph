@@ -1,7 +1,7 @@
 extern crate libc;
 mod function; 
 mod constant; 
-use function::{variable, scalar, eval, grad, assign_outputs};
+use function::{variable, scalar, matrix, eval, grad, assign_outputs};
 use constant::Constant::Scalar;
 use std::collections::HashMap;
 
@@ -17,11 +17,14 @@ extern {
 
 fn main() {
     let a = scalar(2.);
-    //let b = &scalar(3.);
+    let b = matrix(2, 2, vec![
+                   1., 2.,
+                   3., 4.]);
     let x = variable("x", vec![]);
     //let y = &variable("y", vec![]);
 
-    let f = &(&x * &x) + &a;
+    let f1 = &x * &x;
+    let f = &f1 + &a;
     //let mut g = -x;
 
     let mut args = HashMap::new();

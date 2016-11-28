@@ -4,7 +4,8 @@ use std::path::Path;
 
 
 fn main() {
-    let out_dir = env::var("OUT_DIR").unwrap();
+    //let out_dir = env::var("OUT_DIR").unwrap();
+    let out_dir = "out";
 
     Command::new("nvcc")
         .args(&["src/main.cpp src/matrix.cu src/op.cu", "-c", "-fPIC", "-o"]) 

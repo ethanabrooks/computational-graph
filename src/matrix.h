@@ -12,11 +12,10 @@
 #define IDy ((blockIdx.y * blockDim.y) + threadIdx.y)
 #define BLOCKSIZE dim3(16)
 #define BLOCKSIZE2D dim3(16, 16)
-#define SET(a, expr) if (IDx < len) { a[IDx] = expr; }
-#define ZIP_WITH(op) SET(result, a1[IDx] op a2[IDx])
+#define SET(result, value) if (IDx < len) { result[IDx] = value; }
 #define DEFAULT_LAUNCH(kernel, out, ...) \
   kernel<<<blockcount(size(*out)), BLOCKSIZE>>> \
-  (size(*out), out->devArray, ##__VA_ARGS__)
+  (size(*out), out->devArray, ##__VA_ARGS__);
 
 
 int double_input(int input);
@@ -30,8 +29,8 @@ typedef struct matrix_struct {
 void check(int condition, const char *msg);
 int size(Matrix m);
 dim3 blockcount(int count);
-void alloc_matrix(Matrix *matrix, int width, int height);
-void init_matrix(Matrix *matrix, float *array, int width, int height);
+void alloc_matrix(Matrix *matrix, int height, int width);
+void init_matrix(Matrix *matrix, float *array, int height, int width);
 void copy_matrix(Matrix *src, Matrix *dst);
 void fill_matrix(Matrix *matrix, float value);
 void print_matrix(Matrix *matrix);

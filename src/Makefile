@@ -8,6 +8,8 @@ clean:
 	rm main
 
 rust: $(SRCS) matrix.h
-	nvcc -c main.o
-	cargo run
+	cd ..
+	nvcc src/main.cpp src/matrix.cu src/op.cu -c -o out/main.o
+	cd out
+	ar curs libmatrix.a main.o
 

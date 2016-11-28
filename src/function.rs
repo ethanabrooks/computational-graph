@@ -1,6 +1,6 @@
 use std::fmt;
 use std::ops::{Neg, Add, Mul};
-use constant::{Constant, copy_and_fill, new_constant};
+use constant::{Constant, copy_and_fill, new_constant, new_matrix};
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 
@@ -128,6 +128,15 @@ pub fn scalar<'a>(x: f32) -> Function<'a> {
         output: RefCell::new(Some(Constant::Scalar(x))),
         variables: HashSet::new(),
         body: Expr::Constant(Constant::Scalar(x)), 
+    }
+}
+
+pub fn matrix<'a>(height: i32, width: i32, values: Vec<f32>) -> Function<'a> {
+    let m = new_matrix(height, width, values);
+    Function {
+        output: RefCell::new(Some(m.clone())),
+        variables: HashSet::new(),
+        body: Expr::Constant(m.clone()),
     }
 }
 

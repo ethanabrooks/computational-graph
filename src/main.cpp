@@ -60,10 +60,17 @@ int main (void){
   alloc_matrix(&m2, M, N);
   fill_matrix(&m1, 2);
   fill_matrix(&m2, 3);
-  scalar_add(1, &m1, &matrix);
+  elemwise_add(&m1, &m2, &matrix);
   print_matrix(&matrix);
-  scalar_multiply(2, &m1, &matrix);
+  printf("\n");
+  elemwise_mult(&m1, &m2, &matrix);
   print_matrix(&matrix);
-
+  printf("\n");
+  broadcast_add(1, &m2, &matrix);
+  print_matrix(&matrix);
+  printf("\n");
+  broadcast_mult(2, &m2, &matrix);
+  print_matrix(&matrix);
+  printf("\n");
   return EXIT_SUCCESS;
 }
