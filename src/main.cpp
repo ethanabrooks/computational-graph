@@ -60,7 +60,9 @@ int main (void){
   alloc_matrix(&m2, M, N);
   fill_matrix(&m1, 2);
   fill_matrix(&m2, 3);
-  matrix_neg(&m1, &matrix);
+  scalar_add(1, &m1, &matrix);
+  print_matrix(&matrix);
+  scalar_multiply(2, &m1, &matrix);
   print_matrix(&matrix);
 
   return EXIT_SUCCESS;
