@@ -9,7 +9,9 @@ clean:
 
 rust: $(SRCS) matrix.h
 	cd ..
-	nvcc src/main.cpp src/matrix.cu src/op.cu -c -o out/main.o
+	nvcc -c src/main.cpp -o out/main.o
+	nvcc -c src/matrix.cu -o out/matrix.o
+	nvcc -c src/op.cu -o out/op.o
 	cd out
-	ar curs libmatrix.a main.o
+	ar curs libmatrix.a *.o
 

@@ -15,10 +15,10 @@ extern {
 }
 
 #[repr(C)]
-struct Matrix {
-    height: i32,
-    width: i32,
-    devArray: *mut f32,
+pub struct Matrix {
+    pub height: i32,
+    pub width: i32,
+    pub devArray: *mut f32,
 }
 
 impl Clone for Matrix {
