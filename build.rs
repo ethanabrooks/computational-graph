@@ -18,10 +18,10 @@ fn main() {
         .arg(&format!("{}/op.o", out_dir))
         .status().unwrap().success(), "nvcc src/op.cu");
 
-    assert!(Command::new("rm")
-        .args(&["-f", "libmatrix.a"]) 
-        .current_dir(&Path::new(&out_dir)) 
-        .status().unwrap().success(), "rm");
+    //assert!(Command::new("rm")
+        //.args(&["-f", "libmatrix.a"]) 
+        //.current_dir(&Path::new(&out_dir)) 
+        //.status().unwrap().success(), "rm");
 
     assert!(Command::new("ar")
         .args(&["crus", "libmatrix.a", "matrix.o", "op.o"]) 
@@ -33,6 +33,4 @@ fn main() {
     println!("cargo:rustc-link-lib=static=matrix");
     println!("cargo:rustc-link-lib=dylib=cublas");
     println!("cargo:rustc-link-lib=dylib=cudart");
-    println!("cargo:rustc-link-lib=dylib=cuda");
-    println!("cargo:rustc-link-lib=dylib=cudadevrt");
 }

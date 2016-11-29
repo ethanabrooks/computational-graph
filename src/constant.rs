@@ -1,7 +1,5 @@
 use std::{fmt, ptr};
 use std::ops::{Neg, Add, Mul};
-use std::result::Result;
-use libc::{c_void, size_t};
 
 extern {
     fn alloc_matrix(m: *mut Matrix, width: i32, height: i32);
@@ -18,9 +16,9 @@ extern {
 
 #[repr(C)]
 pub struct Matrix {
-    pub height: i32,
-    pub width: i32,
-    pub devArray: *mut f32,
+    height: i32,
+    width: i32,
+    dev_array: *mut f32,
 }
 
 impl Clone for Matrix {
@@ -43,7 +41,7 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
         Constant::Matrix(ref src) => {
             let mut dst = Vec::with_capacity((src.height * src.width) as usize);
             unsafe { download_array(src, dst.as_mut_ptr()) };
-            let mut result = Result::Ok(());
+            let mut result;
             result = write!(f, "\n");
             for i in 0..src.height {
                 for j in 0..src.width {
@@ -73,7 +71,7 @@ fn empty_matrix(height: i32, width: i32) -> Matrix {
     let mut matrix = Matrix { 
         height: height,
         width: width,
-        devArray: ptr::null_mut(),
+        dev_array: ptr::null_mut(),
     };
     unsafe { alloc_matrix(&mut matrix, height, width) };
     matrix
