@@ -24,16 +24,18 @@ typedef struct matrix_struct {
 } Matrix;
 
 extern "C" {
-  int double_input(int input);
+  // allocates on device
+  void alloc_matrix(Matrix *matrix, int height, int width);
+
+  void copy_matrix(Matrix *src, Matrix *dst);
+  void init_matrix(Matrix *matrix, float *array, int height, int width);
   void check(int condition, const char *msg);
   int size(Matrix m);
   dim3 blockcount(int count);
-  void alloc_matrix(Matrix *matrix, int height, int width);
-  void init_matrix(Matrix *matrix, float *array, int height, int width);
-  void copy_matrix(Matrix *src, Matrix *dst);
   void fill_matrix(Matrix *matrix, float value);
   void print_matrix(Matrix *matrix);
   void download_array(Matrix *src, float *dst);
+  void free_matrix(Matrix *matrix);
 }
 
 #endif

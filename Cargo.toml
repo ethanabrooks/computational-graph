@@ -2,7 +2,6 @@
 name = "lstm"
 version = "0.1.0"
 authors = ["ethan"]
-link = "cublas"
 build = "build.rs"
 
 [dependencies]

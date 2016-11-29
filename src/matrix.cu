@@ -6,10 +6,6 @@
 #include "matrix.h" 
 
 extern "C" {
-  int double_input(int input) {
-    return 2 * input;
-  }
-
   dim3 blockcount(int count) {
     return dim3(count / BLOCKSIZE.x + 1);
   }
@@ -28,7 +24,8 @@ extern "C" {
     SET(array, value);
   }
 
-  void alloc_matrix(Matrix *matrix, int height, int width) {
+  // allocates on device
+  void alloc_matrix(Matrix *matrix, int height, int width) { 
     matrix->width = width;
     matrix->height = height;
 
@@ -39,22 +36,23 @@ extern "C" {
   }
 
   void init_matrix(Matrix *matrix, float *array, int height, int width) {
-    alloc_matrix(matrix, height, width);
 
     // copy matrix to GPU 
     cublasStatus_t stat = cublasSetMatrix(width, height, sizeof(*array), 
         array, width, matrix->dev_array, width); 
     check(stat != CUBLAS_STATUS_SUCCESS, "data upload failed"); 
 
-    cudaMemcpy(array, matrix->dev_array, height * width * sizeof(*array), cudaMemcpyDeviceToHost);
+    cudaMemcpy(array, matrix->dev_array,
+        height * width * sizeof(*array),
+        cudaMemcpyDeviceToHost);
   }
 
   void copy_matrix(Matrix *src, Matrix *dst) {
-    alloc_matrix(dst, src->height, src->width);
-
+     
     // copy matrix from src
     cudaMemcpy(dst->dev_array, src->dev_array, 
-        src->height * src->width * sizeof(*src->dev_array), cudaMemcpyDeviceToDevice);
+        src->height * src->width * sizeof(*src->dev_array),
+        cudaMemcpyDeviceToDevice);
   }
 
   void fill_matrix(Matrix *matrix, float value) {
@@ -87,6 +85,10 @@ extern "C" {
     }
 
     free(array);
+  }
+
+  void free_matrix(Matrix *matrix) {
+    free(matrix->dev_array);
   }
 }
 
