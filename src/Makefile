@@ -1,6 +1,6 @@
 SRCS:=main.cpp matrix.cu op.cu
 main: $(SRCS)  matrix.h op.h
-	nvcc $(SRCS) -o main -lcublas -std=c++11
+	strace -o log nvcc $(SRCS) -o main -lcublas -std=c++11
 	./main
 
 clean:

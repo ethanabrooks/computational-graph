@@ -27,8 +27,8 @@ fn main() {
     let x = variable("x", vec![]);
     //let y = &variable("y", vec![]);
 
-    let f1 = &x * &x;
-    let f = &f1 + &a;
+    let f1 = &x + &x;
+    let f = &f1 * &a;
     ////let mut g = -x;
 
     let mut args = HashMap::new();

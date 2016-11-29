@@ -29,6 +29,7 @@ fn main() {
         .status().unwrap().success(), "ar");
 
     println!("cargo:rustc-link-search=native={}", out_dir);
+    println!("cargo:rustc-link-search=native={}", "/usr/local/cuda-7.5/lib64");
     println!("cargo:rustc-link-lib=static=matrix");
     println!("cargo:rustc-link-lib=dylib=cublas");
     println!("cargo:rustc-link-lib=dylib=cudart");
