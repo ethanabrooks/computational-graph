@@ -15,7 +15,7 @@
     SET(result, f_ ## name(a[IDx])) \
   } \
   void map_ ## name(Matrix *m, Matrix *result) { \
-    DEFAULT_LAUNCH(_ ## name, result, m->devArray); \
+    DEFAULT_LAUNCH(_ ## name, result, m->dev_array); \
   }
 
 #define BIN_BROADCAST(name, op) \
@@ -24,7 +24,7 @@
     SET(result, val op a[IDx]) \
   } \
   void broadcast_ ## name(float val, Matrix *m, Matrix *result) { \
-    DEFAULT_LAUNCH(_ ## name ## _scalar, result, m->devArray, val); \
+    DEFAULT_LAUNCH(_ ## name ## _scalar, result, m->dev_array, val); \
   }
 
 #define BIN_ELEMWISE(name, op) \
@@ -34,7 +34,7 @@
   } \
   void elemwise_ ## name (Matrix *m1, Matrix *m2, Matrix *result) { \
     check_dims(m1, m2, result); \
-    DEFAULT_LAUNCH(_ ## name, result, m1->devArray, m2->devArray); \
+    DEFAULT_LAUNCH(_ ## name, result, m1->dev_array, m2->dev_array); \
   }
 
 void check_dims(Matrix *m1, Matrix *m2, Matrix *result) { 
@@ -45,9 +45,11 @@ void check_dims(Matrix *m1, Matrix *m2, Matrix *result) {
       "matrices must have the same dimensions");
 }
 
+extern "C" {
+  UN_MAP(neg, -x) // map_neg
+  BIN_ELEMWISE(mult, *) // elemwise_mult
+  BIN_ELEMWISE(add, +) // elemwise_add
+  BIN_BROADCAST(mult, *) // broadcast_mult
+  BIN_BROADCAST(add, +) // broadcast_add
+}
 
-UN_MAP(neg, -x) // map_neg
-BIN_ELEMWISE(mult, *) // elemwise_mult
-BIN_ELEMWISE(add, +) // elemwise_add
-BIN_BROADCAST(mult, *) // broadcast_mult
-BIN_BROADCAST(add, +) // broadcast_add

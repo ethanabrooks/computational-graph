@@ -15,24 +15,25 @@
 #define SET(result, value) if (IDx < len) { result[IDx] = value; }
 #define DEFAULT_LAUNCH(kernel, out, ...) \
   kernel<<<blockcount(size(*out)), BLOCKSIZE>>> \
-  (size(*out), out->devArray, ##__VA_ARGS__);
-
-
-int double_input(int input);
+  (size(*out), out->dev_array, ##__VA_ARGS__);
 
 typedef struct matrix_struct {
    int height;
    int width;
-   float *devArray;
+   float *dev_array;
 } Matrix;
 
-void check(int condition, const char *msg);
-int size(Matrix m);
-dim3 blockcount(int count);
-void alloc_matrix(Matrix *matrix, int height, int width);
-void init_matrix(Matrix *matrix, float *array, int height, int width);
-void copy_matrix(Matrix *src, Matrix *dst);
-void fill_matrix(Matrix *matrix, float value);
-void print_matrix(Matrix *matrix);
+extern "C" {
+  int double_input(int input);
+  void check(int condition, const char *msg);
+  int size(Matrix m);
+  dim3 blockcount(int count);
+  void alloc_matrix(Matrix *matrix, int height, int width);
+  void init_matrix(Matrix *matrix, float *array, int height, int width);
+  void copy_matrix(Matrix *src, Matrix *dst);
+  void fill_matrix(Matrix *matrix, float value);
+  void print_matrix(Matrix *matrix);
+  void download_array(Matrix *src, float *dst);
+}
 
 #endif

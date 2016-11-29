@@ -21,29 +21,23 @@ extern "C" {
 
 fn main() {
     let a = scalar(2.);
-    //let b = matrix(2, 2, vec![
-                   //1., 2.,
-                   //3., 4.]);
+    let b = matrix(2, 2, vec![
+                   1., 2.,
+                   3., 4.]);
+    println!("b: {}", b);
     let x = variable("x", vec![]);
-    //let y = &variable("y", vec![]);
-
-    let f1 = &x + &x;
-    let f = &f1 * &a;
-    ////let mut g = -x;
+    let f = &x + &b;
+    println!("f: {}", f);
 
     let mut args = HashMap::new();
     args.insert("x", Scalar(3.));
     args.insert("y", Scalar(5.));
-    //assign_outputs(&f, &args);
-    let mut matrix = Matrix { 
-        height: 2,
-        width: 3,
-        devArray: ptr::null_mut(),
-    };
+    assign_outputs(&f, &args);
+    println!("args: {:#?}", args);
 
-    //if let Some(c) = eval(&f, &args) {
-        //println!("eval: {}", c);
-    //}
+    if let Some(c) = eval(&f, &args) {
+        println!("eval: {}", c);
+    }
     //println!("grad x: {}", grad(&f, "x"));
 }
 

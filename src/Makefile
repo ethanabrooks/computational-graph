@@ -1,10 +1,11 @@
 SRCS:=main.cpp matrix.cu op.cu
 main: $(SRCS)  matrix.h op.h
-	strace -o log nvcc $(SRCS) -o main -lcublas -std=c++11
+	nvcc $(SRCS) -o main -lcublas -std=c++11
 	./main
 
 clean:
-	rm *.o
+	rm -f *.o
+	rm -f *.out
 	rm main
 
 rust: $(SRCS) matrix.h

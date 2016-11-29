@@ -1,6 +1,7 @@
 use std::{fmt, ptr};
 use std::ops::{Neg, Add, Mul};
 use std::result::Result;
+use libc::{c_void, size_t};
 
 extern {
     fn alloc_matrix(m: *mut Matrix, width: i32, height: i32);
@@ -12,6 +13,7 @@ extern {
     fn elemwise_mult(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn broadcast_mult(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
+    fn download_array(src: *const Matrix, dst: *mut f32);
 }
 
 #[repr(C)]
@@ -38,17 +40,21 @@ pub enum Constant {
 fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
     match *c {
         Constant::Scalar(x) => write!(f, "{}", x),
-        Constant::Matrix(ref m) => {
+        Constant::Matrix(ref src) => {
+            let mut dst = Vec::with_capacity((src.height * src.width) as usize);
+            unsafe { download_array(src, dst.as_mut_ptr()) };
             let mut result = Result::Ok(());
-            for i in 0..m.height {
-                for j in 0..m.width {
-                    result = write!(f, "{:0.7}", unsafe { 
-                        *m.devArray.offset((i * j + m.width) as isize)
+            result = write!(f, "\n");
+            for i in 0..src.height {
+                for j in 0..src.width {
+                    result = write!(f, "{:7.0}", unsafe {
+                        *dst.as_ptr().offset((i * src.width + j) as isize) 
                     });
                     if result.is_err() {
                         return result
                     }
                 }
+                result = write!(f, "\n");
             }
             result
         }
