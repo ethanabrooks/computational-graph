@@ -27,7 +27,7 @@ pub struct Matrix {
 // allocates on device
 impl Clone for Matrix {
     fn clone(&self) -> Matrix {
-        let mut m = empty_matrix(self.height, self.width);
+        let mut m = empty_like(self);
         unsafe { copy_matrix(self as *const Matrix, &mut m) };
         m
     }
@@ -83,6 +83,9 @@ fn empty_matrix(height: i32, width: i32) -> Matrix {
 }
 
 // allocates on device
+fn empty_like(m: Matrix) -> Matrix { empty_matrix(m.height, m.width) }
+
+// allocates on device
 pub fn new_matrix(height: i32, width: i32, values: Vec<f32>) -> Constant {
     assert!(values.len() as i32 == height * width, "wrong number of values");
     let mut matrix = empty_matrix(height, width);
@@ -117,31 +120,33 @@ fn un_apply(broadcast_fun: &Fn(f32) -> f32,
             c: Constant) -> Constant {
     match c {
         Constant::Scalar(x) => Constant::Scalar(broadcast_fun(x)),
-        Constant::Matrix(src) => {
-            let mut dst = src.clone();
-            unsafe { matrix_fun(&dst, &mut dst) }
-            Constant::Matrix(dst)
+        Constant::Matrix(m) => {
+            let mut result = empty_like(m);
+            unsafe { matrix_fun(&m, &mut result) };
+            Constant::Matrix(result)
         }
     }
 
 }
 
 // allocates on device
-fn bin_apply(broadcast_fun: &Fn(f32, f32) -> f32, 
+fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32, 
             broadcast_matrix_fun: unsafe extern "C" fn(f32, *const Matrix, *mut Matrix),
             matrix_fun: unsafe extern "C" fn(*const Matrix, *const Matrix, *mut Matrix),
             c1: Constant, c2: Constant) -> Constant {
     match (c1, c2) {
         (Constant::Scalar(x1), Constant::Scalar(x2)) =>
-            Constant::Scalar(broadcast_fun(x1, x2)),
+            Constant::Scalar(scalar_fun(x1, x2)),
         (Constant::Scalar(x), Constant::Matrix(ref mut m)) |
-        (Constant::Matrix(ref mut m), Constant::Scalar(x)) => {
-            unsafe { broadcast_matrix_fun(x, m, m) };
-            Constant::Matrix(m.clone())
+        (Constant::Matrix(ref m), Constant::Scalar(x)) => {
+            let mut result = empty_like(m);
+            unsafe { broadcast_matrix_fun(x, m, result) };
+            Constant::Matrix(result)
         }
-        (Constant::Matrix(ref mut m1), Constant::Matrix(ref m2)) => {
-            unsafe { matrix_fun(m1, m2, m1) }
-            Constant::Matrix(m1.clone())
+        (Constant::Matrix(ref m1), Constant::Matrix(ref m2)) => {
+            let mut result = empty_like(m1);
+            unsafe { matrix_fun(m1, m2, result) };
+            Constant::Matrix(result)
         }
     }
 
@@ -174,5 +179,23 @@ impl Mul for Constant {
                    broadcast_mult,
                    elemwise_mult,
                    self, other)
+    }
+}
+
+impl SubAssign for Constant {
+    fn sub_assign(&mut self, other: Constant) {
+        match (self, other) {
+            (Constant::Scalar(ref mut x1), Constant::Scalar(x2)) => x1 -= x2,
+            (Constant::Scalar(x), Constant::Matrix(ref mut m)) |
+            (Constant::Matrix(ref mut m), Constant::Scalar(x)) => {
+                unsafe { elemwise_sub(x, m, m) };
+                Constant::Matrix(m.clone())
+            }
+            (Constant::Matrix(ref mut m1), Constant::Matrix(ref m2)) => {
+                unsafe { matrix_fun(m1, m2, m1) }
+                Constant::Matrix(m1.clone())
+            }
+    }
+
     }
 }

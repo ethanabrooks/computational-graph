@@ -220,3 +220,27 @@ pub fn assign_outputs<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) {
         Expr::Mul(ref f1, ref f2) => assign_and_apply(&|x, y| x * y, args, f1, f2),
     }
 }
+
+fn backprop<'a>(f: &Function<'a>, error: Constant, learn_rate: f32) {
+    match f.body {
+        Expr::Param(ref p) => { 
+            let ref mut value = *p.value.borrow_mut();
+            value -= Constant::Scalar(learn_rate) * error; // TODO: make minus
+        }
+        Expr::Neg(ref f1) => backprop(f1, -error, learn_rate),
+        Expr::Add(ref f1, ref f2) => {
+            backprop(f1, error, learn_rate);
+            backprop(f2, error, learn_rate);
+        }
+        Expr::Mul(ref f1, ref f2) => {
+            match (*f1.output.borrow(), *f2.output.borrow()) {
+                (Some(o1), Some(o2)) => {
+                    backprop(f1, o2 * error, learn_rate);
+                    backprop(f2, f1.output * error, learn_rate);
+                }
+                _ => panic!("Need to run `assign_outputs` before backprop")
+            }
+        }
+        _ => return,
+    }
+}

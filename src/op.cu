@@ -27,6 +27,15 @@
     DEFAULT_LAUNCH(_ ## name ## _scalar, result, m->dev_array, val); \
   }
 
+#define BIN_BROADCAST_REV(name, op) \
+  __global__ \
+  void _ ## name ## _scalar_rev(int len, float *result, float *a, float val) { \
+    SET(result, a[IDx] op val) \
+  } \
+  void broadcast_ ## name_rev(Matrix *m, float val, Matrix *result) { \
+    DEFAULT_LAUNCH(_ ## name ## _scalar_rev, result, m->dev_array, val); \
+  }
+
 #define BIN_ELEMWISE(name, op) \
   __global__ \
   void _ ## name (int len, float *result, float *a1, float *a2) { \
@@ -47,9 +56,14 @@ void check_dims(Matrix *m1, Matrix *m2, Matrix *result) {
 
 extern "C" {
   UN_MAP(neg, -x) // map_neg
+
   BIN_ELEMWISE(mult, *) // elemwise_mult
   BIN_ELEMWISE(add, +) // elemwise_add
+  BIN_ELEMWISE(sub, -) // elemwise_sub
+
   BIN_BROADCAST(mult, *) // broadcast_mult
   BIN_BROADCAST(add, +) // broadcast_add
-}
+  BIN_BROADCAST(sub, -) // broadcast_sub
 
+  /*BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev*/
+}
