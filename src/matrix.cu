@@ -36,6 +36,7 @@ extern "C" {
   }
 
   void init_matrix(Matrix *matrix, float *array, int height, int width) {
+    alloc_matrix(matrix, height, width);
 
     // copy matrix to GPU 
     cublasStatus_t stat = cublasSetMatrix(width, height, sizeof(*array), 
