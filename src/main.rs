@@ -16,7 +16,7 @@ fn main() {
     let x = variable("x", vec![]);
     let f1 = &x + &b;
     let f2 = &x + &a;
-    let f = &f1 + &f2;
+    let f = &f1 + &x;
     println!("f: {}", f);
 
     let mut args = HashMap::new();
