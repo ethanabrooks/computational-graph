@@ -3,7 +3,7 @@ extern crate libc;
 mod function; 
 mod constant; 
 
-use function::{variable, scalar, matrix, eval, grad, assign_outputs};
+use function::{input, scalar, matrix, eval, grad, assign_outputs};
 use constant::Constant::Scalar;
 use std::collections::HashMap;
 
@@ -13,7 +13,7 @@ fn main() {
                    1., 1.,
                    1., 1.]);
     println!("b: {}", b);
-    let x = variable("x", vec![]);
+    let x = input("x", vec![]);
     let f1 = &x + &b;
     let f2 = &x + &a;
     let f = &f1 + &x;
