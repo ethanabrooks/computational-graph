@@ -68,8 +68,34 @@ extern "C" {
 
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
 
+  __global__
+  void _reduce_equal(int len, const float *a, float x, unsigned int *boolean) {
+    if (IDx >= len) return;
+    unsigned int equal = a[IDx] == x;
+    printf("equal: %d\n", equal);
+    atomicAnd(boolean, equal); 
+  }
+
+  bool reduce_equal(const Matrix *m, float x) {
+    unsigned int *dev_bool;
+    cudaError_t cudaStat = cudaMalloc((void**)&dev_bool,
+        sizeof(*dev_bool));
+    check(cudaStat != cudaSuccess, "cudaMalloc failed for `dev_bool` in `reduce_eq`");
+
+    unsigned int t = 1;
+    cudaMemcpy(dev_bool, &t, sizeof(t), cudaMemcpyHostToDevice);
+
+    printf("%x, TEST TEST TEST\n", t);
+    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>>
+      (size(m), m->dev_array, x, dev_bool);
+
+
+    cudaMemcpy(&t, &dev_bool, sizeof(t), cudaMemcpyDeviceToHost);
+    return t == 1;
+  }
+
   float reduce_sum(const Matrix *m) {
-    int size_matrix = size(*m);
+    int size_matrix = size(m);
     check(size_matrix == 0, "matrix must have more than 0 elements.");
 
     // temp buffer stores result of scan

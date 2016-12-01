@@ -12,12 +12,12 @@ extern "C" {
 
   void check(int condition, const char *msg) {
     if (condition) {
-      fprintf(stderr, "%s\n", msg);
+      fprintf(stderr, "ERROR: %s\n", msg);
       exit(EXIT_FAILURE);
     }
   }
 
-  int size(Matrix m) { return m.width * m.height; }
+  int size(const Matrix *m) { return m->width * m->height; }
 
   __global__ 
   void _memset(int len, float *array, float value) {

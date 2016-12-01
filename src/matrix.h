@@ -14,8 +14,8 @@
 #define BLOCKSIZE2D dim3(16, 16)
 #define SET(result, value) if (IDx < len) { result[IDx] = value; }
 #define DEFAULT_LAUNCH(kernel, out, ...) \
-  kernel<<<blockcount(size(*out)), BLOCKSIZE>>> \
-  (size(*out), out->dev_array, ##__VA_ARGS__);
+  dim3 numblocks = blockcount(pow(2, ceil(log2((float)size(out))))); \
+  kernel<<<numblocks, BLOCKSIZE>>>(size(out), out->dev_array, ##__VA_ARGS__);
 
 typedef struct matrix_struct {
    int height;
@@ -30,7 +30,7 @@ extern "C" {
   void copy_matrix(Matrix *src, Matrix *dst);
   void init_matrix(Matrix *matrix, float *array, int height, int width);
   void check(int condition, const char *msg);
-  int size(Matrix m);
+  int size(const Matrix *m);
   dim3 blockcount(int count);
   void fill_matrix(Matrix *matrix, float value);
   void print_matrix(Matrix *matrix);

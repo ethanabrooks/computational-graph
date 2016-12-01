@@ -5,6 +5,8 @@ use std::collections::{HashMap, HashSet};
 use std::cell::{RefCell, Ref};
 use std::rc::Rc;
 
+//// MACROS
+
 macro_rules! hashset {
     ($( $val: expr ),*) => {{
          let mut set = HashSet::new();
@@ -12,6 +14,8 @@ macro_rules! hashset {
          set
     }}
 }
+
+//// STRUCTS AND ENUMS
 
 type Shared<T> = Rc<RefCell<T>>;
 
@@ -24,7 +28,6 @@ mod shared {
     }
 }
 
-//// STRUCTS AND ENUMS
 
 #[derive(Debug)]
 struct Input {
@@ -114,7 +117,7 @@ fn bin_apply(expr: &Fn(Function, Function) -> Expr,
 
     Function {
         output: shared::new(None),
-        params: params1.union(&params2).cloned().collect(), // TODO: does this generalize?
+        params: params1.union(&params2).cloned().collect(),
         body: Rc::new(expr(f1.clone(), f2.clone())),
     }
 }
@@ -211,25 +214,17 @@ fn get_output(f: &Function) -> Constant {
     }
 }
 
-// TODO: return an expr instead of a Constant
-pub fn grad(f: &Function, param: &str) -> Constant {
-    match f.params.contains::<str>(&param) {
-        false => Constant::Scalar(0.),
-        true => match *f.body { 
-            Expr::Constant(ref c) => copy_and_fill(c, 0.), 
-            Expr::Input(ref i) => new_constant(&i.dims, 0.),
-            Expr::Param(ref p) => {
-                copy_and_fill(&p.value.borrow(),
-                              match param == p.name {
-                                  true => 1., 
-                                  false => 0.,
-                              })
-            },
+pub fn grad(f: &Function, param: &str) -> Function {
+    if f.params.contains::<str>(&param) {
+        match *f.body { 
             Expr::Neg(ref f) => -grad(&f, param),
             Expr::Add(ref f1, ref f2) => grad(&f1, param) + grad(&f2, param),
-            Expr::Mul(ref f1, ref f2) => grad(&f1, param) * get_output(&f2) +
-                                         grad(&f2, param) * get_output(&f1),
+            Expr::Mul(ref f1, ref f2) => &grad(&f1, param) * f2 +
+                                         &grad(&f2, param) * f1,
+            _ => f.clone(),
         }
+    } else {
+        scalar(0.)
     }
 }
 
@@ -237,6 +232,7 @@ fn apply_to_branches(f: &Fn(Constant, Constant) -> Constant,
                      args: &HashMap<&str, Constant>,
                      f1: &Function, 
                      f2: &Function) -> Option<Constant> {
+    println!("{}, {}", f1, f2);
     match (eval(&f1, args), eval(&f2, args)) {
         (Some(x1), Some(x2)) => Some(f(x1, x2)),
         _ => None,

@@ -117,10 +117,11 @@ fn un_apply(broadcast_fun: &Fn(f32) -> f32,
 fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32, 
              broadcast_matrix_fun: unsafe extern "C" fn(f32, *const Matrix, *mut Matrix),
              matrix_fun: unsafe extern "C" fn(*const Matrix, *const Matrix, *mut Matrix),
-             c1: &Constant, c2: &Constant) -> Constant {
+             c1: &Constant, c2: &Constant,
+             identity: f32) -> Constant {
     match (c1, c2) {
-        (&Constant::Scalar(x1), &Constant::Scalar(x2)) =>
-            Constant::Scalar(scalar_fun(x1, x2)),
+        (&Constant::Scalar(x1), &Constant::Scalar(x2)) => {
+            Constant::Scalar(scalar_fun(x1, x2)) }
         (&Constant::Scalar(x), &Constant::Matrix(ref m)) |
         (&Constant::Matrix(ref m), &Constant::Scalar(x)) => {
             let mut result = empty_like(m);
@@ -134,6 +135,12 @@ fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32,
         }
     }
 }
+
+//fn equal(c: &Constant, val: f32) -> bool {
+    //match c {
+
+    //}
+//}
 
 // allocates on device
 impl Neg for Constant {

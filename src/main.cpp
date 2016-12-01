@@ -2,6 +2,7 @@
 #include <stdlib.h> 
 #include <math.h> 
 #include <string.h> 
+#include <iostream> 
 #include <cuda.h> 
 #include <cuda_runtime.h> 
 #include "cublas_v2.h" 
@@ -73,5 +74,8 @@ int main (void){
   print_matrix(&matrix);
   printf("\n");
   printf("sum over m1: %f", reduce_sum(&m2));
+  printf("\n");
+  std::cout << "m1 == 2: " << reduce_equal(&m1, 2) << std::endl;
+
   return EXIT_SUCCESS;
 }
