@@ -158,31 +158,19 @@ fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32,
 // allocates on device
 impl Neg for Constant {
     type Output = Constant;
-    fn neg(self) -> Constant {
-        un_apply(&|x| -x, map_neg, &self)
-    }
+    fn neg(self) -> Constant { -&self }
 }
 
 // allocates on device
 impl Add for Constant {
     type Output = Constant;
-    fn add(self, other: Constant) -> Constant {
-        bin_apply(&|x1, x2| x1 + x2,
-                  broadcast_add,
-                  elemwise_add,
-                  &self, &other)
-    }
+    fn add(self, other: Constant) -> Constant { &self + &other }
 }
 
 // allocates on device
 impl Mul for Constant {
     type Output = Constant;
-    fn mul(self, other: Constant) -> Constant {
-        bin_apply(&|x1, x2| x1 * x2,
-                  broadcast_mult,
-                  elemwise_mult,
-                  &self, &other)
-    }
+    fn mul(self, other: Constant) -> Constant { &self * &other }
 }
 
 // allocates on device
@@ -192,6 +180,18 @@ impl<'a> Neg for &'a Constant {
         un_apply(&|x| -x, map_neg, self)
     }
 }
+
+// allocates on device
+impl<'a> Add for &'a Constant {
+    type Output = Constant;
+    fn add(self, other: &'a Constant) -> Constant {
+        bin_apply(&|x1, x2| x1 + x2,
+                  broadcast_add,
+                  elemwise_add,
+                  &self, &other)
+    }
+}
+
 
 // allocates on device
 impl<'a> Mul for &'a Constant {

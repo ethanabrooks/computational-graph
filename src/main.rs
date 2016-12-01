@@ -15,8 +15,9 @@ fn main() {
                    3., 4.]);
     println!("b: {}", b);
     let x = param("x", Scalar(1.));
-    let f1 = &x + &b;
-    let f2 = &x + &b;
+    //let f1 = &x + &b;
+    //let f2 = &x + &b;
+    //let y = -x;
     let f = &x;
     println!("f: {}", f);
 
