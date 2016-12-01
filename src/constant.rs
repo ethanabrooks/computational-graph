@@ -209,7 +209,7 @@ impl SubAssign for Constant {
             (&mut Constant::Matrix(ref mut m1), Constant::Matrix(ref m2)) => {
                 unsafe { elemwise_sub(m1, m2, m1) }
             }
-            _ => panic!("scalar -= matrix not implemented.")
+            _ => panic!("scalar -= matrix not implemented.") // TODO: average matrix
         }
     }
 }

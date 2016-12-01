@@ -4,6 +4,7 @@
 #include <cuda_runtime.h> 
 #include "cublas_v2.h" 
 #include "matrix.h" 
+#include "scan.h" 
 
 #define UN_MAP(name, f_body) \
   __device__ \
@@ -66,4 +67,44 @@ extern "C" {
   BIN_BROADCAST(sub, -) // broadcast_sub
 
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
+
+  float reduce_sum(Matrix *m) {
+    int size_matrix = size(*m);
+    check(size_matrix == 0, "matrix must have more than 0 elements.");
+
+    float return_val [10];
+    cudaMemcpy(&return_val, m->dev_array, 6 * sizeof(float),
+        cudaMemcpyDeviceToHost);
+
+    int i;
+    rng(i, 0, 6) {
+      printf("%f ", return_val[i]);
+    }
+    printf("\n");
+
+
+    float *dev_idata;
+    cudaError_t cudaStat = cudaMalloc((void**)&dev_idata,
+        size_matrix*sizeof(*dev_idata));
+    check(cudaStat != cudaSuccess, "cudaMalloc failed for `temp` in `reduce_avg`");
+    cudaMemcpy(dev_idata, m->dev_array, size_matrix * sizeof(*dev_idata),
+        cudaMemcpyDeviceToHost);
+
+    float *dev_temp;
+    cudaStat = cudaMalloc((void**)&dev_temp,
+        size_matrix*sizeof(*dev_temp));
+    check(cudaStat != cudaSuccess, "cudaMalloc failed for `temp` in `reduce_avg`");
+
+    dev_scan(size_matrix, dev_temp, dev_idata);
+
+    cudaMemcpy(&return_val, dev_temp, 6 * sizeof(*dev_idata),
+        cudaMemcpyDeviceToHost);
+
+    rng(i, 0, 6) {
+      printf("%f ", return_val[i]);
+    }
+    printf("\n");
+
+    return *return_val;
+  }
 }

@@ -235,6 +235,7 @@ pub fn assign_outputs<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) {
 }
 
 pub fn backprop<'a>(f: &Function<'a>, error: &Constant, learn_rate: f32) {
+    if f.params.is_empty() { return; }
     match f.body {
         Expr::Param(ref p) => { 
             let mut value = p.value.borrow_mut();
