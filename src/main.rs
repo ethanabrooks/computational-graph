@@ -3,7 +3,8 @@ extern crate libc;
 mod function; 
 mod constant; 
 
-use function::{input, scalar, param, matrix, eval, grad, assign_outputs, backprop};
+use function::{input, scalar, param, matrix, eval, 
+               grad, assign_outputs, minimize, maximize};
 use constant::Constant::Scalar;
 use std::collections::HashMap;
 
@@ -16,7 +17,7 @@ fn main() {
     let x = param("x", Scalar(1.));
     let f1 = &x + &b;
     let f2 = &x + &b;
-    let f = &f1 * &x;
+    let f = &x;
     println!("f: {}", f);
 
     let mut args = HashMap::new();
@@ -29,8 +30,10 @@ fn main() {
         println!("eval: {}", c);
     }
 
-    backprop(&f, &f.output.borrow().clone().unwrap(), 1.);
-
     println!("grad x: {}", grad(&f, "x"));
+
+    println!("x: {}", x);
+    minimize(&f, 1., 1);
+    println!("x: {}", x);
 }
 

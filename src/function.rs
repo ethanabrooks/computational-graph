@@ -62,7 +62,9 @@ impl<'a> fmt::Display for Expr<'a> {
         match *self {
             Expr::Constant(ref c) => write!(f, "{}", c), 
             Expr::Input(ref i) => write!(f, "{}", i.name),
-            Expr::Param(ref p) => write!(f, "{}", p.name),
+            Expr::Param(ref p) => write!(f, "{} ({})", 
+                                         p.name, 
+                                         p.value.clone().into_inner()),
             Expr::Neg(ref x) => match x.body {
                 Expr::Constant(_) | Expr::Input(_)  => write!(f, "-{}", x),
                 _  => write!(f, "-({})", x),
@@ -234,7 +236,19 @@ pub fn assign_outputs<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) {
     }
 }
 
-pub fn backprop<'a>(f: &Function<'a>, error: &Constant, learn_rate: f32) {
+pub fn minimize<'a>(f: &Function<'a>, learn_rate: f32, iters: i32) {
+    for _ in 0..iters {
+        backprop(f, &get_output(f), learn_rate);
+    }
+}
+
+pub fn maximize<'a>(f: &Function<'a>, learn_rate: f32, iters: i32) {
+    for _ in 0..iters {
+        backprop(f, &-get_output(f), learn_rate);
+    }
+}
+
+fn backprop<'a>(f: &Function<'a>, error: &Constant, learn_rate: f32) {
     if f.params.is_empty() { return; }
     match f.body {
         Expr::Param(ref p) => { 
@@ -248,13 +262,8 @@ pub fn backprop<'a>(f: &Function<'a>, error: &Constant, learn_rate: f32) {
             backprop(f2, error, learn_rate);
         }
         Expr::Mul(ref f1, ref f2) => {
-            match (f1.output.borrow().clone(), f2.output.borrow().clone()) {
-                (Some(o1), Some(o2)) => {
-                    backprop(f1, &(&o2 * error), learn_rate);
-                    backprop(f2, &(&o1 * error), learn_rate);
-                }
-                _ => panic!("Need to run `assign_outputs` before backprop")
-            }
+            backprop(f1, &(&get_output(f2) * error), learn_rate);
+            backprop(f2, &(&get_output(f1) * error), learn_rate);
         }
         _ => return,
     }
