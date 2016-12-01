@@ -28,7 +28,7 @@ enum Expr<'a> {
 
 #[derive(Debug)]
 pub struct Function<'a> {
-    output: RefCell<Option<Constant>>,
+    pub output: RefCell<Option<Constant>>,
     pub params: HashSet<String>,
     body: Expr<'a>,
 }
@@ -131,6 +131,19 @@ pub fn input<'a>(s: &str, dims: Vec<i32>) -> Function<'a> {
     }
 }
 
+pub fn param<'a>(s: &str, value: Constant) -> Function<'a> {
+    let mut params = HashSet::new();
+    params.insert(String::from(s));
+    Function {
+        output: RefCell::new(Some(value.clone())),
+        params: params,
+        body: Expr::Param(Param {
+                name: String::from(s),
+                value: RefCell::new(value.clone()),
+        })
+    }
+}
+
 pub fn scalar<'a>(x: f32) -> Function<'a> {
     Function {
         output: RefCell::new(Some(Constant::Scalar(x))),
@@ -221,11 +234,12 @@ pub fn assign_outputs<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) {
     }
 }
 
-fn backprop<'a>(f: &Function<'a>, error: &Constant, learn_rate: f32) {
+pub fn backprop<'a>(f: &Function<'a>, error: &Constant, learn_rate: f32) {
     match f.body {
         Expr::Param(ref p) => { 
             let mut value = p.value.borrow_mut();
-            *value -= &Constant::Scalar(learn_rate) * error;
+            *value -= &Constant::Scalar(learn_rate) * error; 
+            // TODO: reduce error to a scalar when value is a scalar
         }
         Expr::Neg(ref f1) => backprop(f1, &-error, learn_rate),
         Expr::Add(ref f1, ref f2) => {
