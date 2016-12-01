@@ -32,7 +32,7 @@
   void _ ## name ## _scalar_rev(int len, float *result, float *a, float val) { \
     SET(result, a[IDx] op val) \
   } \
-  void broadcast_ ## name_rev(Matrix *m, float val, Matrix *result) { \
+  void broadcast_ ## name ## _rev(Matrix *m, float val, Matrix *result) { \
     DEFAULT_LAUNCH(_ ## name ## _scalar_rev, result, m->dev_array, val); \
   }
 
@@ -65,5 +65,5 @@ extern "C" {
   BIN_BROADCAST(add, +) // broadcast_add
   BIN_BROADCAST(sub, -) // broadcast_sub
 
-  /*BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev*/
+  BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
 }
