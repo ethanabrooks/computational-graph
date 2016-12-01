@@ -14,6 +14,7 @@ extern {
     fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub_rev(m: *const Matrix, val: f32, result: *mut Matrix);
     fn download_array(src: *const Matrix, dst: *mut f32);
+    fn reduce_sum(matrix: *const Matrix) -> f32;
 }
 
 #[repr(C)]
@@ -38,11 +39,15 @@ pub enum Constant {
     Matrix(Matrix)
 }
 
+fn size(matrix: &Matrix) -> i32 {
+    matrix.height * matrix.width
+}
+
 fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
     match *c {
         Constant::Scalar(x) => write!(f, "{}", x),
         Constant::Matrix(ref src) => {
-            let mut dst = Vec::with_capacity((src.height * src.width) as usize);
+            let mut dst = Vec::with_capacity(size(src) as usize);
             unsafe { download_array(src, dst.as_mut_ptr()) };
             let mut result;
             result = write!(f, "\n");
@@ -209,7 +214,10 @@ impl SubAssign for Constant {
             (&mut Constant::Matrix(ref mut m1), Constant::Matrix(ref m2)) => {
                 unsafe { elemwise_sub(m1, m2, m1) }
             }
-            _ => panic!("scalar -= matrix not implemented.") // TODO: average matrix
+            (&mut Constant::Scalar(ref mut x), Constant::Matrix(ref m)) => {
+                let sum = unsafe { reduce_sum(m) };
+                //*x -= sum / 
+            }
         }
     }
 }

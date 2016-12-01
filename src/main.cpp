@@ -72,6 +72,6 @@ int main (void){
   broadcast_sub_rev(&m2, 2, &matrix);
   print_matrix(&matrix);
   printf("\n");
-  printf("sum over m1: %f", reduce_sum(&m1));
+  printf("sum over m1: %f", reduce_sum(&m2));
   return EXIT_SUCCESS;
 }
