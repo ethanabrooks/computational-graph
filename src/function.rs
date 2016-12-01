@@ -5,6 +5,14 @@ use std::collections::{HashMap, HashSet};
 use std::cell::{RefCell, Ref};
 use std::rc::Rc;
 
+macro_rules! hashset {
+    ($( $val: expr ),*) => {{
+         let mut set = HashSet::new();
+         $( set.insert($val); )*
+         set
+    }}
+}
+
 type Shared<T> = Rc<RefCell<T>>;
 
 mod shared {
@@ -111,6 +119,7 @@ fn bin_apply(expr: &Fn(Function, Function) -> Expr,
     }
 }
 
+// TODO: macros!
 impl Neg for Function {
     type Output = Function;
     fn neg(self) -> Function { -&self }
@@ -149,47 +158,45 @@ impl<'a> Mul for &'a Function {
 
 //// constructors
 
+fn new_function(output: Option<Constant>, params: HashSet<String>, body: Expr) -> Function {
+    Function {
+        output: shared::new(output),
+        params: params,
+        body: Rc::new(body),
+    }
+}
+
+#[allow(dead_code)]
 pub fn input(s: &str, dims: Vec<i32>) -> Function {
-    let mut params = HashSet::new();
-    params.insert(String::from(s));
-    Function {
-        output: shared::new(None),
-        params: params,
-        body: Rc::new(Expr::Input(Input {
-                name: String::from(s),
-                dims: dims,
-        }))
-    }
+    let params = hashset![String::from(s)];
+    new_function(None, params, 
+                 Expr::Input(Input {
+                     name: String::from(s),
+                     dims: dims,
+                 }))
 }
 
+#[allow(dead_code)]
 pub fn param(s: &str, value: Constant) -> Function {
-    let mut params = HashSet::new();
-    params.insert(String::from(s));
-    Function {
-        output: shared::new(Some(value.clone())),
-        params: params,
-        body: Rc::new(Expr::Param(Param {
-                name: String::from(s),
-                value: shared::new(value.clone()),
-        }))
-    }
+    let params = hashset![String::from(s)];
+    new_function(None, params, 
+                 Expr::Param(Param {
+                     name: String::from(s),
+                     value: shared::new(value.clone()),
+                 }))
 }
 
+#[allow(dead_code)]
 pub fn scalar(x: f32) -> Function {
-    Function {
-        output: shared::new(Some(Constant::Scalar(x))),
-        params: HashSet::new(),
-        body: Rc::new(Expr::Constant(Constant::Scalar(x))), 
-    }
+    new_function(Some(Constant::Scalar(x)), HashSet::new(), 
+                 Expr::Constant(Constant::Scalar(x)))
 }
 
+#[allow(dead_code)]
 pub fn matrix(height: i32, width: i32, values: Vec<f32>) -> Function {
     let m = new_matrix(height, width, values);
-    Function {
-        output: shared::new(Some(m.clone())),
-        params: HashSet::new(),
-        body: Rc::new(Expr::Constant(m.clone())),
-    }
+    new_function(Some(m.clone()), HashSet::new(),
+                 Expr::Constant(m.clone()))
 }
 
 //// MAIN FUNCTIONS
@@ -272,12 +279,14 @@ pub fn assign_outputs(f: &Function, args: &HashMap<&str, Constant>) {
     }
 }
 
+#[allow(dead_code)]
 pub fn minimize(f: &Function, learn_rate: f32, iters: i32) {
     for _ in 0..iters {
         backprop(f, &get_output(f), learn_rate);
     }
 }
 
+#[allow(dead_code)]
 pub fn maximize(f: &Function, learn_rate: f32, iters: i32) {
     minimize(&-f, learn_rate, iters);
 }

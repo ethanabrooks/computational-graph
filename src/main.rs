@@ -3,6 +3,7 @@ extern crate libc;
 mod function; 
 mod constant; 
 
+#[allow(unused_imports)]
 use function::{input, scalar, param, matrix, eval, 
                grad, assign_outputs, minimize, maximize};
 use constant::Constant::Scalar;
@@ -21,23 +22,23 @@ fn main() {
                    3., 4.,
                    5., 6.]);
     println!("c: {}", c);
-    //let x = param("x", Scalar(1.));
-    //let f = (&x + &b);
-    //println!("f: {}", f);
+    let x = param("x", Scalar(1.));
+    let f = (&a + &a) + a;
+    println!("f: {}", f);
 
-    //let mut args = HashMap::new();
-    //args.insert("x", Scalar(3.));
+    let mut args = HashMap::new();
+    args.insert("x", Scalar(3.));
 
-    //assign_outputs(&f, &args);
-    //println!("args: {:#?}", args);
+    assign_outputs(&f, &args);
+    println!("args: {:#?}", args);
 
-    //if let Some(c) = eval(&f, &args) {
-        //println!("eval: {}", c);
-    //}
+    if let Some(c) = eval(&f, &args) {
+        println!("eval: {}", c);
+    }
 
-    //println!("grad x: {}", grad(&f, "x"));
+    println!("grad x: {}", grad(&f, "x"));
 
-    //println!("x: {}", x);
-    //minimize(&f, 1., 1);
-    //println!("x: {}", x);
+    println!("x: {}", x);
+    minimize(&f, 1., 1);
+    println!("x: {}", x);
 }

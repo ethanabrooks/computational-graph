@@ -17,12 +17,23 @@ extern {
     fn reduce_sum(matrix: *const Matrix) -> f32;
 }
 
+//// STURCTS AND ENUMS
+
 #[repr(C)]
 pub struct Matrix {
     height: i32,
     width: i32,
     dev_array: *mut f32,
 }
+
+#[derive(Clone)]
+pub enum Constant {
+    Scalar(f32),
+    Matrix(Matrix)
+}
+
+
+//// TRAITS
 
 // allocates on device
 impl Clone for Matrix {
@@ -31,12 +42,6 @@ impl Clone for Matrix {
         unsafe { copy_matrix(self as *const Matrix, &mut m) };
         m
     }
-}
-
-#[derive(Clone)]
-pub enum Constant {
-    Scalar(f32),
-    Matrix(Matrix)
 }
 
 fn size(matrix: &Matrix) -> i32 {
@@ -52,8 +57,6 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
             let mut result;
 
             let h = src.height - 1;
-            let h_prev = h - 1;
-
             result = if h == 0 { write!(f, "\n{:>2}", "[") }
             else               { write!(f, "\n{:>2}", "⎡")
             };
@@ -93,49 +96,6 @@ impl fmt::Debug for Constant {
 
 impl fmt::Display for Constant {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt_(self, f) }
-}
-
-// allocates on device
-fn empty_matrix(height: i32, width: i32) -> Matrix {
-    let mut matrix = Matrix { 
-        height: height,
-        width: width,
-        dev_array: ptr::null_mut(),
-    };
-    unsafe { alloc_matrix(&mut matrix, height, width) };
-    matrix
-}
-
-// allocates on device
-fn empty_like(m: &Matrix) -> Matrix { empty_matrix(m.height, m.width) }
-
-// allocates on device
-pub fn new_matrix(height: i32, width: i32, values: Vec<f32>) -> Constant {
-    assert!(values.len() as i32 == height * width, "wrong number of values");
-    let mut matrix = empty_matrix(height, width);
-    unsafe { init_matrix(&mut matrix, values.as_ptr(), height, width) };
-    Constant::Matrix(matrix)
-}
-
-// allocates on device
-pub fn new_constant(dims: &Vec<i32>, val: f32) -> Constant {
-    match dims.len() {
-        0 => Constant::Scalar(val),
-        2 => {
-            let mut matrix = empty_matrix(dims[0], dims[1]);
-            unsafe { fill_matrix(&mut matrix, val) };
-            Constant::Matrix(matrix)
-        },
-        _ => panic!("not supported"),
-    }
-}
-
-// allocates on device
-pub fn copy_and_fill(c: &Constant, val: f32) -> Constant {
-    match *c {
-        Constant::Scalar(_) => Constant::Scalar(val),
-        Constant::Matrix(ref m) => new_constant(&vec![m.height, m.width], val),
-    }
 }
 
 // allocates on device
@@ -241,3 +201,49 @@ impl SubAssign for Constant {
         }
     }
 }
+
+//// FUNCTIONS
+
+// allocates on device
+fn empty_matrix(height: i32, width: i32) -> Matrix {
+    let mut matrix = Matrix { 
+        height: height,
+        width: width,
+        dev_array: ptr::null_mut(),
+    };
+    unsafe { alloc_matrix(&mut matrix, height, width) };
+    matrix
+}
+
+// allocates on device
+fn empty_like(m: &Matrix) -> Matrix { empty_matrix(m.height, m.width) }
+
+// allocates on device
+pub fn new_matrix(height: i32, width: i32, values: Vec<f32>) -> Constant {
+    assert!(values.len() as i32 == height * width, "wrong number of values");
+    let mut matrix = empty_matrix(height, width);
+    unsafe { init_matrix(&mut matrix, values.as_ptr(), height, width) };
+    Constant::Matrix(matrix)
+}
+
+// allocates on device
+pub fn new_constant(dims: &Vec<i32>, val: f32) -> Constant {
+    match dims.len() {
+        0 => Constant::Scalar(val),
+        2 => {
+            let mut matrix = empty_matrix(dims[0], dims[1]);
+            unsafe { fill_matrix(&mut matrix, val) };
+            Constant::Matrix(matrix)
+        },
+        _ => panic!("not supported"),
+    }
+}
+
+// allocates on device
+pub fn copy_and_fill(c: &Constant, val: f32) -> Constant {
+    match *c {
+        Constant::Scalar(_) => Constant::Scalar(val),
+        Constant::Matrix(ref m) => new_constant(&vec![m.height, m.width], val),
+    }
+}
+
