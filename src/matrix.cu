@@ -7,7 +7,8 @@
 
 extern "C" {
   dim3 blockcount(int count) {
-    return dim3(count / BLOCKSIZE.x + 1);
+    float numblocks = (count / BLOCKSIZE.x + 1);
+    return pow(2, ceil(log2(numblocks))); \
   }
 
   void check(int condition, const char *msg) {
@@ -57,7 +58,7 @@ extern "C" {
   }
 
   void fill_matrix(Matrix *matrix, float value) {
-    DEFAULT_LAUNCH(_memset, matrix, value);
+    DEFAULT_LAUNCH(_memset, matrix, value)
   }
 
   void download_array(Matrix *src, float *dst) {

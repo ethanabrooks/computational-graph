@@ -70,6 +70,7 @@ extern "C" {
 
   __global__
   void _reduce_equal(int len, const float *a, float x, unsigned int *boolean) {
+    printf("%x, TEST TEST TEST\n", boolean);
     if (IDx >= len) return;
     unsigned int equal = a[IDx] == x;
     printf("equal: %d\n", equal);
@@ -85,7 +86,6 @@ extern "C" {
     unsigned int t = 1;
     cudaMemcpy(dev_bool, &t, sizeof(t), cudaMemcpyHostToDevice);
 
-    printf("%x, TEST TEST TEST\n", t);
     _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>>
       (size(m), m->dev_array, x, dev_bool);
 

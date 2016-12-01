@@ -27,7 +27,7 @@ void dev_scan(int n, const float *dev_idata, float *dev_odata) {
 
   // round n up to the nearest power of 2
   int bufferedLength = pow(2, ceil(log2((float)n))); 
-  dim3 numBlocks = blockcount(bufferedLength); // enough blocks to allocate one thread to each array element
+  dim3 numBlocks = blockcount(n); // enough blocks to allocate one thread to each array element
 
   float *dev_temp;
   cudaError_t cudaStat = cudaMalloc((void**)&dev_temp,
