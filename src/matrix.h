@@ -6,7 +6,7 @@
 #include <cuda_runtime.h> 
 #include "cublas_v2.h" 
 
-#define range(i, start, end) for(i = start; i < end; i++)
+#define rng(i, start, end) for(i = start; i < end; i++)
 #define idx2c(i, j, width) ((j) * (width) + (i))
 #define IDx ((blockIdx.x * blockDim.x) + threadIdx.x)
 #define IDy ((blockIdx.y * blockDim.y) + threadIdx.y)

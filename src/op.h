@@ -13,5 +13,6 @@ extern "C" {
   void broadcast_sub(float val, Matrix *m, Matrix *result); // e.g. 1 - [ [1 1] [1 1] ]
 
   void broadcast_sub_rev(Matrix *m, float val, Matrix *result); // e.g. [ [1 1] [1 1] ] - 1
+  float reduce_sum(Matrix *m);
 }
 
