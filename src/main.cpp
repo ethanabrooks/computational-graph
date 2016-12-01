@@ -43,8 +43,8 @@ int main (void){
   array = (float *)malloc (M * N * sizeof (float)); 
   check(!array, "host memory allocation failed"); 
 
-  range(j, 0, N) {
-    range(i, 0, M) {
+  rng(j, 0, N) {
+    rng(i, 0, M) {
       array[idx2c(i,j,M)] = (float)idx2c(j, i, M);
     }
   }
@@ -69,8 +69,9 @@ int main (void){
   broadcast_add(1, &m2, &matrix);
   print_matrix(&matrix);
   printf("\n");
-  broadcast_mult(2, &m2, &matrix);
+  broadcast_sub_rev(&m2, 2, &matrix);
   print_matrix(&matrix);
   printf("\n");
+  printf("sum over m1: %f", reduce_sum(&m2));
   return EXIT_SUCCESS;
 }

@@ -36,6 +36,7 @@ extern "C" {
   }
 
   void init_matrix(Matrix *matrix, float *array, int height, int width) {
+    alloc_matrix(matrix, height, width);
 
     // copy matrix to GPU 
     cublasStatus_t stat = cublasSetMatrix(width, height, sizeof(*array), 
@@ -77,8 +78,8 @@ extern "C" {
     download_array(matrix, array);
 
     int i, j;
-    range(j, 0, matrix->height) {
-      range(i, 0, matrix->width) {
+    rng(j, 0, matrix->height) {
+      rng(i, 0, matrix->width) {
         printf("%7.0f", array[idx2c(i, j, matrix->width)]);
       }
       printf("\n");
