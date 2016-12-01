@@ -23,34 +23,36 @@ fn more_recent_than(srcs: Vec<String>, dst: &str) -> std::io::Result<bool> {
 }
 
 fn main() {
-    let out_dir: String = env::var("OUT_DIR").unwrap();
-
-    let out_name = |name| format!("{}/{}.o", out_dir, name);
-
     let c_names = vec!["matrix", "op", "scan"];
+
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let get_out_name = |name| format!("{}/{}.o", out_dir, name);
+
     for i in 0..c_names.len() {
         let src_name = format!("src/{}.cu", c_names[i]);
-        if more_recent_than(vec![src_name.clone()], &out_name(c_names[i])).unwrap() {
+        let out_name = get_out_name(c_names[i]);
+         
+        if more_recent_than(vec![src_name.clone()], &out_name).unwrap() {
             assert!(Command::new("nvcc")
                 .arg(&src_name)
                 .args(&["-c", "-Xcompiler", "-fPIC", "-lcublas", "-o"]) 
-                .arg(&out_name(c_names[i]))
-                .status().unwrap().success(), "nvcc src/matrix.cu");
+                .arg(&out_name)
+                .status().unwrap().success(), "nvcc {} failed", src_name);
         }
     }
 
-    let out_files: Vec<String> = c_names.into_iter().map(out_name).collect();
+    let out_files: Vec<String> = c_names.into_iter().map(get_out_name).collect();
 
     if more_recent_than(out_files, "libmatrix.a").unwrap() {
         assert!(Command::new("rm")
             .args(&["-f", "libmatrix.a"]) 
             .current_dir(&Path::new(&out_dir)) 
-            .status().unwrap().success(), "rm");
+            .status().unwrap().success(), "rm failed");
 
         assert!(Command::new("ar")
             .args(&["crus", "libmatrix.a", "matrix.o", "op.o", "scan.o"]) 
             .current_dir(&Path::new(&out_dir)) 
-            .status().unwrap().success(), "ar");
+            .status().unwrap().success(), "ar failed");
     }
 
     println!("cargo:rustc-link-search=native={}", out_dir);

@@ -216,7 +216,7 @@ impl SubAssign for Constant {
             }
             (&mut Constant::Scalar(ref mut x), Constant::Matrix(ref m)) => {
                 let sum = unsafe { reduce_sum(m) };
-                //*x -= sum / 
+                *x -= sum / size(m) as f32;
             }
         }
     }
