@@ -50,17 +50,37 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
             let mut dst = Vec::with_capacity(size(src) as usize);
             unsafe { download_array(src, dst.as_mut_ptr()) };
             let mut result;
-            result = write!(f, "\n");
+
+            let h = src.height - 1;
+            let h_prev = h - 1;
+
+            result = if h == 0 { write!(f, "\n{:>2}", "[") }
+            else               { write!(f, "\n{:>2}", "⎡")
+            };
+            if result.is_err() { return result }
+
             for i in 0..src.height {
+
                 for j in 0..src.width {
-                    result = write!(f, "{:7.0}", unsafe {
+                    result = write!(f, "{:2.0}", unsafe {
                         *dst.as_ptr().offset((i * src.width + j) as isize) 
                     });
-                    if result.is_err() {
-                        return result
-                    }
+                    if result.is_err() { return result }
                 }
-                result = write!(f, "\n");
+
+                result = if h == 0           { write!(f, "{:>2}\n", "]") }
+
+                else     if i == 0 && h == 1 { write!(f, "{:>2}\n{:>2}", "⎤", "⎣" ) }
+
+                else     if i == h - 1       { write!(f, "{:>2}\n{:>2}", "⎥", "⎣") }
+
+                else     if i == 0           { write!(f, "{:>2}\n{:>2}", "⎤", "⎢") }
+
+                else     if i == h           { write!(f, "{:>2}", "⎦") } 
+
+                else                         { write!(f, "{:>2}\n{:>2}", "⎥", "⎢") };
+
+                if result.is_err() { return result }
             }
             result
         }

@@ -72,7 +72,7 @@ impl fmt::Display for Expr {
         match *self {
             Expr::Constant(ref c) => write!(f, "{}", c), 
             Expr::Input(ref i) => write!(f, "{}", i.name),
-            Expr::Param(ref p) => write!(f, "{} ({})", p.name, 
+            Expr::Param(ref p) => write!(f, "{}:={}", p.name, 
                                          get_shared(&p.value).clone()),
             Expr::Neg(ref x) => match *x.body.clone() {
                 Expr::Constant(_) | Expr::Input(_)  => write!(f, "-{}", x),
@@ -109,6 +109,21 @@ fn bin_apply(expr: &Fn(Function, Function) -> Expr,
         params: params1.union(&params2).cloned().collect(), // TODO: does this generalize?
         body: Rc::new(expr(f1.clone(), f2.clone())),
     }
+}
+
+impl Neg for Function {
+    type Output = Function;
+    fn neg(self) -> Function { -&self }
+}
+
+impl Add for Function {
+    type Output = Function;
+    fn add(self, other: Function) -> Function { &self + &other }
+}
+
+impl Mul for Function {
+    type Output = Function;
+    fn mul(self, other: Function) -> Function { &self * &other }
 }
 
 impl <'a> Neg for &'a Function {
