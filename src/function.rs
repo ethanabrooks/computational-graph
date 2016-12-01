@@ -221,26 +221,26 @@ pub fn assign_outputs<'a>(f: &Function<'a>, args: &HashMap<&str, Constant>) {
     }
 }
 
-//fn backprop<'a>(f: &Function<'a>, error: &Constant, learn_rate: f32) {
-    //match f.body {
-        //Expr::Param(ref p) => { 
-            //let mut value = p.value.borrow_mut();
-            //*value -= Constant::Scalar(learn_rate) * error;
-        //}
-        //Expr::Neg(ref f1) => backprop(f1, &-error, learn_rate),
-        //Expr::Add(ref f1, ref f2) => {
-            //backprop(f1, error, learn_rate);
-            //backprop(f2, error, learn_rate);
-        //}
-        //Expr::Mul(ref f1, ref f2) => {
-            //match (f1.output.borrow().clone(), f2.output.borrow().clone()) {
-                //(Some(o1), Some(o2)) => {
-                    //backprop(f1, &(o2 * error), learn_rate);
-                    //backprop(f2, &(o1 * error), learn_rate);
-                //}
-                //_ => panic!("Need to run `assign_outputs` before backprop")
-            //}
-        //}
-        //_ => return,
-    //}
-//}
+fn backprop<'a>(f: &Function<'a>, error: &Constant, learn_rate: f32) {
+    match f.body {
+        Expr::Param(ref p) => { 
+            let mut value = p.value.borrow_mut();
+            *value -= &Constant::Scalar(learn_rate) * error;
+        }
+        Expr::Neg(ref f1) => backprop(f1, &-error, learn_rate),
+        Expr::Add(ref f1, ref f2) => {
+            backprop(f1, error, learn_rate);
+            backprop(f2, error, learn_rate);
+        }
+        Expr::Mul(ref f1, ref f2) => {
+            match (f1.output.borrow().clone(), f2.output.borrow().clone()) {
+                (Some(o1), Some(o2)) => {
+                    backprop(f1, &(&o2 * error), learn_rate);
+                    backprop(f2, &(&o1 * error), learn_rate);
+                }
+                _ => panic!("Need to run `assign_outputs` before backprop")
+            }
+        }
+        _ => return,
+    }
+}
