@@ -72,39 +72,24 @@ extern "C" {
     int size_matrix = size(*m);
     check(size_matrix == 0, "matrix must have more than 0 elements.");
 
-    float return_val [10];
-    cudaMemcpy(&return_val, m->dev_array, 6 * sizeof(float),
-        cudaMemcpyDeviceToHost);
-
-    int i;
-    rng(i, 0, 6) {
-      printf("%f ", return_val[i]);
-    }
-    printf("\n");
-
-
-    float *dev_idata;
-    cudaError_t cudaStat = cudaMalloc((void**)&dev_idata,
-        size_matrix*sizeof(*dev_idata));
-    check(cudaStat != cudaSuccess, "cudaMalloc failed for `temp` in `reduce_avg`");
-    cudaMemcpy(dev_idata, m->dev_array, size_matrix * sizeof(*dev_idata),
-        cudaMemcpyDeviceToHost);
-
+    // temp buffer stores result of scan
     float *dev_temp;
-    cudaStat = cudaMalloc((void**)&dev_temp,
+    cudaError_t cudaStat = cudaMalloc((void**)&dev_temp,
         size_matrix*sizeof(*dev_temp));
     check(cudaStat != cudaSuccess, "cudaMalloc failed for `temp` in `reduce_avg`");
 
-    dev_scan(size_matrix, dev_temp, dev_idata);
+    dev_scan(size_matrix, dev_temp, m->dev_array);
 
-    cudaMemcpy(&return_val, dev_temp, 6 * sizeof(*dev_idata),
-        cudaMemcpyDeviceToHost);
+    // last element of scan is sum of all but last element of matrix
+    float last_scan_val, last_matrix_val;
 
-    rng(i, 0, 6) {
-      printf("%f ", return_val[i]);
-    }
-    printf("\n");
+    cudaMemcpy(&last_scan_val, &dev_temp[size_matrix - 1], 
+        sizeof(last_scan_val), cudaMemcpyDeviceToHost);
 
-    return *return_val;
+    cudaMemcpy(&last_matrix_val, &m->dev_array[size_matrix - 1],
+        sizeof(last_matrix_val), cudaMemcpyDeviceToHost);
+
+    cudaFree(dev_temp);
+    return last_matrix_val + last_scan_val;
   }
 }
