@@ -5,25 +5,30 @@ use std::path::Path;
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
 
-    //writeln!(&mut std::io::stderr(), "pwd = {:?}", Command::new("pwd").output().unwrap());
+    let names = vec!["matrix", "op", "scan"];
 
-    assert!(Command::new("nvcc")
-        .args(&["src/matrix.cu", "-c", "-Xcompiler", "-fPIC", "-lcublas", "-o"]) 
-        .arg(&format!("{}/matrix.o", out_dir))
-        .status().unwrap().success(), "nvcc src/matrix.cu");
+    let src_files: Vec<String> = names.clone().into_iter()
+        .map(|name| format!("src/{}.cu", name))
+        .collect();
 
-    assert!(Command::new("nvcc")
-        .args(&["src/op.cu", "-c", "-Xcompiler", "-fPIC", "-lcublas", "-o"]) 
-        .arg(&format!("{}/op.o", out_dir))
-        .status().unwrap().success(), "nvcc src/op.cu");
+    let out_files: Vec<String> = names.clone().into_iter()
+        .map(|name| format!("{}/{}.o", out_dir, name))
+        .collect();
 
-    //assert!(Command::new("rm")
-        //.args(&["-f", "libmatrix.a"]) 
-        //.current_dir(&Path::new(&out_dir)) 
-        //.status().unwrap().success(), "rm");
+    for i in 0..names.len() {
+        assert!(Command::new("nvcc")
+            .args(&[src_files[i].as_str(), "-c", "-Xcompiler", "-fPIC", "-lcublas", "-o"]) 
+            .arg(&out_files[i])
+            .status().unwrap().success(), "nvcc src/matrix.cu");
+    }
+
+    assert!(Command::new("rm")
+        .args(&["-f", "libmatrix.a"]) 
+        .current_dir(&Path::new(&out_dir)) 
+        .status().unwrap().success(), "rm");
 
     assert!(Command::new("ar")
-        .args(&["crus", "libmatrix.a", "matrix.o", "op.o"]) 
+        .args(&["crus", "libmatrix.a", "matrix.o", "op.o", "scan.o"]) 
         .current_dir(&Path::new(&out_dir)) 
         .status().unwrap().success(), "ar");
 
