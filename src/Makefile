@@ -6,7 +6,7 @@ main: $(SRCS)  matrix.h op.h scan.h
 clean:
 	rm -f *.o
 	rm -f *.out
-	rm main
+	rm -f main
 
 rust: $(SRCS) matrix.h
 	cd ..
@@ -16,3 +16,5 @@ rust: $(SRCS) matrix.h
 	cd out
 	ar curs libmatrix.a *.o
 
+rust_clean: 
+	rm -rf ../target/debug/build/lstm-53f3b05885762f6a
