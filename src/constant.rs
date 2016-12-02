@@ -115,6 +115,15 @@ impl Constant {
             }
         }
     }
+
+    pub fn avg(&self) -> f32 {
+        match self {
+            &Constant::Scalar(x) => x,
+            &Constant::Matrix(ref m) => {
+                (unsafe { reduce_sum(m) }) / size(m) as f32
+            }
+        }
+    }
 }
 
 // allocates on device
@@ -200,17 +209,16 @@ impl<'a> Mul for &'a Constant {
 
 impl SubAssign for Constant {
     fn sub_assign(&mut self, other: Constant) {
-        match (self, other) {
-            (&mut Constant::Scalar(ref mut x1), Constant::Scalar(x2)) => *x1 -= x2,
-            (&mut Constant::Matrix(ref mut m), Constant::Scalar(x)) => {
+        match (self, &other) {
+            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) => *x1 -= x2,
+            (&mut Constant::Matrix(ref mut m), &Constant::Scalar(x)) => {
                unsafe { broadcast_sub_rev(m, x, m) }
             }
-            (&mut Constant::Matrix(ref mut m1), Constant::Matrix(ref m2)) => {
+            (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) => {
                 unsafe { elemwise_sub(m1, m2, m1) }
             }
-            (&mut Constant::Scalar(ref mut x), Constant::Matrix(ref m)) => {
-                let sum = unsafe { reduce_sum(m) };
-                *x -= sum / size(m) as f32;
+            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(ref m)) => {
+                *x -= other.avg();
             }
         }
     }

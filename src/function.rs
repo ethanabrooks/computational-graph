@@ -346,15 +346,17 @@ impl Function {
     }
 
     #[allow(dead_code)]
-    pub fn minimize(&self, learn_rate: f32, iters: i32) {
+    pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
         for _ in 0..iters {
+            self.assign_outputs(args);
             self.backprop(&self.get_output(), learn_rate);
+            println!("{}", self.get_output());
         }
     }
 
     #[allow(dead_code)]
-    pub fn maximize(&self, learn_rate: f32, iters: i32) {
-        (&-self).minimize(learn_rate, iters);
+    pub fn maximize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
+        self.abs().minimize(args, learn_rate, iters);
     }
 
     fn backprop(&self, error: &Constant, learn_rate: f32) {
@@ -362,6 +364,9 @@ impl Function {
         match *self.body.clone() {
             Expr::Param(ref p) => { 
                 let mut value = p.value.borrow_mut();
+                println!("value: {}", *value);
+                println!("error: {}", error);
+                println!("value -= error: {} -= {}", *value, error);
                 *value -= &Constant::Scalar(learn_rate) * error; 
             }
             Expr::Neg(ref f1) => f1.backprop(&-error, learn_rate),
