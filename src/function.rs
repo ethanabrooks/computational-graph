@@ -84,7 +84,7 @@ impl fmt::Display for Expr {
         match *self {
             Expr::Constant(ref c) => write!(f, "{}", c), 
             Expr::Input(ref i) => write!(f, "{}", i.name),
-            Expr::Param(ref p) => write!(f, "{}:={}", p.name, 
+            Expr::Param(ref p) => write!(f, "{}≔{}", p.name, 
                                          get_shared(&p.value).clone()),
             Expr::Neg(ref x) => match *x.body.clone() {
                 Expr::Constant(_) | Expr::Input(_)  => write!(f, "-{}", x),
@@ -92,7 +92,7 @@ impl fmt::Display for Expr {
             },
             Expr::Abs(ref x) => write!(f, "|{}|", x),
             Expr::Add(ref a, ref b) => write_with_parens(a, "+", b, f),
-            Expr::Mul(ref a, ref b) => write_with_parens(a, "*", b, f),
+            Expr::Mul(ref a, ref b) => write_with_parens(a, "×", b, f),
         }
     }
 }
