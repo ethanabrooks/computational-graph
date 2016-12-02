@@ -1,6 +1,6 @@
 use std::fmt;
 use std::ops::{Neg, Add, Mul};
-use constant::{Constant, copy_and_fill, new_constant, new_matrix};
+use constant::{Constant, copy_and_fill, new_matrix, all_equal};
 use std::collections::{HashMap, HashSet};
 use std::cell::{RefCell, Ref};
 use std::rc::Rc;
@@ -110,15 +110,31 @@ fn un_apply(expr: &Fn(Function) -> Expr, f: &Function) -> Function {
     }
 }
 
-fn bin_apply(expr: &Fn(Function, Function) -> Expr, 
-             f1: &Function, f2: &Function) -> Function {
-    let params1 = f1.params.clone();
-    let params2 = f2.params.clone();
+impl Function {
+    fn all_equal(&self, val:f32) -> bool {
+        match *self.body {
+            Expr::Constant(ref c) => all_equal(c, val),
+            _                     => false
+        }
+    }
+}
 
-    Function {
-        output: shared::new(None),
-        params: params1.union(&params2).cloned().collect(),
-        body: Rc::new(expr(f1.clone(), f2.clone())),
+fn bin_apply(expr: &Fn(Function, Function) -> Expr, 
+             f1: &Function, f2: &Function, 
+             identity: f32) -> Function {
+    if f1.all_equal(identity) {
+        f2.clone()
+    } else if f2.all_equal(identity) {
+        f1.clone()
+    } else {
+        let params1 = f1.params.clone();
+        let params2 = f2.params.clone();
+
+        Function {
+            output: shared::new(None),
+            params: params1.union(&params2).cloned().collect(),
+            body: Rc::new(expr(f1.clone(), f2.clone())),
+        }
     }
 }
 
@@ -141,32 +157,47 @@ impl Mul for Function {
 impl <'a> Neg for &'a Function {
     type Output = Function;
     fn neg(self) -> Function {
-        un_apply(&|f| Expr::Neg(f), self)
+        if self.all_equal(0.) {
+            self.clone()
+        } else {
+            un_apply(&|f| Expr::Neg(f), self)
+        }
     }
 }
 
 impl<'a> Add for &'a Function {
     type Output = Function;
     fn add(self, other: &Function) -> Function {
-        bin_apply(&|f1, f2| Expr::Add(f1, f2), self, other) 
+        bin_apply(&|f1, f2| Expr::Add(f1, f2), self, other, 0.) 
     }
 }
 
 impl<'a> Mul for &'a Function {
     type Output = Function;
     fn mul(self, other: &Function) -> Function {
-        bin_apply(&|f1, f2| Expr::Mul(f1, f2), self, other) 
+        if self.all_equal(0.) {
+            return self.clone()
+        } 
+        if other.all_equal(0.) {
+            return other.clone()
+        }
+        bin_apply(&|f1, f2| Expr::Mul(f1, f2), self, other, 1.) 
     }
 }
 
 //// constructors
 
-fn new_function(output: Option<Constant>, params: HashSet<String>, body: Expr) -> Function {
+fn new_function(output: Option<Constant>, params: HashSet<String>, body: Expr) 
+-> Function {
     Function {
         output: shared::new(output),
         params: params,
         body: Rc::new(body),
     }
+}
+
+fn new_constant(value: Constant) -> Function {
+    new_function(Some(value.clone()), HashSet::new(), Expr::Constant(value))
 }
 
 #[allow(dead_code)]
@@ -185,21 +216,18 @@ pub fn param(s: &str, value: Constant) -> Function {
     new_function(None, params, 
                  Expr::Param(Param {
                      name: String::from(s),
-                     value: shared::new(value.clone()),
+                     value: shared::new(value),
                  }))
 }
 
 #[allow(dead_code)]
 pub fn scalar(x: f32) -> Function {
-    new_function(Some(Constant::Scalar(x)), HashSet::new(), 
-                 Expr::Constant(Constant::Scalar(x)))
+    new_constant(Constant::Scalar(x)) 
 }
 
 #[allow(dead_code)]
 pub fn matrix(height: i32, width: i32, values: Vec<f32>) -> Function {
-    let m = new_matrix(height, width, values);
-    new_function(Some(m.clone()), HashSet::new(),
-                 Expr::Constant(m.clone()))
+    new_constant(new_matrix(height, width, values))
 }
 
 //// MAIN FUNCTIONS
@@ -209,7 +237,7 @@ fn get_shared<T>(s: &Shared<T>) -> Ref<T> { s.borrow() }
 
 fn get_output(f: &Function) -> Constant {
     match *get_shared(&f.output) {
-        Some(ref x) => x.clone(), // Can we avoid this clone?
+        Some(ref x) => x.clone(),
         None => panic!("Need to run `assign_outputs` before `grad`"),
     }
 }
@@ -221,7 +249,10 @@ pub fn grad(f: &Function, param: &str) -> Function {
             Expr::Add(ref f1, ref f2) => grad(&f1, param) + grad(&f2, param),
             Expr::Mul(ref f1, ref f2) => &grad(&f1, param) * f2 +
                                          &grad(&f2, param) * f1,
-            _ => f.clone(),
+            Expr::Param(ref p) => new_constant(
+                copy_and_fill(&*get_shared(&p.value), 1.)
+                ),
+            _ => panic!("should never reach here"),
         }
     } else {
         scalar(0.)
@@ -232,7 +263,6 @@ fn apply_to_branches(f: &Fn(Constant, Constant) -> Constant,
                      args: &HashMap<&str, Constant>,
                      f1: &Function, 
                      f2: &Function) -> Option<Constant> {
-    println!("{}, {}", f1, f2);
     match (eval(&f1, args), eval(&f2, args)) {
         (Some(x1), Some(x2)) => Some(f(x1, x2)),
         _ => None,

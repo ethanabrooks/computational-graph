@@ -4,7 +4,7 @@
 #include <cuda_runtime.h> 
 #include "cublas_v2.h" 
 #include "matrix.h" 
-#include "scan.h" 
+#include "util.h" 
 
 #define UN_MAP(name, f_body) \
   __device__ \
@@ -71,9 +71,15 @@ extern "C" {
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
 
   __global__
-  void _reduce_equal(int len, const float *a, float x, unsigned int *boolean) {
+  void _reduce_equal(int len, const float *a, unsigned int *boolean, float x) {
     if (IDx >= len) return;
     atomicAnd(boolean, a[IDx] == x); 
+  }
+
+  __global__
+  void _reduce_sum(int len, const float *a, float *sum) {
+    if (IDx >= len) return;
+    atomicAdd(sum, a[IDx]); 
   }
 
   bool reduce_equal(const Matrix *m, float x) {
@@ -86,17 +92,11 @@ extern "C" {
     check(cudaStat != cudaSuccess, "cudaMemcpy failed");
 
     _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> 
-      (size(m), m->dev_array, x, dev_bool);
+      (size(m), m->dev_array, dev_bool, x);
 
     cudaStat = cudaMemcpy(&t, dev_bool, sizeof(t), cudaMemcpyDeviceToHost);
     check(cudaStat != cudaSuccess, "cudaMemcpy failed");
     return t == 1;
-  }
-
-  __global__
-  void _reduce_sum(int len, const float *a, float *sum) {
-    if (IDx >= len) return;
-    atomicAdd(sum, a[IDx]); 
   }
 
   float reduce_sum(const Matrix *m) {
@@ -108,7 +108,8 @@ extern "C" {
     cudaStat = cudaMemcpy(dev_sum, &z, sizeof(z), cudaMemcpyHostToDevice);
     check(cudaStat != cudaSuccess, "cudaMemcpy failed");
 
-    _reduce_sum<<<blockcount(size(m)), BLOCKSIZE>>>(size(m), m->dev_array, dev_sum);
+    _reduce_sum<<<blockcount(size(m)), BLOCKSIZE>>>
+      (size(m), m->dev_array, dev_sum);
 
     cudaStat = cudaMemcpy(&sum, dev_sum, sizeof(sum), cudaMemcpyDeviceToHost);
     check(cudaStat != cudaSuccess, "cudaMemcpy failed");

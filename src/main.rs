@@ -14,7 +14,8 @@ fn main() {
     let x = param("x", Scalar(1.));
 
     let mut args = HashMap::new();
-    let f = (&a + &x) * a;
+    let f = &x * &(&a + &x);
+    println!("f: {}", f);
 
     args.insert("x", Scalar(3.));
 
@@ -27,7 +28,7 @@ fn main() {
 
     println!("grad x: {}", grad(&f, "x"));
 
-    println!("x: {}", x);
+    println!("x: {}", &x);
     minimize(&f, 1., 1);
-    println!("x: {}", x);
+    println!("x: {}", &x);
 }

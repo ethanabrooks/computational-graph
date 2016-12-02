@@ -13,7 +13,8 @@ extern {
     fn broadcast_mult(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub_rev(m: *const Matrix, val: f32, result: *mut Matrix);
-    fn download_array(src: *const Matrix, dst: *mut f32);
+    fn download_matrix(src: *const Matrix, dst: *mut f32);
+    fn reduce_equal(matrix: *const Matrix, x: f32) -> bool;
     fn reduce_sum(matrix: *const Matrix) -> f32;
 }
 
@@ -53,7 +54,7 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
         Constant::Scalar(x) => write!(f, "{}", x),
         Constant::Matrix(ref src) => {
             let mut dst = Vec::with_capacity(size(src) as usize);
-            unsafe { download_array(src, dst.as_mut_ptr()) };
+            unsafe { download_matrix(src, dst.as_mut_ptr()) };
             let mut result;
 
             let h = src.height - 1;
@@ -117,8 +118,7 @@ fn un_apply(broadcast_fun: &Fn(f32) -> f32,
 fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32, 
              broadcast_matrix_fun: unsafe extern "C" fn(f32, *const Matrix, *mut Matrix),
              matrix_fun: unsafe extern "C" fn(*const Matrix, *const Matrix, *mut Matrix),
-             c1: &Constant, c2: &Constant,
-             identity: f32) -> Constant {
+             c1: &Constant, c2: &Constant) -> Constant {
     match (c1, c2) {
         (&Constant::Scalar(x1), &Constant::Scalar(x2)) => {
             Constant::Scalar(scalar_fun(x1, x2)) }
@@ -251,6 +251,13 @@ pub fn copy_and_fill(c: &Constant, val: f32) -> Constant {
     match *c {
         Constant::Scalar(_) => Constant::Scalar(val),
         Constant::Matrix(ref m) => new_constant(&vec![m.height, m.width], val),
+    }
+}
+
+pub fn all_equal(c: &Constant, val: f32) -> bool {
+    match *c {
+        Constant::Scalar(x) => x == val,
+        Constant::Matrix(ref m) => unsafe { reduce_equal(m, val) },
     }
 }
 

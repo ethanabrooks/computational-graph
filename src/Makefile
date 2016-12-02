@@ -1,5 +1,5 @@
-SRCS:=main.cpp matrix.cu op.cu scan.cu
-main: $(SRCS)  matrix.h op.h scan.h
+SRCS:=main.cpp matrix.cu op.cu util.cu
+main: $(SRCS)  matrix.h op.h util.h
 	nvcc $(SRCS) -o main -lcublas -std=c++11
 	./main
 

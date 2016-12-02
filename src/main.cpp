@@ -9,6 +9,7 @@
 #include "cublas_v2.h" 
 #include "matrix.h" 
 #include "op.h" 
+#include "util.h" 
 
 #define M 3
 #define N 2
