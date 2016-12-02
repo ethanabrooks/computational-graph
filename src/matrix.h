@@ -34,7 +34,7 @@ extern "C" {
   dim3 blockcount(int count);
   void fill_matrix(Matrix *matrix, float value);
   void print_matrix(Matrix *matrix);
-  void download_array(Matrix *src, float *dst);
+  void download_matrix(const Matrix *src, float *dst);
   void free_matrix(Matrix *matrix);
 }
 

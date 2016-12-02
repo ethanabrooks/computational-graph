@@ -5,12 +5,13 @@
 #include <iostream> 
 #include <cuda.h> 
 #include <cuda_runtime.h> 
+#include <time.h>
 #include "cublas_v2.h" 
 #include "matrix.h" 
 #include "op.h" 
 
-#define M 3 
-#define N 2 
+#define M 3
+#define N 2
 
 // globals
 float *input;
@@ -30,8 +31,9 @@ int main (void){
 
   // set values of weights matrix
   float weights_vals [] = {
-    2, 2, 
-    2, 1
+    1, 2, 
+    2, 2,
+    2, 2,
   };
 
   cublasHandle_t handle;
@@ -59,26 +61,30 @@ int main (void){
   init_matrix(&matrix, array, M, N);
   alloc_matrix(&m1, M, N);
   alloc_matrix(&m2, M, N);
-  //fill_matrix(&m1, 2);
-  //fill_matrix(&m2, 3);
-  //elemwise_add(&m1, &m2, &matrix);
-  //print_matrix(&matrix);
-  //printf("\n");
-  //elemwise_mult(&m1, &m2, &matrix);
-  //print_matrix(&matrix);
-  //printf("\n");
-  //broadcast_add(1, &m2, &matrix);
-  //print_matrix(&matrix);
-  //printf("\n");
   fill_matrix(&m1, 2);
-  //print_matrix(&m1);
+  fill_matrix(&m2, 3);
+  elemwise_add(&m1, &m2, &matrix);
+  print_matrix(&matrix);
   printf("\n");
-  bool b = reduce_equal(&m1, 2);
-  printf("m1 == 2: %d\n", b);
-  //print_matrix(&matrix);
-  //printf("\n");
-  //printf("sum over m1: %f", reduce_sum(&m2));
-  //printf("\n");
+  elemwise_mult(&m1, &m2, &matrix);
+  print_matrix(&matrix);
+  printf("\n");
+  broadcast_add(1, &m2, &matrix);
+  print_matrix(&matrix);
+  printf("\n");
+  fill_matrix(&m1, 2);
+  init_matrix(&m1, weights_vals, M, N);
+  print_matrix(&m1);
+  printf("\n");
+
+  printf("reduce_sum = %f\n", reduce_sum(&m1));
+  clock_t start = clock(), diff;
+  /////
+  //reduce_sum(&m1);
+  /////
+  diff = clock() - start;
+  int msec = diff * 1000 / CLOCKS_PER_SEC; 
+  //printf("Time taken %d seconds %d milliseconds\n", msec/1000, msec%1000);
 
   return EXIT_SUCCESS;
 }

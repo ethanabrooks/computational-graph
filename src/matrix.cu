@@ -61,7 +61,7 @@ extern "C" {
     DEFAULT_LAUNCH(_memset, matrix, value)
   }
 
-  void download_array(Matrix *src, float *dst) {
+  void download_matrix(const Matrix *src, float *dst) {
     cublasStatus_t stat = cublasGetMatrix(src->width, src->height, 
         sizeof(*src->dev_array), 
         src->dev_array, src->width, dst, src->width);
@@ -76,7 +76,7 @@ extern "C" {
     check(!array, "host memory allocation failed"); 
 
     // copy matrix to CPU
-    download_array(matrix, array);
+    download_matrix(matrix, array);
 
     int i, j;
     rng(j, 0, matrix->height) {

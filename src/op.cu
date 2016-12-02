@@ -78,8 +78,7 @@ extern "C" {
 
   bool reduce_equal(const Matrix *m, float x) {
     unsigned int *dev_bool;
-    cudaError_t cudaStat = cudaMalloc((void**)&dev_bool,
-        sizeof(*dev_bool));
+    cudaError_t cudaStat = cudaMalloc(&dev_bool, sizeof(*dev_bool));
     check(cudaStat != cudaSuccess, "cudaMalloc failed for `dev_bool` in `reduce_eq`");
 
     unsigned int t = 1;
@@ -94,44 +93,25 @@ extern "C" {
     return t == 1;
   }
 
-  bool reduce_equal2(const Matrix *m, float x) {
-    unsigned int *dev_bool;
-    cudaError_t cudaStat = cudaMalloc((void**)&dev_bool,
-        sizeof(*dev_bool));
-    check(cudaStat != cudaSuccess, "cudaMalloc failed for `dev_bool` in `reduce_eq`");
-
-    unsigned int t = 1;
-    cudaMemcpy(dev_bool, &t, sizeof(t), cudaMemcpyHostToDevice);
-
-    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> 
-      (size(m), m->dev_array, x, dev_bool);
-
-    cudaMemcpy(&t, dev_bool, sizeof(t), cudaMemcpyDeviceToHost);
-    return t == 1;
+  __global__
+  void _reduce_sum(int len, const float *a, float *sum) {
+    if (IDx >= len) return;
+    atomicAdd(sum, a[IDx]); 
   }
 
   float reduce_sum(const Matrix *m) {
-    int size_matrix = size(m);
-    check(size_matrix == 0, "matrix must have more than 0 elements.");
+    float sum, *dev_sum;
+    cudaError_t cudaStat = cudaMalloc(&dev_sum, sizeof(*dev_sum));
+    check(cudaStat != cudaSuccess, "cudaMalloc failed for `dev_sum` in `reduce_eq`");
 
-    // temp buffer stores result of scan
-    float *dev_temp;
-    cudaError_t cudaStat = cudaMalloc((void**)&dev_temp,
-        size_matrix*sizeof(*dev_temp));
-    check(cudaStat != cudaSuccess, "cudaMalloc failed for `temp` in `reduce_avg`");
+    float z = 0;
+    cudaStat = cudaMemcpy(dev_sum, &z, sizeof(z), cudaMemcpyHostToDevice);
+    check(cudaStat != cudaSuccess, "cudaMemcpy failed");
 
-    dev_scan(size_matrix, m->dev_array, dev_temp);
+    _reduce_sum<<<blockcount(size(m)), BLOCKSIZE>>>(size(m), m->dev_array, dev_sum);
 
-    // last element of scan is sum of all but last element of matrix
-    float last_scan_val, last_matrix_val;
-
-    cudaMemcpy(&last_scan_val, &dev_temp[size_matrix - 1], 
-        sizeof(last_scan_val), cudaMemcpyDeviceToHost);
-
-    cudaMemcpy(&last_matrix_val, &m->dev_array[size_matrix - 1],
-        sizeof(last_matrix_val), cudaMemcpyDeviceToHost);
-
-    cudaFree(dev_temp);
-    return last_matrix_val + last_scan_val;
+    cudaStat = cudaMemcpy(&sum, dev_sum, sizeof(sum), cudaMemcpyDeviceToHost);
+    check(cudaStat != cudaSuccess, "cudaMemcpy failed");
+    return sum;
   }
 }
