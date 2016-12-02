@@ -25,13 +25,13 @@ extern "C" {
     cublasStatus_t stat = cublasGetMatrix(src->width, src->height, 
         sizeof(*src->dev_array), 
         src->dev_array, src->width, dst, src->width);
-    check(stat != CUBLAS_STATUS_SUCCESS, "data download failed");
+    check(stat != CUBLAS_STATUS_SUCCESS, "download_matrix failed");
   }
 
   void upload_matrix(float *src, const Matrix *dst) {
     cublasStatus_t blas_stat = cublasSetMatrix(dst->width, dst->height, 
         sizeof(*src), src, dst->width, dst->dev_array, dst->width); 
-    check(blas_stat != CUBLAS_STATUS_SUCCESS, "data upload failed"); 
+    check(blas_stat != CUBLAS_STATUS_SUCCESS, "upload_matrix failed"); 
 
     /*cudaError custat = cudaMemcpy(src, dst->dev_array,*/
         /*size(dst) * sizeof(*src), cudaMemcpyDeviceToHost);*/
@@ -64,7 +64,7 @@ extern "C" {
   void print_matrix(Matrix *matrix) {
 
     // allocate space for matrix on CPU 
-    float *array = float_malloc(size(matrix));
+    float *array = safe_malloc<float>(size(matrix));
 
     // copy matrix to CPU
     download_matrix(matrix, array);

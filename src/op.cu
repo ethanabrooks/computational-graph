@@ -100,17 +100,17 @@ extern "C" {
   }
 
   float reduce_sum(const Matrix *m) {
-    float sum, *dev_sum;
-    cudaError_t cudaStat = cudaMalloc(&dev_sum, sizeof(*dev_sum));
-    check(cudaStat != cudaSuccess, "cudaMalloc failed for `dev_sum` in `reduce_eq`");
+
+    float *dev_sum = safe_malloc<float>(size(m));
 
     float z = 0;
-    cudaStat = cudaMemcpy(dev_sum, &z, sizeof(z), cudaMemcpyHostToDevice);
+    cudaError_t cudaStat = cudaMemcpy(dev_sum, &z, sizeof(z), cudaMemcpyHostToDevice);
     check(cudaStat != cudaSuccess, "cudaMemcpy failed");
 
     _reduce_sum<<<blockcount(size(m)), BLOCKSIZE>>>
       (size(m), m->dev_array, dev_sum);
 
+    float sum;
     cudaStat = cudaMemcpy(&sum, dev_sum, sizeof(sum), cudaMemcpyDeviceToHost);
     check(cudaStat != cudaSuccess, "cudaMemcpy failed");
     return sum;
