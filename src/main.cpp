@@ -30,8 +30,8 @@ int main (void){
 
   // set values of weights matrix
   float weights_vals [] = {
-    1, 1, 
-    1, 1
+    2, 2, 
+    2, 1
   };
 
   cublasHandle_t handle;
@@ -59,23 +59,26 @@ int main (void){
   init_matrix(&matrix, array, M, N);
   alloc_matrix(&m1, M, N);
   alloc_matrix(&m2, M, N);
+  //fill_matrix(&m1, 2);
+  //fill_matrix(&m2, 3);
+  //elemwise_add(&m1, &m2, &matrix);
+  //print_matrix(&matrix);
+  //printf("\n");
+  //elemwise_mult(&m1, &m2, &matrix);
+  //print_matrix(&matrix);
+  //printf("\n");
+  //broadcast_add(1, &m2, &matrix);
+  //print_matrix(&matrix);
+  //printf("\n");
   fill_matrix(&m1, 2);
-  fill_matrix(&m2, 3);
-  elemwise_add(&m1, &m2, &matrix);
-  print_matrix(&matrix);
+  //print_matrix(&m1);
   printf("\n");
-  elemwise_mult(&m1, &m2, &matrix);
-  print_matrix(&matrix);
-  printf("\n");
-  broadcast_add(1, &m2, &matrix);
-  print_matrix(&matrix);
-  printf("\n");
-  //broadcast_sub_rev(&m2, 2, &matrix);
-  print_matrix(&matrix);
-  printf("\n");
-  printf("sum over m1: %f", reduce_sum(&m2));
-  printf("\n");
-  std::cout << "m1 == 2: " << reduce_equal(&m1, 2) << std::endl;
+  bool b = reduce_equal(&m1, 2);
+  printf("m1 == 2: %d\n", b);
+  //print_matrix(&matrix);
+  //printf("\n");
+  //printf("sum over m1: %f", reduce_sum(&m2));
+  //printf("\n");
 
   return EXIT_SUCCESS;
 }

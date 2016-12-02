@@ -71,30 +71,10 @@ extern "C" {
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
 
   __global__
-  void _reduce_equal() {//int len, const float *a, float x, unsigned int *boolean) {
-    /*if (IDx >= len) return;*/
-    /*unsigned int equal = a[IDx] == x;*/
-    /*printf("equal: %d\n", equal);*/
-    /*atomicAnd(boolean, equal); */
+  void _reduce_equal(int len, const float *a, float x, unsigned int *boolean) {
+    if (IDx >= len) return;
+    atomicAnd(boolean, a[IDx] == x); 
   }
-  
-  /*void _sub_scalar_rev(int len, float *result, const float *a, float val) {*/
-    /*if (((blockIdx.x * blockDim.x) + threadIdx.x) < len) { */
-      /*result[((blockIdx.x * blockDim.x) + threadIdx.x)] = a[((blockIdx.x * blockDim.x) + threadIdx.x)] - val; */
-    /*} */
-  /*} */
-  void test(const Matrix *m, float val, Matrix *result) { 
-    printf("BEFORE\n");
-    _sub_scalar_rev<<<blockcount(8), dim3(16)>>>
-        (size(result), result->dev_array, m->dev_array, val);; 
-    printf("AFTER\n");
-  }
-
-  /*__global__*/
-  /*void _test(int len, float *result, const float *a1, const float *a2) {*/
-    /*printf("\n TEST TEST TEST\n");*/
-  /*}*/
-
 
   bool reduce_equal(const Matrix *m, float x) {
     unsigned int *dev_bool;
@@ -103,19 +83,30 @@ extern "C" {
     check(cudaStat != cudaSuccess, "cudaMalloc failed for `dev_bool` in `reduce_eq`");
 
     unsigned int t = 1;
+    cudaStat = cudaMemcpy(dev_bool, &t, sizeof(t), cudaMemcpyHostToDevice);
+    check(cudaStat != cudaSuccess, "cudaMemcpy failed");
+
+    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> 
+      (size(m), m->dev_array, x, dev_bool);
+
+    cudaStat = cudaMemcpy(&t, dev_bool, sizeof(t), cudaMemcpyDeviceToHost);
+    check(cudaStat != cudaSuccess, "cudaMemcpy failed");
+    return t == 1;
+  }
+
+  bool reduce_equal2(const Matrix *m, float x) {
+    unsigned int *dev_bool;
+    cudaError_t cudaStat = cudaMalloc((void**)&dev_bool,
+        sizeof(*dev_bool));
+    check(cudaStat != cudaSuccess, "cudaMalloc failed for `dev_bool` in `reduce_eq`");
+
+    unsigned int t = 1;
     cudaMemcpy(dev_bool, &t, sizeof(t), cudaMemcpyHostToDevice);
 
+    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> 
+      (size(m), m->dev_array, x, dev_bool);
 
-    /*_reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> ();*/
-    /*DEFAULT_LAUNCH(_test, m, m->dev_array, m->dev_array); \*/
-    Matrix m1;
-    alloc_matrix(&m1, m->height, m->width);
-    test(m, 1, &m1);
-
-      /*(size(m), m->dev_array, x, dev_bool);*/
-
-
-    cudaMemcpy(&t, &dev_bool, sizeof(t), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&t, dev_bool, sizeof(t), cudaMemcpyDeviceToHost);
     return t == 1;
   }
 
