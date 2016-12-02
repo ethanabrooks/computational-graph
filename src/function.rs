@@ -47,14 +47,15 @@ enum Expr {
     Input(Input),
     Param(Param),
     Neg(Function),
+    Abs(Function),
     Add(Function, Function),
     Mul(Function, Function),
 }
 
 #[derive(Debug, Clone)]
-pub struct Function {
-    pub output: Shared<Option<Constant>>,
-    pub params: HashSet<String>,
+struct Function {
+    output: Shared<Option<Constant>>,
+    params: HashSet<String>,
     body: Rc<Expr>,
 }
 
@@ -89,6 +90,7 @@ impl fmt::Display for Expr {
                 Expr::Constant(_) | Expr::Input(_)  => write!(f, "-{}", x),
                 _  => write!(f, "-({})", x),
             },
+            Expr::Abs(ref x) => write!(f, "|{}|", x),
             Expr::Add(ref a, ref b) => write_with_parens(a, "+", b, f),
             Expr::Mul(ref a, ref b) => write_with_parens(a, "*", b, f),
         }
@@ -116,6 +118,9 @@ impl Function {
             Expr::Constant(ref c) => all_equal(c, val),
             _                     => false
         }
+    }
+
+    fn abs() {
     }
 }
 
