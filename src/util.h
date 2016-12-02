@@ -14,5 +14,6 @@
 
 void check(int condition, const char *msg);
 dim3 blockcount(int count);
+float* float_malloc(int count); 
 
 #endif

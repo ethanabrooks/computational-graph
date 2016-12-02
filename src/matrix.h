@@ -12,6 +12,7 @@ extern "C" {
   void alloc_matrix(Matrix *matrix, int height, int width);
 
   int size(const Matrix *m);
+  void copy_dev2dev(Matrix *src, Matrix *dst);
   void copy_matrix(Matrix *src, Matrix *dst);
   void init_matrix(Matrix *matrix, float *array, int height, int width);
   void fill_matrix(Matrix *matrix, float value);

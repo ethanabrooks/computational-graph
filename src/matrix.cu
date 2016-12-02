@@ -14,6 +14,30 @@ extern "C" {
 
   int size(const Matrix *m) { return m->width * m->height; }
 
+  void copy_dev2dev(Matrix *src, Matrix *dst) {
+      cudaError stat = cudaMemcpy(dst->dev_array, src->dev_array, 
+          src->height * src->width * sizeof(*src->dev_array),
+          cudaMemcpyDeviceToDevice);
+      check(stat != cudaSuccess, "copy_dev2dev failed");
+  }
+
+  void download_matrix(const Matrix *src, float *dst) {
+    cublasStatus_t stat = cublasGetMatrix(src->width, src->height, 
+        sizeof(*src->dev_array), 
+        src->dev_array, src->width, dst, src->width);
+    check(stat != CUBLAS_STATUS_SUCCESS, "data download failed");
+  }
+
+  void upload_matrix(float *src, const Matrix *dst) {
+    cublasStatus_t blas_stat = cublasSetMatrix(dst->width, dst->height, 
+        sizeof(*src), src, dst->width, dst->dev_array, dst->width); 
+    check(blas_stat != CUBLAS_STATUS_SUCCESS, "data upload failed"); 
+
+    /*cudaError custat = cudaMemcpy(src, dst->dev_array,*/
+        /*size(dst) * sizeof(*src), cudaMemcpyDeviceToHost);*/
+    /*check(custat != cudaSuccess, "data upload failed"); */
+  }
+
   // allocates on device
   void alloc_matrix(Matrix *matrix, int height, int width) { 
     matrix->width = width;
@@ -27,42 +51,20 @@ extern "C" {
 
   void init_matrix(Matrix *matrix, float *array, int height, int width) {
     alloc_matrix(matrix, height, width);
-
-    // copy matrix to GPU 
-    cublasStatus_t stat = cublasSetMatrix(width, height, sizeof(*array), 
-        array, width, matrix->dev_array, width); 
-    check(stat != CUBLAS_STATUS_SUCCESS, "data upload failed"); 
-
-    cudaMemcpy(array, matrix->dev_array,
-        height * width * sizeof(*array),
-        cudaMemcpyDeviceToHost);
+    upload_matrix(array, matrix);
   }
 
   void copy_matrix(Matrix *src, Matrix *dst) {
-     
-    // copy matrix from src
-    cudaMemcpy(dst->dev_array, src->dev_array, 
-        src->height * src->width * sizeof(*src->dev_array),
-        cudaMemcpyDeviceToDevice);
   }
 
   void fill_matrix(Matrix *matrix, float value) {
     DEFAULT_LAUNCH(_memset, matrix, value)
   }
 
-  void download_matrix(const Matrix *src, float *dst) {
-    cublasStatus_t stat = cublasGetMatrix(src->width, src->height, 
-        sizeof(*src->dev_array), 
-        src->dev_array, src->width, dst, src->width);
-    check(stat != CUBLAS_STATUS_SUCCESS, "data download failed");
-  }
-
   void print_matrix(Matrix *matrix) {
 
     // allocate space for matrix on CPU 
-    float *array = (float *)malloc(matrix->width * matrix->height *
-        sizeof(*matrix->dev_array)); 
-    check(!array, "host memory allocation failed"); 
+    float *array = float_malloc(size(matrix));
 
     // copy matrix to CPU
     download_matrix(matrix, array);
@@ -79,7 +81,7 @@ extern "C" {
   }
 
   void free_matrix(Matrix *matrix) {
-    free(matrix->dev_array);
+    cudaFree(matrix->dev_array);
   }
 }
 
