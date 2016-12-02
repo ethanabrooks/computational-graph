@@ -1,5 +1,4 @@
 extern crate libc;
-extern crate num;
 
 mod function; 
 mod constant; 
@@ -11,9 +10,9 @@ use constant::Constant::Scalar;
 use std::collections::HashMap;
 
 fn main() {
-    let a = Scalar(2.);
+    let a = Scalar(-2.);
     println!("a: {}", &a);
-    println!("a: {}", &a.abs());
+    println!("a: {}", &a.signum());
     //println!("a: {}", &a.abs());
     //let x = param("x", Scalar(1.)); 
     //let mut args = HashMap::new();

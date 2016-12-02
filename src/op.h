@@ -4,6 +4,7 @@ extern "C" {
 
   void map_neg(Matrix *m, Matrix *result);
   void map_abs(Matrix *m, Matrix *result);
+  void map_sign(Matrix *m, Matrix *result);
 
   void elemwise_mult(Matrix *m1, Matrix *m2, Matrix *result);
   void elemwise_add(Matrix *m1, Matrix *m2, Matrix *result);
