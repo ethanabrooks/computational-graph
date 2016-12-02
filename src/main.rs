@@ -10,27 +10,27 @@ use constant::Constant::Scalar;
 use std::collections::HashMap;
 
 fn main() {
-    let a = Scalar(-2.);
-    println!("a: {}", &a);
-    println!("a: {}", &a.signum());
-    //println!("a: {}", &a.abs());
-    //let x = param("x", Scalar(1.)); 
-    //let mut args = HashMap::new();
-    //let f = &x * &(&a + &x);
-    //println!("f: {}", f);
+    let a = scalar(-2.); 
+    let b = scalar(-3.); 
+    println!("a * b: {}", &a * &b);
+    let x = param("x", Scalar(-3.)); 
+    println!("a * x: {}", &a * &x);
+    let f = x;
+    println!("f: {}", f);
 
-    //args.insert("x", Scalar(3.));
+    let mut args = HashMap::new();
+    //args.insert("x", Scalar(-3.));
 
-    //assign_outputs(&f, &args);
-    //println!("args: {:#?}", args);
+    assign_outputs(&f, &args);
+    println!("args: {:#?}", args);
 
-    //if let Some(c) = eval(&f, &args) {
-        //println!("eval: {}", c);
-    //}
+    if let Some(c) = eval(&f, &args) {
+        println!("eval: {}", c);
+    }
 
-    //println!("grad x: {}", grad(&f, "x"));
+    println!("grad x: {}", grad(&f, "x"));
 
     //println!("x: {}", &x);
-    //minimize(&f, 1., 1);
+    minimize(&f, 1., 1);
     //println!("x: {}", &x);
 }

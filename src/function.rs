@@ -4,6 +4,8 @@ use constant::{Constant, copy_and_fill, new_matrix, all_equal};
 use std::collections::{HashMap, HashSet};
 use std::cell::{RefCell, Ref};
 use std::rc::Rc;
+use std::io;
+use std::io::Write;
 
 //// MACROS
 
@@ -47,7 +49,8 @@ enum Expr {
     Input(Input),
     Param(Param),
     Neg(Function),
-    //Abs(Function),
+    Abs(Function),
+    Sign(Function),
     Add(Function, Function),
     Mul(Function, Function),
 }
@@ -90,7 +93,8 @@ impl fmt::Display for Expr {
                 Expr::Constant(_) | Expr::Input(_)  => write!(f, "-{}", x),
                 _  => write!(f, "-({})", x),
             },
-            //Expr::Abs(ref x) => write!(f, "|{}|", x),
+            Expr::Abs(ref x) => write!(f, "|{}|", x),
+            Expr::Sign(ref x) => write!(f, "sign({})", x),
             Expr::Add(ref a, ref b) => write_with_parens(a, "+", b, f),
             Expr::Mul(ref a, ref b) => write_with_parens(a, "×", b, f),
         }
@@ -104,15 +108,15 @@ impl fmt::Display for Function {
 }
 
 
-fn un_apply(expr: &Fn(Function) -> Expr, f: &Function) -> Function {
-    Function {
-        output: shared::new(None),
-        params: f.params.clone(),
-        body: Rc::new(expr(f.clone())),
-    }
-}
-
 impl Function {
+    fn apply(&self, expr: &Fn(Function) -> Expr) -> Function {
+        Function {
+            output: shared::new(None),
+            params: self.params.clone(),
+            body: Rc::new(expr(self.clone())),
+        }
+    }
+
     fn all_equal(&self, val:f32) -> bool {
         match *self.body {
             Expr::Constant(ref c) => all_equal(c, val),
@@ -120,25 +124,40 @@ impl Function {
         }
     }
 
-    fn abs() {
+    pub fn abs(&self) -> Function {
+        self.apply(&|f| Expr::Abs(f))
+    }
+
+    fn signum(&self) -> Function {
+        self.apply(&|f| Expr::Sign(f))
     }
 }
 
 fn bin_apply(expr: &Fn(Function, Function) -> Expr, 
              f1: &Function, f2: &Function, 
              identity: f32) -> Function {
-    if f1.all_equal(identity) {
-        f2.clone()
-    } else if f2.all_equal(identity) {
-        f1.clone()
-    } else {
-        let params1 = f1.params.clone();
-        let params2 = f2.params.clone();
+    match (&*f1.body, &*f2.body) {
 
-        Function {
-            output: shared::new(None),
-            params: params1.union(&params2).cloned().collect(),
-            body: Rc::new(expr(f1.clone(), f2.clone())),
+        // optimization to combine constants
+        (&Expr::Constant(_), &Expr::Constant(_)) => {
+            new_constant(eval(
+                    &new_function(None, HashSet::new(), expr(f1.clone(), f2.clone())), 
+                    &HashMap::new()).unwrap())
+        }, 
+        _ => {
+
+            // optimization to eliminate identities
+            if f1.all_equal(identity) {
+                f2.clone()
+            } else if f2.all_equal(identity) {
+                f1.clone()
+            } else {
+                let params1 = f1.params.clone();
+                let params2 = f2.params.clone();
+
+                new_function(None, params1.union(&params2).cloned().collect(),
+                            expr(f1.clone(), f2.clone()))
+            }
         }
     }
 }
@@ -162,10 +181,12 @@ impl Mul for Function {
 impl <'a> Neg for &'a Function {
     type Output = Function;
     fn neg(self) -> Function {
+
+        // optimization to eliminate -0
         if self.all_equal(0.) {
             self.clone()
         } else {
-            un_apply(&|f| Expr::Neg(f), self)
+            self.apply(&|f| Expr::Neg(f))
         }
     }
 }
@@ -180,6 +201,8 @@ impl<'a> Add for &'a Function {
 impl<'a> Mul for &'a Function {
     type Output = Function;
     fn mul(self, other: &Function) -> Function {
+
+        // optimization to eliminate multiplication by 0
         if self.all_equal(0.) {
             return self.clone()
         } 
@@ -251,18 +274,16 @@ pub fn grad(f: &Function, param: &str) -> Function {
     if f.params.contains::<str>(&param) {
         match *f.body { 
             Expr::Neg(ref f) => -grad(&f, param),
-            //Expr::Abs(ref f) => {
-                //let g = grad(&f, param);
-                //if get_shared(&f.output) < 0 { -g }
-                //else { g }
-            //}
+            Expr::Abs(ref f) => 
+                f.signum() * grad(&f, param),
+            Expr::Sign(ref f) => panic!("signum is nondifferentiable"),
             Expr::Add(ref f1, ref f2) => grad(&f1, param) + grad(&f2, param),
             Expr::Mul(ref f1, ref f2) => &grad(&f1, param) * f2 +
                                          &grad(&f2, param) * f1,
             Expr::Param(ref p) => new_constant(
                 copy_and_fill(&*get_shared(&p.value), 1.)
                 ),
-            _ => panic!("should never reach here"),
+            Expr::Constant(_)| Expr::Input(_) => panic!("should never reach here"),
         }
     } else {
         scalar(0.)
@@ -286,6 +307,8 @@ pub fn eval(f: &Function, args: &HashMap<&str, Constant>) -> Option<Constant> {
         Expr::Input(ref i) => args.get::<str>(&i.name).map(|x| x.clone()),
         Expr::Param(ref p) => Some(get_shared(&p.value).clone()),
         Expr::Neg(ref f) => eval(&f, args).map(|x| -x),
+        Expr::Abs(ref f) => eval(&f, args).map(|x| x.abs()),
+        Expr::Sign(ref f) => eval(&f, args).map(|x| x.signum()),
         Expr::Add(ref f1, ref f2) => apply_to_branches(&|x, y| x + y, args, f1, f2),
         Expr::Mul(ref f1, ref f2) => apply_to_branches(&|x, y| x * y, args, f1, f2),
     }
@@ -309,6 +332,16 @@ pub fn assign_outputs(f: &Function, args: &HashMap<&str, Constant>) {
         Expr::Neg(ref f1) => {
             assign_outputs(f1, args);
             Some(-get_output(f1))
+        }
+        Expr::Abs(ref f1) => {
+            assign_outputs(f1, args);
+            Some(get_output(f1).abs())
+        }
+        Expr::Sign(ref f1) => {
+            writeln!(&mut io::stderr(), "WARN: Sign is non-differentiable.
+            Running `backprop` on this function will cause an error");
+            assign_outputs(f1, args);
+            Some(get_output(f1).signum())
         }
         Expr::Add(ref f1, ref f2) => assign_and_apply(&|x, y| x + y, args, f1, f2),
         Expr::Mul(ref f1, ref f2) => assign_and_apply(&|x, y| x * y, args, f1, f2),
@@ -335,6 +368,8 @@ fn backprop(f: &Function, error: &Constant, learn_rate: f32) {
             *value -= &Constant::Scalar(learn_rate) * error; 
         }
         Expr::Neg(ref f1) => backprop(f1, &-error, learn_rate),
+        Expr::Abs(ref f1) => backprop(f1, &error.abs(), learn_rate),
+        Expr::Sign(ref f1) => panic!("sign is not differentiable"),
         Expr::Add(ref f1, ref f2) => {
             backprop(f1, error, learn_rate);
             backprop(f2, error, learn_rate);
@@ -343,6 +378,6 @@ fn backprop(f: &Function, error: &Constant, learn_rate: f32) {
             backprop(f1, &(&get_output(f2) * error), learn_rate);
             backprop(f2, &(&get_output(f1) * error), learn_rate);
         }
-        _ => return,
+        Expr::Constant(_)| Expr::Input(_) => return,
     }
 }
