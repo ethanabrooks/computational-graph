@@ -4,8 +4,7 @@ mod function;
 mod constant; 
 
 #[allow(unused_imports)]
-use function::{input, scalar, param, matrix, eval, 
-               grad, assign_outputs, minimize, maximize};
+use function::{input, scalar, param, matrix};
 use constant::Constant::Scalar;
 use std::collections::HashMap;
 
@@ -21,16 +20,16 @@ fn main() {
     let mut args = HashMap::new();
     //args.insert("x", Scalar(-3.));
 
-    assign_outputs(&f, &args);
+    f.assign_outputs(&args);
     println!("args: {:#?}", args);
 
-    if let Some(c) = eval(&f, &args) {
+    if let Some(c) = f.eval(&args) {
         println!("eval: {}", c);
     }
 
-    println!("grad x: {}", grad(&f, "x"));
+    println!("grad x: {}", f.grad("x"));
 
     //println!("x: {}", &x);
-    minimize(&f, 1., 1);
+    f.minimize(1., 10);
     //println!("x: {}", &x);
 }

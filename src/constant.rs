@@ -102,18 +102,19 @@ impl fmt::Display for Constant {
 }
 
 // allocates on device
-fn un_apply(scalar_fun: &Fn(f32) -> f32, 
-            matrix_fun: unsafe extern "C" fn(*const Matrix, *mut Matrix),
-            c: &Constant) -> Constant {
-    match c {
-        &Constant::Scalar(x) => Constant::Scalar(scalar_fun(x)),
-        &Constant::Matrix(ref m) => {
-            let mut result = empty_like(m);
-            unsafe { matrix_fun(m, &mut result) };
-            Constant::Matrix(result)
+impl Constant {
+    fn apply(&self, scalar_fun: &Fn(f32) -> f32, 
+             matrix_fun: unsafe extern "C" fn(*const Matrix, *mut Matrix)
+             ) -> Constant {
+        match self {
+            &Constant::Scalar(x) => Constant::Scalar(scalar_fun(x)),
+            &Constant::Matrix(ref m) => {
+                let mut result = empty_like(m);
+                unsafe { matrix_fun(m, &mut result) };
+                Constant::Matrix(result)
+            }
         }
     }
-
 }
 
 // allocates on device
@@ -140,11 +141,11 @@ fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32,
 
 impl Constant {
     pub fn abs(&self) -> Constant {
-        un_apply(&|x| x.abs(), map_abs, self)
+        self.apply(&|x| x.abs(), map_abs)
     }
 
     pub fn signum(&self) -> Constant {
-        un_apply(&|x| x.signum(), map_sign, self)
+        self.apply(&|x| x.signum(), map_sign)
     }
 }
 
@@ -170,7 +171,7 @@ impl Mul for Constant {
 impl<'a> Neg for &'a Constant {
     type Output = Constant;
     fn neg(self) -> Constant {
-        un_apply(&|x| -x, map_neg, self)
+        self.apply(&|x| -x, map_neg)
     }
 }
 

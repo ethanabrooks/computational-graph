@@ -140,9 +140,8 @@ fn bin_apply(expr: &Fn(Function, Function) -> Expr,
 
         // optimization to combine constants
         (&Expr::Constant(_), &Expr::Constant(_)) => {
-            new_constant(eval(
-                    &new_function(None, HashSet::new(), expr(f1.clone(), f2.clone())), 
-                    &HashMap::new()).unwrap())
+            new_constant(new_function(None, HashSet::new(), expr(f1.clone(), f2.clone()))
+                         .eval(&HashMap::new()).unwrap())
         }, 
         _ => {
 
@@ -262,122 +261,121 @@ pub fn matrix(height: i32, width: i32, values: Vec<f32>) -> Function {
 
 fn get_shared<T>(s: &Shared<T>) -> Ref<T> { s.borrow() }
 
-
-fn get_output(f: &Function) -> Constant {
-    match *get_shared(&f.output) {
-        Some(ref x) => x.clone(),
-        None => panic!("Need to run `assign_outputs` before `grad`"),
-    }
-}
-
-pub fn grad(f: &Function, param: &str) -> Function {
-    if f.params.contains::<str>(&param) {
-        match *f.body { 
-            Expr::Neg(ref f) => -grad(&f, param),
-            Expr::Abs(ref f) => 
-                f.signum() * grad(&f, param),
-            Expr::Sign(ref f) => panic!("signum is nondifferentiable"),
-            Expr::Add(ref f1, ref f2) => grad(&f1, param) + grad(&f2, param),
-            Expr::Mul(ref f1, ref f2) => &grad(&f1, param) * f2 +
-                                         &grad(&f2, param) * f1,
-            Expr::Param(ref p) => new_constant(
-                copy_and_fill(&*get_shared(&p.value), 1.)
-                ),
-            Expr::Constant(_)| Expr::Input(_) => panic!("should never reach here"),
-        }
-    } else {
-        scalar(0.)
-    }
-}
-
 fn apply_to_branches(f: &Fn(Constant, Constant) -> Constant, 
-                     args: &HashMap<&str, Constant>,
-                     f1: &Function, 
-                     f2: &Function) -> Option<Constant> {
-    match (eval(&f1, args), eval(&f2, args)) {
+                    args: &HashMap<&str, Constant>,
+                    f1: &Function, 
+                    f2: &Function) -> Option<Constant> {
+    match (f1.eval(args), f2.eval(args)) {
         (Some(x1), Some(x2)) => Some(f(x1, x2)),
         _ => None,
     }
 }
 
-
-pub fn eval(f: &Function, args: &HashMap<&str, Constant>) -> Option<Constant> {
-    match *f.body { 
-        Expr::Constant(ref x) => Some(x.clone()),
-        Expr::Input(ref i) => args.get::<str>(&i.name).map(|x| x.clone()),
-        Expr::Param(ref p) => Some(get_shared(&p.value).clone()),
-        Expr::Neg(ref f) => eval(&f, args).map(|x| -x),
-        Expr::Abs(ref f) => eval(&f, args).map(|x| x.abs()),
-        Expr::Sign(ref f) => eval(&f, args).map(|x| x.signum()),
-        Expr::Add(ref f1, ref f2) => apply_to_branches(&|x, y| x + y, args, f1, f2),
-        Expr::Mul(ref f1, ref f2) => apply_to_branches(&|x, y| x * y, args, f1, f2),
-    }
-}
-
-
 fn assign_and_apply(f: &Fn(Constant, Constant) -> Constant, 
                     args: &HashMap<&str, Constant>,
                     f1: &Function, f2: &Function) -> Option<Constant> {
-    assign_outputs(f1, args);
-    assign_outputs(f2, args);
+    f1.assign_outputs(args);
+    f2.assign_outputs(args);
     apply_to_branches(f, args, f1, f2)
 }
 
-
-pub fn assign_outputs(f: &Function, args: &HashMap<&str, Constant>) {
-    *f.output.borrow_mut() = match *f.body.clone() { 
-        Expr::Constant(ref x) => Some(x.clone()),
-        Expr::Input(ref arg) => args.get::<str>(&arg.name).map(|x| x.clone()),
-        Expr::Param(ref p) => Some(get_shared(&p.value).clone()),
-        Expr::Neg(ref f1) => {
-            assign_outputs(f1, args);
-            Some(-get_output(f1))
+impl Function {
+    fn get_output(&self) -> Constant {
+        match *get_shared(&self.output) {
+            Some(ref x) => x.clone(),
+            None => panic!("Need to run `assign_outputs` before `grad`"),
         }
-        Expr::Abs(ref f1) => {
-            assign_outputs(f1, args);
-            Some(get_output(f1).abs())
-        }
-        Expr::Sign(ref f1) => {
-            writeln!(&mut io::stderr(), "WARN: Sign is non-differentiable.
-            Running `backprop` on this function will cause an error");
-            assign_outputs(f1, args);
-            Some(get_output(f1).signum())
-        }
-        Expr::Add(ref f1, ref f2) => assign_and_apply(&|x, y| x + y, args, f1, f2),
-        Expr::Mul(ref f1, ref f2) => assign_and_apply(&|x, y| x * y, args, f1, f2),
     }
-}
 
-#[allow(dead_code)]
-pub fn minimize(f: &Function, learn_rate: f32, iters: i32) {
-    for _ in 0..iters {
-        backprop(f, &get_output(f), learn_rate);
+    pub fn grad(&self, param: &str) -> Function {
+        if self.params.contains::<str>(&param) {
+            match *self.body { 
+                Expr::Neg(ref f) => -f.grad(param),
+                Expr::Abs(ref f) => 
+                    f.signum() * f.grad(param),
+                Expr::Sign(ref f) => panic!("signum is nondifferentiable"),
+                Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
+                Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
+                                             &f2.grad(param) * f1,
+                Expr::Param(ref p) => new_constant(
+                    copy_and_fill(&*get_shared(&p.value), 1.)
+                    ),
+                Expr::Constant(_)| Expr::Input(_) => panic!("should never reach here"),
+            }
+        } else {
+            scalar(0.)
+        }
     }
-}
 
-#[allow(dead_code)]
-pub fn maximize(f: &Function, learn_rate: f32, iters: i32) {
-    minimize(&-f, learn_rate, iters);
-}
+    pub fn eval(&self, args: &HashMap<&str, Constant>) -> Option<Constant> {
+        match *self.body { 
+            Expr::Constant(ref x) => Some(x.clone()),
+            Expr::Input(ref i) => args.get::<str>(&i.name).map(|x| x.clone()),
+            Expr::Param(ref p) => Some(get_shared(&p.value).clone()),
+            Expr::Neg(ref f) => f.eval(args).map(|x| -x),
+            Expr::Abs(ref f) => f.eval(args).map(|x| x.abs()),
+            Expr::Sign(ref f) => f.eval(args).map(|x| x.signum()),
+            Expr::Add(ref f1, ref f2) => apply_to_branches(&|x, y| x + y, args, f1, f2),
+            Expr::Mul(ref f1, ref f2) => apply_to_branches(&|x, y| x * y, args, f1, f2),
+        }
+    }
 
-fn backprop(f: &Function, error: &Constant, learn_rate: f32) {
-    if f.params.is_empty() { return; }
-    match *f.body.clone() {
-        Expr::Param(ref p) => { 
-            let mut value = p.value.borrow_mut();
-            *value -= &Constant::Scalar(learn_rate) * error; 
+
+    pub fn assign_outputs(&self, args: &HashMap<&str, Constant>) {
+        *self.output.borrow_mut() = match *self.body { 
+            Expr::Constant(ref x) => Some(x.clone()),
+            Expr::Input(ref arg) => args.get::<str>(&arg.name).cloned(),
+            Expr::Param(ref p) => Some(get_shared(&p.value).clone()),
+            Expr::Neg(ref f1) => {
+                f1.assign_outputs(args);
+                Some(-f1.get_output().clone())
+            }
+            Expr::Abs(ref f1) => {
+                f1.assign_outputs(args);
+                Some(f1.get_output().abs().clone())
+            }
+            Expr::Sign(ref f1) => {
+                writeln!(&mut io::stderr(), "WARN: Sign is non-differentiable.
+                Running `backprop` on this function will cause an error");
+                f1.assign_outputs(args);
+                Some(f1.get_output().signum().clone())
+            }
+            Expr::Add(ref f1, ref f2) => assign_and_apply(&|x, y| x + y, args, f1, f2),
+            Expr::Mul(ref f1, ref f2) => assign_and_apply(&|x, y| x * y, args, f1, f2),
         }
-        Expr::Neg(ref f1) => backprop(f1, &-error, learn_rate),
-        Expr::Abs(ref f1) => backprop(f1, &error.abs(), learn_rate),
-        Expr::Sign(ref f1) => panic!("sign is not differentiable"),
-        Expr::Add(ref f1, ref f2) => {
-            backprop(f1, error, learn_rate);
-            backprop(f2, error, learn_rate);
+    }
+
+    #[allow(dead_code)]
+    pub fn minimize(&self, learn_rate: f32, iters: i32) {
+        for _ in 0..iters {
+            self.backprop(&self.get_output(), learn_rate);
         }
-        Expr::Mul(ref f1, ref f2) => {
-            backprop(f1, &(&get_output(f2) * error), learn_rate);
-            backprop(f2, &(&get_output(f1) * error), learn_rate);
+    }
+
+    #[allow(dead_code)]
+    pub fn maximize(&self, learn_rate: f32, iters: i32) {
+        (&-self).minimize(learn_rate, iters);
+    }
+
+    fn backprop(&self, error: &Constant, learn_rate: f32) {
+        if self.params.is_empty() { return; }
+        match *self.body.clone() {
+            Expr::Param(ref p) => { 
+                let mut value = p.value.borrow_mut();
+                *value -= &Constant::Scalar(learn_rate) * error; 
+            }
+            Expr::Neg(ref f1) => f1.backprop(&-error, learn_rate),
+            Expr::Abs(ref f1) => f1.backprop(&error.abs(), learn_rate),
+            Expr::Sign(ref f1) => panic!("sign is not differentiable"),
+            Expr::Add(ref f1, ref f2) => {
+                f1.backprop(error, learn_rate);
+                f2.backprop(error, learn_rate);
+            }
+            Expr::Mul(ref f1, ref f2) => {
+                f1.backprop(&(&f2.get_output() * error), learn_rate);
+                f2.backprop(&(&f1.get_output() * error), learn_rate);
+            }
+            Expr::Constant(_)| Expr::Input(_) => return,
         }
-        Expr::Constant(_)| Expr::Input(_) => return,
     }
 }
