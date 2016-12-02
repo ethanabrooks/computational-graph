@@ -41,8 +41,11 @@ pub enum Constant {
 // allocates on device
 impl Clone for Matrix {
     fn clone(&self) -> Matrix {
+        println!("1");
         let mut m = empty_like(self);
+        println!("2");
         unsafe { copy_matrix(self as *const Matrix, &mut m) };
+        println!("3");
         m
     }
 }

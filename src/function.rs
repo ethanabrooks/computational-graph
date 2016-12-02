@@ -364,9 +364,6 @@ impl Function {
         match *self.body.clone() {
             Expr::Param(ref p) => { 
                 let mut value = p.value.borrow_mut();
-                println!("value: {}", *value);
-                println!("error: {}", error);
-                println!("value -= error: {} -= {}", *value, error);
                 *value -= &Constant::Scalar(learn_rate) * error; 
             }
             Expr::Neg(ref f1) => f1.backprop(&-error, learn_rate),

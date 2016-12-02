@@ -6,15 +6,20 @@ mod constant;
 #[allow(unused_imports)]
 use function::{input, scalar, param, matrix};
 use constant::Constant::Scalar;
+use constant::new_matrix;
 use std::collections::HashMap;
 
 fn main() {
-    //let a = scalar(-2.); 
-    //let b = scalar(-3.); 
+    let a = scalar(-2.); 
+    let b = scalar(-3.); 
     //println!("a * b: {}", &a * &b);
-    let x = param("x", Scalar(-1.)); 
+    let x = param( "x", new_matrix(
+            2, 3, vec![
+            1., 1., 1., 
+            1., 1., 1.])); 
     //println!("a * x: {}", &a * &x);
-    let f = x;
+    println!("x: {}", x);
+    let f = (&x + &b).abs() * (&x + &a);
     println!("f: {}", f);
 
     let mut args = HashMap::new();
@@ -30,6 +35,6 @@ fn main() {
     //println!("grad x: {}", f.grad("x"));
 
     //println!("x: {}", &x);
-    f.maximize(&args, 0.5, 10);
+    f.minimize(&args, 0.4, 40);
     //println!("x: {}", &x);
 }
