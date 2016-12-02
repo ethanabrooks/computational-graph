@@ -280,7 +280,7 @@ fn assign_and_apply(f: &Fn(Constant, Constant) -> Constant,
 }
 
 impl Function {
-    fn get_output(&self) -> Constant {
+    pub fn get_output(&self) -> Constant {
         match *get_shared(&self.output) {
             Some(ref x) => x.clone(),
             None => panic!("Need to run `assign_outputs` before `grad`"),
@@ -364,6 +364,8 @@ impl Function {
         match *self.body.clone() {
             Expr::Param(ref p) => { 
                 let mut value = p.value.borrow_mut();
+                //println!("value: {}", *value);
+                //println!("error: {}", error);
                 *value -= &Constant::Scalar(learn_rate) * error; 
             }
             Expr::Neg(ref f1) => f1.backprop(&-error, learn_rate),

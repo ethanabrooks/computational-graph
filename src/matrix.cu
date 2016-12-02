@@ -21,7 +21,7 @@ extern "C" {
     check(stat != CUBLAS_STATUS_SUCCESS, "download_matrix failed");
   }
 
-  void upload_matrix(float *src, const Matrix *dst) {
+  void upload_matrix(const float *src, Matrix *dst) {
     cublasStatus_t blas_stat = cublasSetMatrix(dst->width, dst->height, 
         sizeof(*src), src, dst->width, dst->dev_array, dst->width); 
     check(blas_stat != CUBLAS_STATUS_SUCCESS, "upload_matrix failed"); 
@@ -38,15 +38,16 @@ extern "C" {
     check(cudaStat != cudaSuccess, "device memory allocation failed"); 
   }
 
-  void init_matrix(Matrix *matrix, float *array, int height, int width) {
+  void init_matrix(Matrix *matrix, const float *array, int height, int width) {
     alloc_matrix(matrix, height, width);
     upload_matrix(array, matrix);
   }
 
-  void copy_matrix(Matrix *src, Matrix *dst) {
+  void copy_matrix(const Matrix *src, Matrix *dst) {
     dst->height = src->height;
     dst->width = src->width;
-    cudaError_t stat = device2device(size(src), src, dst);
+    cudaError_t stat = device2device<float>(size(src), 
+        src->dev_array, dst->dev_array);
     check(stat != cudaSuccess, "copy_matrix failed");
   }
 
@@ -54,7 +55,7 @@ extern "C" {
     DEFAULT_LAUNCH(_memset, matrix, value)
   }
 
-  void print_matrix(Matrix *matrix) {
+  void print_matrix(const Matrix *matrix) {
 
     // allocate space for matrix on CPU 
     float *array = safe_malloc<float>(size(matrix));

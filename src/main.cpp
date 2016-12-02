@@ -76,8 +76,8 @@ int main (void){
   //fill_matrix(&m1, 2);
   //init_matrix(&m1, weights_vals, M, N);
   print_matrix(&m1);
-  map_abs(&m1, &m1);
-  print_matrix(&m1);
+  copy_matrix(&m1, &m2);
+  print_matrix(&m2);
   //printf("\n");
 
   //printf("reduce_equal = %d\n", reduce_equal(&m1, 2.0));

@@ -12,10 +12,12 @@ extern "C" {
   void alloc_matrix(Matrix *matrix, int height, int width);
 
   int size(const Matrix *m);
-  void copy_matrix(Matrix *src, Matrix *dst);
-  void init_matrix(Matrix *matrix, float *array, int height, int width);
+  void copy_matrix(const Matrix *src, Matrix *dst);
+
+  // TODO: fix signatures
+  void init_matrix(Matrix *matrix, const float *array, int height, int width);
   void fill_matrix(Matrix *matrix, float value);
-  void print_matrix(Matrix *matrix);
+  void print_matrix(const Matrix *matrix);
   void download_matrix(const Matrix *src, float *dst);
   void free_matrix(Matrix *matrix);
 }
