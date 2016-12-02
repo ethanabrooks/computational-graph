@@ -17,14 +17,14 @@ dim3 blockcount(int count);
 
 template<typename T> inline T* safe_malloc(int count) {
     T *array = (T *)malloc(count * sizeof(*array));
-    check(!array, "safe_malloc"); 
+    check(!array, "safe_malloc failed"); 
     return array;
 }
 
 template<typename T> inline T* safe_cuda_malloc(int count) {
     T *array;
     cudaError_t cudaStat = cudaMalloc((void**)&array, count * sizeof(*array));
-    check(cudaStat != cudaSuccess, "float_malloc_cuda");
+    check(cudaStat != cudaSuccess, "float_malloc_cuda failed");
     return array;
 }
 

@@ -82,26 +82,26 @@ extern "C" {
     atomicAdd(sum, a[IDx]); 
   }
 
-  bool reduce_equal(const Matrix *m, float x) {
-    unsigned int *dev_bool;
-    cudaError_t cudaStat = cudaMalloc(&dev_bool, sizeof(*dev_bool));
-    check(cudaStat != cudaSuccess, "cudaMalloc failed for `dev_bool` in `reduce_eq`");
+  /*bool reduce_equal(const Matrix *m, float x) {*/
+    /*unsigned int *dev_bool;*/
+    /*cudaError_t cudaStat = cudaMalloc(&dev_bool, sizeof(*dev_bool));*/
+    /*check(cudaStat != cudaSuccess, "cudaMalloc failed for `dev_bool` in `reduce_eq`");*/
 
-    unsigned int t = 1;
-    cudaStat = cudaMemcpy(dev_bool, &t, sizeof(t), cudaMemcpyHostToDevice);
-    check(cudaStat != cudaSuccess, "cudaMemcpy failed");
+    /*unsigned int t = 1;*/
+    /*cudaStat = cudaMemcpy(dev_bool, &t, sizeof(t), cudaMemcpyHostToDevice);*/
+    /*check(cudaStat != cudaSuccess, "cudaMemcpy failed");*/
 
-    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> 
-      (size(m), m->dev_array, dev_bool, x);
+    /*_reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> */
+      /*(size(m), m->dev_array, dev_bool, x);*/
 
-    cudaStat = cudaMemcpy(&t, dev_bool, sizeof(t), cudaMemcpyDeviceToHost);
-    check(cudaStat != cudaSuccess, "cudaMemcpy failed");
-    return t == 1;
-  }
+    /*cudaStat = cudaMemcpy(&t, dev_bool, sizeof(t), cudaMemcpyDeviceToHost);*/
+    /*check(cudaStat != cudaSuccess, "cudaMemcpy failed");*/
+    /*return t == 1;*/
+  /*}*/
 
   float reduce_sum(const Matrix *m) {
 
-    float *dev_sum = safe_malloc<float>(size(m));
+    float *dev_sum = safe_cuda_malloc<float>(size(m));
 
     float z = 0;
     cudaError_t cudaStat = cudaMemcpy(dev_sum, &z, sizeof(z), cudaMemcpyHostToDevice);
