@@ -3,7 +3,7 @@ use std::env;
 use std::path::Path;
 use std::fs;
 
-fn more_recent_than(srcs: Vec<String>, dst: &str) -> std::io::Result<bool> {
+fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
     match fs::metadata(dst) {
         Ok(metadata_dst) => {
             let time_mod_dst = metadata_dst.modified()?;
@@ -30,7 +30,7 @@ fn main() {
         let src_name = format!("src/{}.cu", c_names[i]);
         let out_name = get_out_name(c_names[i]);
          
-        if more_recent_than(vec![src_name.clone()], &out_name).unwrap() {
+        if more_recent_than(&vec![src_name.clone()], &out_name).unwrap() {
             assert!(Command::new("nvcc")
                 .arg(&src_name)
                 .args(&["-c", "-Xcompiler", "-fPIC", "-lcublas", "-o"]) 
@@ -41,7 +41,7 @@ fn main() {
 
     let out_files: Vec<String> = c_names.into_iter().map(get_out_name).collect();
 
-    if more_recent_than(out_files, "libmatrix.a").unwrap() {
+    if more_recent_than(&out_files, "libmatrix.a").unwrap() {
 
         assert!(Command::new("rm")
             .args(&["-f", "libmatrix.a"]) 
@@ -50,7 +50,8 @@ fn main() {
 
 
         assert!(Command::new("ar")
-            .args(&["crus", "libmatrix.a", "matrix.o", "op.o", "scan.o"]) 
+            .args(&["crus", "libmatrix.a"])
+            .args(&out_files)
             .current_dir(&Path::new(&out_dir)) 
             .status().unwrap().success(), "ar failed");
     }
