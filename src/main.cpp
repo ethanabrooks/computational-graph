@@ -62,30 +62,32 @@ int main (void){
   init_matrix(&matrix, array, M, N);
   alloc_matrix(&m1, M, N);
   alloc_matrix(&m2, M, N);
-  fill_matrix(&m1, 2);
-  fill_matrix(&m2, 3);
-  elemwise_add(&m1, &m2, &matrix);
-  print_matrix(&matrix);
-  printf("\n");
-  elemwise_mult(&m1, &m2, &matrix);
-  print_matrix(&matrix);
-  printf("\n");
-  broadcast_add(1, &m2, &matrix);
-  print_matrix(&matrix);
-  printf("\n");
-  fill_matrix(&m1, 2);
-  init_matrix(&m1, weights_vals, M, N);
+  fill_matrix(&m1, -2);
+  //fill_matrix(&m2, 3);
+  //elemwise_add(&m1, &m2, &matrix);
+  //print_matrix(&matrix);
+  //printf("\n");
+  //elemwise_mult(&m1, &m2, &matrix);
+  //print_matrix(&matrix);
+  //printf("\n");
+  //broadcast_add(1, &m2, &matrix);
+  //print_matrix(&matrix);
+  //printf("\n");
+  //fill_matrix(&m1, 2);
+  //init_matrix(&m1, weights_vals, M, N);
   print_matrix(&m1);
-  printf("\n");
+  map_abs(&m1, &m1);
+  print_matrix(&m1);
+  //printf("\n");
 
-  printf("reduce_equal = %d\n", reduce_equal(&m1, 2.0));
-  printf("reduce_sum = %f\n", reduce_sum(&m1));
-  clock_t start = clock(), diff;
-  /////
-  //reduce_sum(&m1);
-  /////
-  diff = clock() - start;
-  int msec = diff * 1000 / CLOCKS_PER_SEC; 
+  //printf("reduce_equal = %d\n", reduce_equal(&m1, 2.0));
+  //printf("reduce_sum = %f\n", reduce_sum(&m1));
+  //clock_t start = clock(), diff;
+  ///////
+  ////reduce_sum(&m1);
+  ///////
+  //diff = clock() - start;
+  //int msec = diff * 1000 / CLOCKS_PER_SEC; 
   //printf("Time taken %d seconds %d milliseconds\n", msec/1000, msec%1000);
 
   return EXIT_SUCCESS;

@@ -1,5 +1,6 @@
 use std::{fmt, ptr};
 use std::ops::{Neg, Add, Mul, SubAssign};
+use num::abs;
 
 extern {
     fn alloc_matrix(m: *mut Matrix, width: i32, height: i32); // allocates on device
@@ -7,6 +8,7 @@ extern {
     fn init_matrix(m: *mut Matrix, array: *const f32, width: i32, height: i32);
     fn fill_matrix(m: *mut Matrix, value: f32);
     fn map_neg(m: *const Matrix, result: *mut Matrix);
+    fn map_abs(m: *const Matrix, result: *mut Matrix);
     fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn elemwise_sub(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn elemwise_mult(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
@@ -136,11 +138,18 @@ fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32,
     }
 }
 
-//fn equal(c: &Constant, val: f32) -> bool {
-    //match c {
-
-    //}
-//}
+impl Constant {
+    pub fn abs(&self) -> Constant {
+        match *self {
+            Constant::Scalar(ref x) => Constant::Scalar(abs(*x)),
+            Constant::Matrix(ref m) => {
+                let mut result = m.clone();
+                unsafe { map_abs(m, &mut result) };
+                Constant::Matrix(result)
+            }
+        }
+    }
+}
 
 // allocates on device
 impl Neg for Constant {

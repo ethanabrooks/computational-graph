@@ -2,8 +2,6 @@ use std::process::Command;
 use std::env;
 use std::path::Path;
 use std::fs;
-use std::time::SystemTime;
-use std::io::Write;
 
 fn more_recent_than(srcs: Vec<String>, dst: &str) -> std::io::Result<bool> {
     match fs::metadata(dst) {
@@ -23,7 +21,7 @@ fn more_recent_than(srcs: Vec<String>, dst: &str) -> std::io::Result<bool> {
 }
 
 fn main() {
-    let c_names = vec!["matrix", "op", "scan"];
+    let c_names = vec!["matrix", "op", "util"];
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
