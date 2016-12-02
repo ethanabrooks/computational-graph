@@ -70,7 +70,7 @@ int main (void){
   broadcast_add(1, &m2, &matrix);
   print_matrix(&matrix);
   printf("\n");
-  broadcast_sub_rev(&m2, 2, &matrix);
+  //broadcast_sub_rev(&m2, 2, &matrix);
   print_matrix(&matrix);
   printf("\n");
   printf("sum over m1: %f", reduce_sum(&m2));

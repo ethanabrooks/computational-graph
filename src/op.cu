@@ -31,6 +31,7 @@
 #define BIN_BROADCAST_REV(name, op) \
   __global__ \
   void _ ## name ## _scalar_rev(int len, float *result, const float *a, float val) { \
+    printf("TEST TEST TEST\n"); \
     SET(result, a[IDx] op val) \
   } \
   void broadcast_ ## name ## _rev(const Matrix *m, float val, Matrix *result) { \
@@ -55,6 +56,7 @@ void check_dims(const Matrix *m1, const Matrix *m2, const Matrix *result) {
       "matrices must have the same dimensions");
 }
 
+
 extern "C" {
   UN_MAP(neg, -x) // map_neg
 
@@ -69,13 +71,30 @@ extern "C" {
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
 
   __global__
-  void _reduce_equal(int len, const float *a, float x, unsigned int *boolean) {
-    printf("%x, TEST TEST TEST\n", boolean);
-    if (IDx >= len) return;
-    unsigned int equal = a[IDx] == x;
-    printf("equal: %d\n", equal);
-    atomicAnd(boolean, equal); 
+  void _reduce_equal() {//int len, const float *a, float x, unsigned int *boolean) {
+    /*if (IDx >= len) return;*/
+    /*unsigned int equal = a[IDx] == x;*/
+    /*printf("equal: %d\n", equal);*/
+    /*atomicAnd(boolean, equal); */
   }
+  
+  /*void _sub_scalar_rev(int len, float *result, const float *a, float val) {*/
+    /*if (((blockIdx.x * blockDim.x) + threadIdx.x) < len) { */
+      /*result[((blockIdx.x * blockDim.x) + threadIdx.x)] = a[((blockIdx.x * blockDim.x) + threadIdx.x)] - val; */
+    /*} */
+  /*} */
+  void test(const Matrix *m, float val, Matrix *result) { 
+    printf("BEFORE\n");
+    _sub_scalar_rev<<<blockcount(8), dim3(16)>>>
+        (size(result), result->dev_array, m->dev_array, val);; 
+    printf("AFTER\n");
+  }
+
+  /*__global__*/
+  /*void _test(int len, float *result, const float *a1, const float *a2) {*/
+    /*printf("\n TEST TEST TEST\n");*/
+  /*}*/
+
 
   bool reduce_equal(const Matrix *m, float x) {
     unsigned int *dev_bool;
@@ -86,8 +105,14 @@ extern "C" {
     unsigned int t = 1;
     cudaMemcpy(dev_bool, &t, sizeof(t), cudaMemcpyHostToDevice);
 
-    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>>
-      (size(m), m->dev_array, x, dev_bool);
+
+    /*_reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> ();*/
+    /*DEFAULT_LAUNCH(_test, m, m->dev_array, m->dev_array); \*/
+    Matrix m1;
+    alloc_matrix(&m1, m->height, m->width);
+    test(m, 1, &m1);
+
+      /*(size(m), m->dev_array, x, dev_bool);*/
 
 
     cudaMemcpy(&t, &dev_bool, sizeof(t), cudaMemcpyDeviceToHost);
