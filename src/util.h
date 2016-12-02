@@ -28,5 +28,19 @@ template<typename T> inline T* safe_cuda_malloc(int count) {
     return array;
 }
 
+template<typename T> inline 
+cudaError_t device2host(int count, const T *src, T *dst) {
+    return cudaMemcpy(dst, src, count * sizeof(*src), cudaMemcpyDeviceToHost);
+}
+
+template<typename T> inline 
+cudaError_t host2device(int count, const T *src, T *dst) {
+   return  cudaMemcpy(dst, src, count * sizeof(*src), cudaMemcpyHostToDevice);
+}
+
+template<typename T> inline 
+cudaError_t device2device(int count, const T *src, T *dst) {
+    return cudaMemcpy(dst, src, count * sizeof(*src), cudaMemcpyDeviceToDevice);
+}
 
 #endif

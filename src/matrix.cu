@@ -14,13 +14,6 @@ extern "C" {
 
   int size(const Matrix *m) { return m->width * m->height; }
 
-  void copy_dev2dev(Matrix *src, Matrix *dst) {
-      cudaError stat = cudaMemcpy(dst->dev_array, src->dev_array, 
-          src->height * src->width * sizeof(*src->dev_array),
-          cudaMemcpyDeviceToDevice);
-      check(stat != cudaSuccess, "copy_dev2dev failed");
-  }
-
   void download_matrix(const Matrix *src, float *dst) {
     cublasStatus_t stat = cublasGetMatrix(src->width, src->height, 
         sizeof(*src->dev_array), 
@@ -32,10 +25,6 @@ extern "C" {
     cublasStatus_t blas_stat = cublasSetMatrix(dst->width, dst->height, 
         sizeof(*src), src, dst->width, dst->dev_array, dst->width); 
     check(blas_stat != CUBLAS_STATUS_SUCCESS, "upload_matrix failed"); 
-
-    /*cudaError custat = cudaMemcpy(src, dst->dev_array,*/
-        /*size(dst) * sizeof(*src), cudaMemcpyDeviceToHost);*/
-    /*check(custat != cudaSuccess, "data upload failed"); */
   }
 
   // allocates on device
@@ -55,6 +44,10 @@ extern "C" {
   }
 
   void copy_matrix(Matrix *src, Matrix *dst) {
+    dst->height = src->height;
+    dst->width = src->width;
+    cudaError_t stat = device2device(size(src), src, dst);
+    check(stat != cudaSuccess, "copy_matrix failed");
   }
 
   void fill_matrix(Matrix *matrix, float value) {

@@ -82,37 +82,37 @@ extern "C" {
     atomicAdd(sum, a[IDx]); 
   }
 
-  /*bool reduce_equal(const Matrix *m, float x) {*/
-    /*unsigned int *dev_bool;*/
-    /*cudaError_t cudaStat = cudaMalloc(&dev_bool, sizeof(*dev_bool));*/
-    /*check(cudaStat != cudaSuccess, "cudaMalloc failed for `dev_bool` in `reduce_eq`");*/
+  bool reduce_equal(const Matrix *m, float x) {
+    unsigned int *dev_bool = safe_cuda_malloc<unsigned int>(1);
+    unsigned int t = 1;
 
-    /*unsigned int t = 1;*/
-    /*cudaStat = cudaMemcpy(dev_bool, &t, sizeof(t), cudaMemcpyHostToDevice);*/
-    /*check(cudaStat != cudaSuccess, "cudaMemcpy failed");*/
+    cudaError_t cudaStat = host2device(1, &t, dev_bool);
+    check(cudaStat != cudaSuccess, "host2device failed in reduce_eq");
 
-    /*_reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> */
-      /*(size(m), m->dev_array, dev_bool, x);*/
+    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> 
+      (size(m), m->dev_array, dev_bool, x);
 
-    /*cudaStat = cudaMemcpy(&t, dev_bool, sizeof(t), cudaMemcpyDeviceToHost);*/
-    /*check(cudaStat != cudaSuccess, "cudaMemcpy failed");*/
-    /*return t == 1;*/
-  /*}*/
+    cudaStat = device2host(1, dev_bool, &t);
+    check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
+
+    cudaFree(dev_bool);
+    return t == 1;
+  }
 
   float reduce_sum(const Matrix *m) {
+    float *dev_sum = safe_cuda_malloc<float>(1);
+    float sum = 0;
 
-    float *dev_sum = safe_cuda_malloc<float>(size(m));
-
-    float z = 0;
-    cudaError_t cudaStat = cudaMemcpy(dev_sum, &z, sizeof(z), cudaMemcpyHostToDevice);
-    check(cudaStat != cudaSuccess, "cudaMemcpy failed");
+    cudaError_t cudaStat = host2device(1, &sum, dev_sum);
+    check(cudaStat != cudaSuccess, "host2device failed in reduce_sum");
 
     _reduce_sum<<<blockcount(size(m)), BLOCKSIZE>>>
       (size(m), m->dev_array, dev_sum);
 
-    float sum;
-    cudaStat = cudaMemcpy(&sum, dev_sum, sizeof(sum), cudaMemcpyDeviceToHost);
-    check(cudaStat != cudaSuccess, "cudaMemcpy failed");
+    cudaStat = device2host(1, dev_sum, &sum);
+    check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
+
+    cudaFree(dev_sum);
     return sum;
   }
 }

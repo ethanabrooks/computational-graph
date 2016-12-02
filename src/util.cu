@@ -14,8 +14,3 @@ void check(int condition, const char *msg) {
     exit(EXIT_FAILURE);
   }
 }
-
-/*void device2host(float *src, float *dst) {*/
-    /*cudaError_t cudaStat = cudaMemcpy(dev_sum, &z, sizeof(z), cudaMemcpyHostToDevice);*/
-    /*check(cudaStat != cudaSuccess, "cudaMemcpy failed");*/
-/*}*/

@@ -32,7 +32,7 @@ int main (void){
 
   // set values of weights matrix
   float weights_vals [] = {
-    1, 2, 
+    2, 2, 
     2, 2,
     2, 2,
   };
@@ -78,6 +78,7 @@ int main (void){
   print_matrix(&m1);
   printf("\n");
 
+  printf("reduce_equal = %d\n", reduce_equal(&m1, 2.0));
   printf("reduce_sum = %f\n", reduce_sum(&m1));
   clock_t start = clock(), diff;
   /////
