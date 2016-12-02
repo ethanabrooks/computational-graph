@@ -47,13 +47,13 @@ enum Expr {
     Input(Input),
     Param(Param),
     Neg(Function),
-    Abs(Function),
+    //Abs(Function),
     Add(Function, Function),
     Mul(Function, Function),
 }
 
 #[derive(Debug, Clone)]
-struct Function {
+pub struct Function {
     output: Shared<Option<Constant>>,
     params: HashSet<String>,
     body: Rc<Expr>,
@@ -90,7 +90,7 @@ impl fmt::Display for Expr {
                 Expr::Constant(_) | Expr::Input(_)  => write!(f, "-{}", x),
                 _  => write!(f, "-({})", x),
             },
-            Expr::Abs(ref x) => write!(f, "|{}|", x),
+            //Expr::Abs(ref x) => write!(f, "|{}|", x),
             Expr::Add(ref a, ref b) => write_with_parens(a, "+", b, f),
             Expr::Mul(ref a, ref b) => write_with_parens(a, "×", b, f),
         }
@@ -251,6 +251,11 @@ pub fn grad(f: &Function, param: &str) -> Function {
     if f.params.contains::<str>(&param) {
         match *f.body { 
             Expr::Neg(ref f) => -grad(&f, param),
+            //Expr::Abs(ref f) => {
+                //let g = grad(&f, param);
+                //if get_shared(&f.output) < 0 { -g }
+                //else { g }
+            //}
             Expr::Add(ref f1, ref f2) => grad(&f1, param) + grad(&f2, param),
             Expr::Mul(ref f1, ref f2) => &grad(&f1, param) * f2 +
                                          &grad(&f2, param) * f1,
