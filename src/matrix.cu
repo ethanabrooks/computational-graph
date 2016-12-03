@@ -6,10 +6,13 @@
 #include "matrix.h" 
 #include "util.h" 
 
+extern cublasHandle_t handle;
+
 extern "C" {
-  __global__ 
-  void _memset(int len, float *array, float value) {
-    SET(array, value);
+
+  void init_cublas() {
+    cublasStatus_t stat = cublasCreate(&handle);
+    check(stat != CUBLAS_STATUS_SUCCESS, "CUBLAS initialization failed"); 
   }
 
   int size(const Matrix *m) { return m->width * m->height; }
@@ -49,6 +52,11 @@ extern "C" {
     cudaError_t stat = device2device<float>(size(src), 
         src->dev_array, dst->dev_array);
     check(stat != cudaSuccess, "copy_matrix failed");
+  }
+
+  __global__ 
+  void _memset(int len, float *array, float value) {
+    SET(array, value);
   }
 
   void fill_matrix(Matrix *matrix, float value) {

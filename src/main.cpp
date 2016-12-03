@@ -19,8 +19,6 @@ float *input;
 float *devPtrInput;
 float *weights;
 float *devPtrWeights;
-cublasHandle_t handle;
-
 
 int main (void){ 
 
@@ -37,7 +35,6 @@ int main (void){
     2, 2,
   };
 
-  cublasHandle_t handle;
   int i, j;
   float *array;
   Matrix matrix;
@@ -56,9 +53,7 @@ int main (void){
   cudaError_t cudaStat;
   cublasStatus_t stat;
 
-  stat = cublasCreate(&handle);
-  check(stat != CUBLAS_STATUS_SUCCESS, "CUBLAS initialization failed"); 
-
+  init_cublas();
   init_matrix(&matrix, array, M, N);
   alloc_matrix(&m1, M, N);
   alloc_matrix(&m2, M, N);

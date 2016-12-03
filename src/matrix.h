@@ -8,13 +8,14 @@ typedef struct matrix_struct {
 } Matrix;
 
 extern "C" {
+  cublasHandle_t handle;
+
   // allocates on device
   void alloc_matrix(Matrix *matrix, int height, int width);
 
   int size(const Matrix *m);
+  void init_cublas();
   void copy_matrix(const Matrix *src, Matrix *dst);
-
-  // TODO: fix signatures
   void init_matrix(Matrix *matrix, const float *array, int height, int width);
   void fill_matrix(Matrix *matrix, float value);
   void print_matrix(const Matrix *matrix);
