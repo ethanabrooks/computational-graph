@@ -6,7 +6,7 @@
 #include "matrix.h" 
 #include "util.h" 
 
-extern cublasHandle_t handle;
+cublasHandle_t handle;
 
 extern "C" {
 

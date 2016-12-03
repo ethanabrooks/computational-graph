@@ -8,7 +8,7 @@ typedef struct matrix_struct {
 } Matrix;
 
 extern "C" {
-  cublasHandle_t handle;
+  extern cublasHandle_t handle;
 
   // allocates on device
   void alloc_matrix(Matrix *matrix, int height, int width);
