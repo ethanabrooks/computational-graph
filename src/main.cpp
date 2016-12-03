@@ -11,8 +11,8 @@
 #include "op.h" 
 #include "util.h" 
 
-#define M 3
-#define N 2
+#define M 2
+#define N 3
 
 // globals
 float *input;
@@ -37,30 +37,23 @@ int main (void){
 
   int i, j;
   float *array;
-  Matrix matrix;
   Matrix m1;
   Matrix m2;
+  Matrix result;
 
   array = (float *)malloc (M * N * sizeof (float)); 
   check(!array, "host memory allocation failed"); 
 
-  rng(j, 0, N) {
-    rng(i, 0, M) {
-      array[idx2c(i,j,M)] = (float)idx2c(j, i, M);
-    }
-  }
-
-  cudaError_t cudaStat;
-  cublasStatus_t stat;
-
   init_cublas();
-  init_matrix(&matrix, array, M, N);
   alloc_matrix(&m1, M, N);
-  alloc_matrix(&m2, M, N);
-  fill_matrix(&m1, -2);
+  alloc_matrix(&m2, N, M);
+  alloc_matrix(&result, M, M);
+  fill_matrix(&m1, 1);
+  fill_matrix(&m2, 2);
+  gemm(&m1, &m2, &result);
+  print_matrix(&result);
   //fill_matrix(&m2, 3);
   //elemwise_add(&m1, &m2, &matrix);
-  //print_matrix(&matrix);
   //printf("\n");
   //elemwise_mult(&m1, &m2, &matrix);
   //print_matrix(&matrix);
@@ -70,9 +63,9 @@ int main (void){
   //printf("\n");
   //fill_matrix(&m1, 2);
   //init_matrix(&m1, weights_vals, M, N);
-  print_matrix(&m1);
-  copy_matrix(&m1, &m2);
-  print_matrix(&m2);
+  //print_matrix(m1);
+  //copy_matrix(m1, m2);
+  //print_matrix(m2);
   //printf("\n");
 
   //printf("reduce_equal = %d\n", reduce_equal(&m1, 2.0));

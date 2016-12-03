@@ -73,6 +73,19 @@ extern "C" {
 
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
 
+  void gemm(const Matrix *m1, const Matrix *m2, Matrix *result) {
+    float alpha = 1;
+    float beta = 1;
+    cublasStatus_t stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+        m1->height, m2->width, m1->width, 
+        &alpha,
+        m1->dev_array, m1->width,
+        m2->dev_array, m2->height,
+        &beta,
+        result->dev_array,
+        result->height);
+  }
+
   __global__
   void _reduce_equal(int len, const float *a, unsigned int *boolean, float x) {
     if (IDx >= len) return;

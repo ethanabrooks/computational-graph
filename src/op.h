@@ -2,6 +2,8 @@
 
 extern "C" {
 
+  void gemm(const Matrix *m1, const Matrix *m2, Matrix *result);
+
   void map_neg(Matrix *m, Matrix *result);
   void map_abs(Matrix *m, Matrix *result);
   void map_signum(Matrix *m, Matrix *result);
