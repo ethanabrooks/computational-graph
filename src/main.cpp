@@ -11,8 +11,9 @@
 #include "op.h" 
 #include "util.h" 
 
+#define L 5
 #define M 2
-#define N 3
+#define N 8
 
 // globals
 float *input;
@@ -30,9 +31,8 @@ int main (void){
 
   // set values of weights matrix
   float weights_vals [] = {
-    2, 2, 
-    2, 2,
-    2, 2,
+    1, 2, 
+    3, 4,
   };
 
   int i, j;
@@ -45,11 +45,18 @@ int main (void){
   check(!array, "host memory allocation failed"); 
 
   init_cublas();
-  alloc_matrix(&m1, M, N);
-  alloc_matrix(&m2, N, M);
-  alloc_matrix(&result, M, M);
+  alloc_matrix(&m1, L, M);
+  alloc_matrix(&m2, M, N);
+  alloc_matrix(&result, L, N);
+
+  //init_matrix(&m1, input_vals, 2, 2);
+  //init_matrix(&m2, input_vals, 2, 2);
+
   fill_matrix(&m1, 1);
   fill_matrix(&m2, 2);
+  fill_matrix(&result, 0);
+  print_matrix(&m1);
+  print_matrix(&m2);
   gemm(&m1, &m2, &result);
   print_matrix(&result);
   //fill_matrix(&m2, 3);
@@ -78,5 +85,6 @@ int main (void){
   //int msec = diff * 1000 / CLOCKS_PER_SEC; 
   //printf("Time taken %d seconds %d milliseconds\n", msec/1000, msec%1000);
 
+  cublasDestroy(handle);
   return EXIT_SUCCESS;
 }

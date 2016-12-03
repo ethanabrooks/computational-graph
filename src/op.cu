@@ -49,13 +49,11 @@
   }
 
 void check_dims(const Matrix *m1, const Matrix *m2, const Matrix *result) { 
-  check(m1->height != m2->height 
-     || m1->width  != m2->width
-     || m1->height != result->height 
-     || m1->width  != result->width, 
-      "matrices must have the same dimensions");
+  check(m1->height != m2->height, "m1->height must equal m2->height");
+  check(m1->width != m2->width, "m1->width must equal m2->width");
+  check(m1->height != result->height, "m1->height must equal result->height");
+  check(m1->width != result->width, "m1->width must equal result->width");
 }
-
 
 extern "C" {
   UN_MAP(neg, -x) // map_neg
@@ -74,16 +72,25 @@ extern "C" {
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
 
   void gemm(const Matrix *m1, const Matrix *m2, Matrix *result) {
+    check(m1->width != m2->height, "m1->width must equal m2->height");
+    check(m1->height != result->height, "m1->height must equal result->height");
+    check(m2->width != result->width, "m2->width must equal result->width");
+
     float alpha = 1;
-    float beta = 1;
+    float beta = 0;
     cublasStatus_t stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-        m1->height, m2->width, m1->width, 
-        &alpha,
-        m1->dev_array, m1->width,
-        m2->dev_array, m2->height,
-        &beta,
-        result->dev_array,
-        result->height);
+        m1->height,         // m
+        result->width,      // n
+        m1->width,          // k
+        &alpha,             // alpha
+        m1->dev_array,      // A
+        m1->height,         // lda 
+        m2->dev_array,      // B
+        m2->height,         // ldb
+        &beta,              // beta
+        result->dev_array,  // C
+        result->height);    // ldc
+    check(stat != CUBLAS_STATUS_SUCCESS, "gemm failed :(");
   }
 
   __global__

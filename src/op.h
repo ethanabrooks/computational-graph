@@ -1,7 +1,6 @@
 #include "matrix.h" 
 
 extern "C" {
-
   void gemm(const Matrix *m1, const Matrix *m2, Matrix *result);
 
   void map_neg(Matrix *m, Matrix *result);

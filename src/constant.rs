@@ -10,13 +10,14 @@ extern {
     fn map_abs(m: *const Matrix, result: *mut Matrix);
     fn map_signum(m: *const Matrix, result: *mut Matrix);
     fn map_sigmoid(m: *const Matrix, result: *mut Matrix);
-    fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
-    fn elemwise_sub(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
-    fn elemwise_mult(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn broadcast_mult(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub_rev(m: *const Matrix, val: f32, result: *mut Matrix);
+    fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn elemwise_sub(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn elemwise_mult(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn gemm(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn download_matrix(src: *const Matrix, dst: *mut f32);
     fn reduce_equal(matrix: *const Matrix, x: f32) -> bool;
     fn reduce_sum(matrix: *const Matrix) -> f32;
@@ -290,6 +291,18 @@ impl SubAssign for Constant {
 }
 
 //// FUNCTIONS
+
+// allocates on device
+pub fn matmul(c1: &Constant, c2: &Constant) -> Constant {
+    match (c1, c2) {
+        (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
+            let mut result = empty_matrix(m1.height, m2.width);
+            unsafe { gemm(m1, m2, &mut result) };
+            Constant::Matrix(result)
+        }
+        _ => panic!("MatMul can only take matrix arguments."),
+    }
+}
 
 // allocates on device
 fn empty_matrix(height: i32, width: i32) -> Matrix {

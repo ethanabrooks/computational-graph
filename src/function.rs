@@ -1,11 +1,11 @@
 use std::fmt;
 use std::ops::{Neg, Add, Sub, Mul};
+use constant;
 use constant::{Constant, new_matrix};
 use std::collections::{HashMap, HashSet};
 use std::cell::{RefCell, Ref};
 use std::rc::Rc;
-use std::io;
-use std::io::Write;
+use std::io::{Write, stderr};
 
 //// MACROS
 
@@ -55,6 +55,7 @@ enum Expr {
     Add(Function, Function),
     Sub(Function, Function),
     Mul(Function, Function),
+    MatMul(Function, Function),
 }
 
 #[derive(Debug, Clone)]
@@ -101,6 +102,7 @@ impl fmt::Display for Expr {
             Expr::Add(ref a, ref b) => write_with_parens(a, "+", b, f),
             Expr::Sub(ref a, ref b) => write_with_parens(a, "-", b, f),
             Expr::Mul(ref a, ref b) => write_with_parens(a, "×", b, f),
+            Expr::MatMul(ref a, ref b) => write_with_parens(a, "", b, f),
         }
     }
 }
@@ -149,7 +151,7 @@ fn bin_apply(expr: &Fn(Function, Function) -> Expr,
         // optimization to combine constants
         (&Expr::Constant(_), &Expr::Constant(_)) => {
             new_constant(new_function(None, HashSet::new(), expr(f1.clone(), f2.clone()))
-                         .eval(&HashMap::new()).unwrap())
+                         .eval(&HashMap::new()))
         }, 
         _ => {
 
@@ -281,22 +283,12 @@ pub fn matrix(height: i32, width: i32, values: Vec<f32>) -> Function {
 
 fn get_shared<T>(s: &Shared<T>) -> Ref<T> { s.borrow() }
 
-fn apply_to_branches(f: &Fn(Constant, Constant) -> Constant, 
-                    args: &HashMap<&str, Constant>,
-                    f1: &Function, 
-                    f2: &Function) -> Option<Constant> {
-    match (f1.eval(args), f2.eval(args)) {
-        (Some(x1), Some(x2)) => Some(f(x1, x2)),
-        _ => None,
-    }
-}
-
 fn assign_and_apply(f: &Fn(Constant, Constant) -> Constant, 
                     args: &HashMap<&str, Constant>,
                     f1: &Function, f2: &Function) -> Option<Constant> {
     f1.assign_outputs(args);
     f2.assign_outputs(args);
-    apply_to_branches(f, args, f1, f2)
+    Some(f(f1.eval(args), f2.eval(args)))
 }
 
 impl Function {
@@ -307,18 +299,26 @@ impl Function {
         }
     }
 
-    pub fn eval(&self, args: &HashMap<&str, Constant>) -> Option<Constant> {
+    pub fn eval(&self, args: &HashMap<&str, Constant>) -> Constant {
         match *self.body { 
-            Expr::Constant(ref x) => Some(x.clone()),
-            Expr::Input(ref i) => args.get::<str>(&i.name).map(|x| x.clone()),
-            Expr::Param(ref p) => Some(get_shared(&p.value).clone()),
-            Expr::Neg(ref f) => f.eval(args).map(|x| -x),
-            Expr::Abs(ref f) => f.eval(args).map(|x| x.abs()),
-            Expr::Signum(ref f) => f.eval(args).map(|x| x.signum()),
-            Expr::Sigmoid(ref f) => f.eval(args).map(|x| x.sigmoid()),
-            Expr::Add(ref f1, ref f2) => apply_to_branches(&|x, y| x + y, args, f1, f2),
-            Expr::Sub(ref f1, ref f2) => apply_to_branches(&|x, y| x - y, args, f1, f2),
-            Expr::Mul(ref f1, ref f2) => apply_to_branches(&|x, y| x * y, args, f1, f2),
+            Expr::Constant(ref x) => x.clone(),
+            Expr::Input(ref i) => {
+                match args.get::<str>(&i.name).map(|x| x.clone()) {
+                    Some(val) => val,
+                    None => panic!("`args` is missing {}. Content of `args`: \n{:#?}",
+                                   &i.name, args), 
+                }
+            }
+            Expr::Param(ref p) => get_shared(&p.value).clone(),
+            Expr::Neg(ref f) => -f.eval(args),
+            Expr::Abs(ref f) => f.eval(args).abs(),
+            Expr::Signum(ref f) => f.eval(args).signum(),
+            Expr::Sigmoid(ref f) => f.eval(args).sigmoid(),
+            Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
+            Expr::Sub(ref f1, ref f2) => f1.eval(args) - f2.eval(args),
+            Expr::Mul(ref f1, ref f2) =>  f1.eval(args) * f2.eval(args),
+            Expr::MatMul(ref f1, ref f2) => 
+                constant::matmul(&f1.eval(args), &f2.eval(args)),
         }
     }
 
@@ -337,7 +337,7 @@ impl Function {
                 Some(f1.get_output().abs().clone())
             }
             Expr::Signum(ref f1) => {
-                writeln!(&mut io::stderr(), "WARN: Signum is non-differentiable.
+                writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
                 Running `backprop` on this function will cause an error");
                 f1.assign_outputs(args);
                 Some(f1.get_output().signum().clone())
@@ -349,6 +349,8 @@ impl Function {
             Expr::Add(ref f1, ref f2) => assign_and_apply(&|x, y| x + y, args, f1, f2),
             Expr::Sub(ref f1, ref f2) => assign_and_apply(&|x, y| x - y, args, f1, f2),
             Expr::Mul(ref f1, ref f2) => assign_and_apply(&|x, y| x * y, args, f1, f2),
+            Expr::MatMul(ref f1, ref f2) => 
+                assign_and_apply(&|x, y| constant::matmul(&x, &y), args, f1, f2),
         }
     }
 
@@ -372,11 +374,13 @@ impl Function {
                 Expr::Neg(ref f) => -f.grad(param),
                 Expr::Abs(ref f) => f.signum() * f.grad(param),
                 Expr::Signum(ref f) => panic!("signum is nondifferentiable"),
-                Expr::Sigmoid(ref f) => f.grad(param) * (self.clone() * (&scalar(1.) - self)),
+                Expr::Sigmoid(ref f) =>
+                    f.grad(param) * (self.clone() * (&scalar(1.) - self)),
                 Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
                 Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
                 Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
                                              &f2.grad(param) * f1,
+                Expr::MatMul(ref f1, ref f2) => panic!("still figuring this one out..."),
                 Expr::Param(ref p) => new_constant(
                     get_shared(&p.value).copy_and_fill(1.)
                     ),
@@ -417,6 +421,7 @@ impl Function {
                 f1.backprop(&(&f2.get_output() * error), learn_rate);
                 f2.backprop(&(&f1.get_output() * error), learn_rate);
             }
+            Expr::MatMul(ref f1, ref f2) => panic!("still figuring this one out..."),
             Expr::Constant(_)| Expr::Input(_) => return,
         }
     }
