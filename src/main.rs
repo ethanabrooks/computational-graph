@@ -14,35 +14,36 @@ fn main() {
     let b = scalar(-3.); 
     let y = input("y", vec![]);
     //println!("a * b: {}", &a * &b);
-    let x = param( "x", new_matrix(
-            2, 3, vec![
-            12., 12., 12., 
-            12., 12., 12.])); 
+    let x = param( "x", Scalar(14.));
+    //let x = param( "x", new_matrix(
+            //2, 3, vec![
+            //12., 12., 12., 
+            //12., 12., 12.])); 
     //println!("a * x: {}", &a * &x);
-    println!("x: {}", x);
+    //println!("x: {}", x);
     //let f = (&x + &b).abs() * (&x + &a);
-    let f = a + y;
+    let f = x .sigmoid();
+    println!("f: {}", &f);
 
     let mut args = HashMap::new();
     args.insert("y", Scalar(-3.));
-    let g = f.clone();
-    f.assign_outputs(&args);
-    println!("f.output: {}", f.get_output());
-    println!("g.output: {}", g.get_output());
+    //let g = f.clone();
+    //f.assign_outputs(&args);
+    //println!("f.output: {}", f.get_output());
+    //println!("g.output: {}", g.get_output());
 
-    args.insert("y", Scalar(10.));
-    f.assign_outputs(&args);
-    println!("f.output: {}", f.get_output());
-    println!("g.output: {}", g.get_output());
+    //args.insert("y", Scalar(10.));
+    //f.assign_outputs(&args);
+    //println!("f.output: {}", f.get_output());
+    //println!("g.output: {}", g.get_output());
     //println!("args: {:#?}", args);
 
-    //if let Some(c) = f.eval(&args) {
-        //println!("eval: {}", c);
-    //}
+    if let Some(c) = f.eval(&args) {
+        println!("eval: {}", c);
+    }
 
-    //println!("grad x: {}", f.grad("x"));
+    println!("grad x: {}", f.grad("x"));
 
-    //println!("x: {}", &x);
-    //f.minimize(&args, 0.0005, 20);
+    f.minimize(&args, 20., 100000);
     //println!("x: {}", &x);
 }

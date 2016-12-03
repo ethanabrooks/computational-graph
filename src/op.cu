@@ -60,7 +60,8 @@ void check_dims(const Matrix *m1, const Matrix *m2, const Matrix *result) {
 extern "C" {
   UN_MAP(neg, -x) // map_neg
   UN_MAP(abs, x < 0 ? -x : x) // map_aps
-  UN_MAP(sign, x < 0 ? -1 : 1) // map_sign
+  UN_MAP(signum, x < 0 ? -1 : 1) // map_signum
+  UN_MAP(sigmoid, 1.0f / (1.0f + expf(-x))) // map_sigmoid
 
   BIN_ELEMWISE(mult, *) // elemwise_mult
   BIN_ELEMWISE(add, +) // elemwise_add

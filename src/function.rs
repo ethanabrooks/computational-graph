@@ -1,6 +1,6 @@
 use std::fmt;
-use std::ops::{Neg, Add, Mul};
-use constant::{Constant, copy_and_fill, new_matrix, all_equal};
+use std::ops::{Neg, Add, Sub, Mul};
+use constant::{Constant, new_matrix};
 use std::collections::{HashMap, HashSet};
 use std::cell::{RefCell, Ref};
 use std::rc::Rc;
@@ -50,8 +50,10 @@ enum Expr {
     Param(Param),
     Neg(Function),
     Abs(Function),
-    Sign(Function),
+    Signum(Function),
+    Sigmoid(Function),
     Add(Function, Function),
+    Sub(Function, Function),
     Mul(Function, Function),
 }
 
@@ -94,8 +96,10 @@ impl fmt::Display for Expr {
                 _  => write!(f, "-({})", x),
             },
             Expr::Abs(ref x) => write!(f, "|{}|", x),
-            Expr::Sign(ref x) => write!(f, "sign({})", x),
+            Expr::Signum(ref x) => write!(f, "sign({})", x),
+            Expr::Sigmoid(ref x) => write!(f, "sigmoid({})", x),
             Expr::Add(ref a, ref b) => write_with_parens(a, "+", b, f),
+            Expr::Sub(ref a, ref b) => write_with_parens(a, "-", b, f),
             Expr::Mul(ref a, ref b) => write_with_parens(a, "×", b, f),
         }
     }
@@ -119,7 +123,7 @@ impl Function {
 
     fn all_equal(&self, val:f32) -> bool {
         match *self.body {
-            Expr::Constant(ref c) => all_equal(c, val),
+            Expr::Constant(ref c) => c.all_equal(val),
             _                     => false
         }
     }
@@ -128,8 +132,12 @@ impl Function {
         self.apply(&|f| Expr::Abs(f))
     }
 
-    fn signum(&self) -> Function {
-        self.apply(&|f| Expr::Sign(f))
+    pub fn signum(&self) -> Function {
+        self.apply(&|f| Expr::Signum(f))
+    }
+
+    pub fn sigmoid(&self) -> Function {
+        self.apply(&|f| Expr::Sigmoid(f))
     }
 }
 
@@ -172,6 +180,11 @@ impl Add for Function {
     fn add(self, other: Function) -> Function { &self + &other }
 }
 
+impl Sub for Function {
+    type Output = Function;
+    fn sub(self, other: Function) -> Function { &self - &other }
+}
+
 impl Mul for Function {
     type Output = Function;
     fn mul(self, other: Function) -> Function { &self * &other }
@@ -194,6 +207,13 @@ impl<'a> Add for &'a Function {
     type Output = Function;
     fn add(self, other: &Function) -> Function {
         bin_apply(&|f1, f2| Expr::Add(f1, f2), self, other, 0.) 
+    }
+}
+
+impl<'a> Sub for &'a Function {
+    type Output = Function;
+    fn sub(self, other: &Function) -> Function {
+        bin_apply(&|f1, f2| Expr::Sub(f1, f2), self, other, 0.) 
     }
 }
 
@@ -287,26 +307,6 @@ impl Function {
         }
     }
 
-    pub fn grad(&self, param: &str) -> Function {
-        if self.params.contains::<str>(&param) {
-            match *self.body { 
-                Expr::Neg(ref f) => -f.grad(param),
-                Expr::Abs(ref f) => 
-                    f.signum() * f.grad(param),
-                Expr::Sign(ref f) => panic!("signum is nondifferentiable"),
-                Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
-                Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
-                                             &f2.grad(param) * f1,
-                Expr::Param(ref p) => new_constant(
-                    copy_and_fill(&*get_shared(&p.value), 1.)
-                    ),
-                Expr::Constant(_)| Expr::Input(_) => panic!("should never reach here"),
-            }
-        } else {
-            scalar(0.)
-        }
-    }
-
     pub fn eval(&self, args: &HashMap<&str, Constant>) -> Option<Constant> {
         match *self.body { 
             Expr::Constant(ref x) => Some(x.clone()),
@@ -314,8 +314,10 @@ impl Function {
             Expr::Param(ref p) => Some(get_shared(&p.value).clone()),
             Expr::Neg(ref f) => f.eval(args).map(|x| -x),
             Expr::Abs(ref f) => f.eval(args).map(|x| x.abs()),
-            Expr::Sign(ref f) => f.eval(args).map(|x| x.signum()),
+            Expr::Signum(ref f) => f.eval(args).map(|x| x.signum()),
+            Expr::Sigmoid(ref f) => f.eval(args).map(|x| x.sigmoid()),
             Expr::Add(ref f1, ref f2) => apply_to_branches(&|x, y| x + y, args, f1, f2),
+            Expr::Sub(ref f1, ref f2) => apply_to_branches(&|x, y| x - y, args, f1, f2),
             Expr::Mul(ref f1, ref f2) => apply_to_branches(&|x, y| x * y, args, f1, f2),
         }
     }
@@ -334,13 +336,18 @@ impl Function {
                 f1.assign_outputs(args);
                 Some(f1.get_output().abs().clone())
             }
-            Expr::Sign(ref f1) => {
-                writeln!(&mut io::stderr(), "WARN: Sign is non-differentiable.
+            Expr::Signum(ref f1) => {
+                writeln!(&mut io::stderr(), "WARN: Signum is non-differentiable.
                 Running `backprop` on this function will cause an error");
                 f1.assign_outputs(args);
                 Some(f1.get_output().signum().clone())
             }
+            Expr::Sigmoid(ref f1) => {
+                f1.assign_outputs(args);
+                Some(f1.get_output().sigmoid().clone())
+            }
             Expr::Add(ref f1, ref f2) => assign_and_apply(&|x, y| x + y, args, f1, f2),
+            Expr::Sub(ref f1, ref f2) => assign_and_apply(&|x, y| x - y, args, f1, f2),
             Expr::Mul(ref f1, ref f2) => assign_and_apply(&|x, y| x * y, args, f1, f2),
         }
     }
@@ -349,7 +356,7 @@ impl Function {
     pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
         for _ in 0..iters {
             self.assign_outputs(args);
-            self.backprop(&self.get_output(), learn_rate);
+            self.backprop(&Constant::Scalar(1.), learn_rate);
             println!("{}", self.get_output());
         }
     }
@@ -357,6 +364,27 @@ impl Function {
     #[allow(dead_code)]
     pub fn maximize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
         self.abs().minimize(args, learn_rate, iters);
+    }
+
+    pub fn grad(&self, param: &str) -> Function {
+        if self.params.contains::<str>(&param) {
+            match *self.body { 
+                Expr::Neg(ref f) => -f.grad(param),
+                Expr::Abs(ref f) => f.signum() * f.grad(param),
+                Expr::Signum(ref f) => panic!("signum is nondifferentiable"),
+                Expr::Sigmoid(ref f) => f.grad(param) * (self.clone() * (&scalar(1.) - self)),
+                Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
+                Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
+                Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
+                                             &f2.grad(param) * f1,
+                Expr::Param(ref p) => new_constant(
+                    get_shared(&p.value).copy_and_fill(1.)
+                    ),
+                Expr::Constant(_)| Expr::Input(_) => panic!("should never reach here"),
+            }
+        } else {
+            scalar(0.)
+        }
     }
 
     fn backprop(&self, error: &Constant, learn_rate: f32) {
@@ -368,12 +396,22 @@ impl Function {
                 //println!("error: {}", error);
                 *value -= &Constant::Scalar(learn_rate) * error; 
             }
-            Expr::Neg(ref f1) => f1.backprop(&-error, learn_rate),
-            Expr::Abs(ref f1) => f1.backprop(&error.abs(), learn_rate),
-            Expr::Sign(ref f1) => panic!("sign is not differentiable"),
+            Expr::Neg(ref f) => f.backprop(&-error, learn_rate),
+
+            Expr::Abs(ref f) => f.backprop(&(&(f.get_output().signum()) * error), learn_rate),
+            Expr::Signum(ref f) => panic!("sign is not differentiable"),
+            Expr::Sigmoid(ref f) => {
+                let output = self.get_output();
+                let error = &((&Constant::Scalar(1.) - &output) * output) * error;
+                f.backprop(&error, learn_rate)
+            }
             Expr::Add(ref f1, ref f2) => {
                 f1.backprop(error, learn_rate);
                 f2.backprop(error, learn_rate);
+            }
+            Expr::Sub(ref f1, ref f2) => {
+                f1.backprop(error, learn_rate);
+                f2.backprop(&-error, learn_rate);
             }
             Expr::Mul(ref f1, ref f2) => {
                 f1.backprop(&(&f2.get_output() * error), learn_rate);
