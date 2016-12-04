@@ -61,27 +61,56 @@ extern "C" {
   UN_MAP(signum, x < 0 ? -1 : 1) // map_signum
   UN_MAP(sigmoid, 1.0f / (1.0f + expf(-x))) // map_sigmoid
 
-  BIN_ELEMWISE(mult, *) // elemwise_mult
+  BIN_ELEMWISE(mul, *) // elemwise_mult
   BIN_ELEMWISE(add, +) // elemwise_add
   BIN_ELEMWISE(sub, -) // elemwise_sub
 
-  BIN_BROADCAST(mult, *) // broadcast_mult
+  BIN_BROADCAST(mul, *) // broadcast_mult
   BIN_BROADCAST(add, +) // broadcast_add
   BIN_BROADCAST(sub, -) // broadcast_sub
 
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
+  BIN_BROADCAST_REV(mul, *) // broadcast_mul_rev
 
-  void gemm(const Matrix *m1, const Matrix *m2, Matrix *result) {
-    check(m1->width != m2->height, "m1->width must equal m2->height");
-    check(m1->height != result->height, "m1->height must equal result->height");
-    check(m2->width != result->width, "m2->width must equal result->width");
+  void gemm(const Matrix *m1, bool trans1, const Matrix *m2, bool trans2, 
+      Matrix *result) {
+
+    if (trans1) {
+      check(m1->width != result->height, "m1->width must equal result->height");
+      if (trans2) {
+        check(m1->height != m2->width, "m1->height must equal m2->width");
+        check(m2->height != result->width, "m2->height must equal result->width");
+      } else {
+        check(m1->height != m2->height, "m1->height must equal m2->height");
+        check(m2->width != result->width, "m2->width must equal result->width");
+      }
+    } else {
+      check(m1->height != result->height, "m1->height must equal result->height");
+      if (trans2) {
+        check(m1->width != m2->width, "m1->width must equal m2->width");
+        check(m2->height != result->width, "m2->height must equal result->width");
+      } else {
+        check(m1->width != m2->height, "m1->width must equal m2->height");
+        check(m2->width != result->width, "m2->width must equal result->width");
+      }
+    }
+
+    printf("%d, %d", trans1, trans2);
+    printf("\n");
+    print_matrix(m1);
+    printf("\n");
+    print_matrix(m2);
+
+    int inner_dim = trans1 ? m1->height : m1->width;
+    cublasOperation_t trans1_op = trans1 ? CUBLAS_OP_T : CUBLAS_OP_N;
+    cublasOperation_t trans2_op = trans2 ? CUBLAS_OP_T : CUBLAS_OP_N;
 
     float alpha = 1;
     float beta = 0;
-    cublasStatus_t stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-        m1->height,         // m
+    cublasStatus_t stat = cublasSgemm(handle, trans1_op, trans2_op,
+        result->height,         // m
         result->width,      // n
-        m1->width,          // k
+        inner_dim,          // k
         &alpha,             // alpha
         m1->dev_array,      // A
         m1->height,         // lda 
@@ -90,6 +119,24 @@ extern "C" {
         &beta,              // beta
         result->dev_array,  // C
         result->height);    // ldc
+    switch (stat) {
+      case CUBLAS_STATUS_NOT_INITIALIZED: 
+        fprintf(stderr,
+            "GEMM failed. Cublas not initialized.\n");
+        break;
+      case CUBLAS_STATUS_INVALID_VALUE:
+        fprintf(stderr,
+            "GEMM failed. Invalid value.\n");
+        break;
+      case CUBLAS_STATUS_ARCH_MISMATCH: 
+        fprintf(stderr,
+            "GEMM failed. The device does not support the operation.\n");
+        break;
+      case CUBLAS_STATUS_EXECUTION_FAILED: 
+        fprintf(stderr, 
+            "GEMM failed. The function failed to launch on the GPU.\n");
+        break;
+    }
     check(stat != CUBLAS_STATUS_SUCCESS, "gemm failed :(");
   }
 

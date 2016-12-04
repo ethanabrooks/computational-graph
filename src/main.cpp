@@ -11,9 +11,9 @@
 #include "op.h" 
 #include "util.h" 
 
-#define L 5
-#define M 2
-#define N 8
+#define L 2
+#define M 3
+#define N 2
 
 // globals
 float *input;
@@ -46,7 +46,7 @@ int main (void){
 
   init_cublas();
   alloc_matrix(&m1, L, M);
-  alloc_matrix(&m2, M, N);
+  alloc_matrix(&m2, N, M);
   alloc_matrix(&result, L, N);
 
   //init_matrix(&m1, input_vals, 2, 2);
@@ -54,10 +54,13 @@ int main (void){
 
   fill_matrix(&m1, 1);
   fill_matrix(&m2, 2);
+
   fill_matrix(&result, 0);
   print_matrix(&m1);
+  printf("\n");
   print_matrix(&m2);
-  gemm(&m1, &m2, &result);
+  printf("\n");
+  gemm(&m1, false, &m2, true, &result);
   print_matrix(&result);
   //fill_matrix(&m2, 3);
   //elemwise_add(&m1, &m2, &matrix);

@@ -10,14 +10,16 @@ extern {
     fn map_abs(m: *const Matrix, result: *mut Matrix);
     fn map_signum(m: *const Matrix, result: *mut Matrix);
     fn map_sigmoid(m: *const Matrix, result: *mut Matrix);
-    fn broadcast_mult(val: f32, m: *const Matrix, result: *mut Matrix);
+    fn broadcast_mul(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub_rev(m: *const Matrix, val: f32, result: *mut Matrix);
+    fn broadcast_mul_rev(m: *const Matrix, val: f32, result: *mut Matrix);
     fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn elemwise_sub(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
-    fn elemwise_mult(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
-    fn gemm(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn elemwise_mul(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn gemm(m1: *const Matrix, trans1: bool, m2: *const Matrix, trans2: bool,
+            result: *mut Matrix);
     fn download_matrix(src: *const Matrix, dst: *mut f32);
     fn reduce_equal(matrix: *const Matrix, x: f32) -> bool;
     fn reduce_sum(matrix: *const Matrix) -> f32;
@@ -267,8 +269,8 @@ impl<'a> Mul for &'a Constant {
     type Output = Constant;
     fn mul(self, other: &'a Constant) -> Constant { 
         bin_apply_comm(&|x1, x2| x1 * x2,
-                       broadcast_mult,
-                       elemwise_mult,
+                       broadcast_mul,
+                       elemwise_mul,
                        &self, &other)
     }
 }
@@ -293,14 +295,38 @@ impl SubAssign for Constant {
 //// FUNCTIONS
 
 // allocates on device
-pub fn matmul(c1: &Constant, c2: &Constant) -> Constant {
+pub fn matmul(c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) -> Constant {
     match (c1, c2) {
-        (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-            let mut result = empty_matrix(m1.height, m2.width);
-            unsafe { gemm(m1, m2, &mut result) };
+        (&Constant::Scalar(x1), &Constant::Scalar(x2)) =>
+            panic!("matmul should not be used for scalars"),
+        (&Constant::Scalar(x), &Constant::Matrix(ref m)) => {
+            let mut result = empty_like(m);
+            unsafe { broadcast_mul(x, m, &mut result) };
             Constant::Matrix(result)
         }
-        _ => panic!("MatMul can only take matrix arguments."),
+        (&Constant::Matrix(ref m), &Constant::Scalar(x)) => {
+            let mut result = empty_like(m);
+            unsafe { broadcast_mul_rev(m, x, &mut result) };
+            Constant::Matrix(result)
+        }
+        (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
+            let mut result = 
+                if trans1 {
+                    if trans2 {
+                        empty_matrix(m1.width, m2.height)
+                    } else {
+                        empty_matrix(m1.width, m2.width)
+                    }
+                } else {
+                    if trans2 {
+                        empty_matrix(m1.height, m2.height)
+                    } else {
+                        empty_matrix(m1.height, m2.width)
+                    }
+                };
+            unsafe { gemm(m1, trans1, m2, trans2, &mut result) };
+            Constant::Matrix(result)
+        }
     }
 }
 
