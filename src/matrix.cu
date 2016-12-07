@@ -37,7 +37,6 @@ extern "C" {
   void alloc_matrix(Matrix *matrix, int height, int width) { 
     matrix->width = width;
     matrix->height = height;
-    matrix->transpose = false;
 
     // allocate space for matrix on GPU 
     cudaError_t cudaStat = cudaMalloc((void**)&matrix->dev_array, 
@@ -53,7 +52,6 @@ extern "C" {
   void copy_matrix(const Matrix *src, Matrix *dst) {
     dst->height = src->height;
     dst->width = src->width;
-    dst->transpose = src->transpose;
 
     cudaError_t stat = device2device<float>(size(src), 
         src->dev_array, dst->dev_array);
@@ -69,8 +67,8 @@ extern "C" {
     DEFAULT_LAUNCH(_memset, matrix, value)
   }
 
-  void print_matrix(const Matrix *matrix) {
 
+  void print_matrix(Matrix *matrix) {
   // allocate space for matrix on CPU 
   float *array = safe_malloc<float>(size(matrix));
 
@@ -80,13 +78,7 @@ extern "C" {
   int i, j;
   rng(i, 0, matrix->height) {
     rng(j, 0, matrix->width) {
-      int index;
-      if (matrix->transpose) { 
-        index = MAT_IDX_T(i, j, matrix->width);
-      } else {
-        index = MAT_IDX(i, j, matrix->width);
-      }
-      printf("%7.0f", array[index]);
+      printf("%7.0f", array[MAT_IDX(i, j, matrix->width)]);
     }
     printf("\n");
   }

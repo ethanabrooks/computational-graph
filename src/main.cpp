@@ -58,7 +58,6 @@ int main (void){
 
   //fill_matrix(&result, 0);
   print_matrix(&m2);
-  m2.transpose = true;
   printf("\n");
   print_matrix(&m2);
   //print_matrix(&m2);

@@ -41,18 +41,12 @@
 
 #define BIN_ELEMWISE(name, op) \
   __global__ \
-  void _ ## name (int len, float *result, \
-      const float *a1, bool t1, \
-      const float *a2, bool t2) { \
-    float IDx1 = t1 ? IDx_T : IDx; \
-    float IDx2 = t2 ? IDx_T : IDx; \
-    SET(result, a1[IDx1] op a2[IDx2]) \
+  void _ ## name (int len, float *result, const float *a1, const float *a2) { \
+    SET(result, a1[IDx] op a2[IDx]) \
   } \
   void elemwise_ ## name (const Matrix *m1, const Matrix *m2, Matrix *result) { \
     check_dims(m1, m2, result); \
-    DEFAULT_LAUNCH(_ ## name, result, \
-        m1->dev_array, m1->transpose, \
-        m2->dev_array, m2->transpose); \
+    DEFAULT_LAUNCH(_ ## name, result, m1->dev_array, m2->dev_array); \
   }
 
 void check_dims(const Matrix *m1, const Matrix *m2, const Matrix *result) { 

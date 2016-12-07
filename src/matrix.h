@@ -7,7 +7,6 @@ typedef struct matrix_struct {
    int height;
    int width;
    float *dev_array;
-   bool transpose;
 } Matrix;
 
 extern "C" {
