@@ -49,7 +49,7 @@
     DEFAULT_LAUNCH(_ ## name, result, m1->dev_array, m2->dev_array); \
   }
 #define CHECK_EQUAL(side1, side2) \
-  check(side1 != side2, "# side1 must equal # side2")
+  check(side1 != side2,  "# side1 must equal # side2")
 
 void check_all_eq(const Matrix *m1, const Matrix *m2, const Matrix *result) {
   CHECK_EQUAL(m1->height, m2->height);
@@ -153,13 +153,13 @@ extern "C" {
     unsigned int t = 1;
 
     cudaError_t cudaStat = host2device(1, &t, dev_bool);
-    CHECK_EQUAL(cudaStat, cudaSuccess);
+    check(cudaStat != cudaSuccess, "host2device failed in reduce_eq");
 
     _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>>
       (size(m), m->dev_array, dev_bool, x);
 
     cudaStat = device2host(1, dev_bool, &t);
-    CHECK_EQUAL(cudaStat, cudaSuccess);
+    check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
 
     cudaFree(dev_bool);
     return t == 1;
@@ -170,13 +170,13 @@ extern "C" {
     float sum = 0;
 
     cudaError_t cudaStat = host2device(1, &sum, dev_sum);
-    CHECK_EQUAL(cudaStat, cudaSuccess);
+    check(cudaStat != cudaSuccess, "host2device failed in reduce_sum");
 
     _reduce_sum<<<blockcount(size(m)), BLOCKSIZE>>>
       (size(m), m->dev_array, dev_sum);
 
     cudaStat = device2host(1, dev_sum, &sum);
-    CHECK_EQUAL(cudaStat, cudaSuccess);
+    check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
 
     cudaFree(dev_sum);
     return sum;
