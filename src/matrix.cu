@@ -6,6 +6,9 @@
 #include "matrix.h" 
 #include "util.h" 
 
+#define MAT_IDX(i, j, width) ((i) + (width) * (j))
+#define MAT_IDX_T(i, j, width) ((j) + (width) * (i))
+
 cublasHandle_t handle;
 
 extern "C" {
@@ -34,6 +37,7 @@ extern "C" {
   void alloc_matrix(Matrix *matrix, int height, int width) { 
     matrix->width = width;
     matrix->height = height;
+    matrix->transpose = false;
 
     // allocate space for matrix on GPU 
     cudaError_t cudaStat = cudaMalloc((void**)&matrix->dev_array, 
@@ -49,6 +53,8 @@ extern "C" {
   void copy_matrix(const Matrix *src, Matrix *dst) {
     dst->height = src->height;
     dst->width = src->width;
+    dst->transpose = src->transpose;
+
     cudaError_t stat = device2device<float>(size(src), 
         src->dev_array, dst->dev_array);
     check(stat != cudaSuccess, "copy_matrix failed");
@@ -65,19 +71,25 @@ extern "C" {
 
   void print_matrix(const Matrix *matrix) {
 
-    // allocate space for matrix on CPU 
-    float *array = safe_malloc<float>(size(matrix));
+  // allocate space for matrix on CPU 
+  float *array = safe_malloc<float>(size(matrix));
 
-    // copy matrix to CPU
-    download_matrix(matrix, array);
+  // copy matrix to CPU
+  download_matrix(matrix, array);
 
-    int i, j;
-    rng(j, 0, matrix->height) {
-      rng(i, 0, matrix->width) {
-        printf("%7.0f", array[idx2c(i, j, matrix->width)]);
+  int i, j;
+  rng(i, 0, matrix->height) {
+    rng(j, 0, matrix->width) {
+      int index;
+      if (matrix->transpose) { 
+        index = MAT_IDX_T(i, j, matrix->width);
+      } else {
+        index = MAT_IDX(i, j, matrix->width);
       }
-      printf("\n");
+      printf("%7.0f", array[index]);
     }
+    printf("\n");
+  }
 
     free(array);
   }

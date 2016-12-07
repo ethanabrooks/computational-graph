@@ -1,10 +1,13 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#define SET(result, value) if (IDx < len) { result[IDx] = value; }
+
 typedef struct matrix_struct {
    int height;
    int width;
    float *dev_array;
+   bool transpose;
 } Matrix;
 
 extern "C" {

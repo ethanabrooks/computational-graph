@@ -1,11 +1,13 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <math.h> 
+#include <algorithm> 
 #include <cuda_runtime.h> 
 #include "cublas_v2.h" 
 #include "matrix.h" 
 #include "util.h" 
 
+#define IDx_T ((IDx) % (width)) * (width) + ((IDx) / (width))
 #define UN_MAP(name, f_body) \
   __device__ \
   float f_ ## name(float x) { \
@@ -31,7 +33,6 @@
 #define BIN_BROADCAST_REV(name, op) \
   __global__ \
   void _ ## name ## _scalar_rev(int len, float *result, const float *a, float val) { \
-    printf("TEST TEST TEST\n"); \
     SET(result, a[IDx] op val) \
   } \
   void broadcast_ ## name ## _rev(const Matrix *m, float val, Matrix *result) { \
@@ -40,12 +41,18 @@
 
 #define BIN_ELEMWISE(name, op) \
   __global__ \
-  void _ ## name (int len, float *result, const float *a1, const float *a2) { \
-    SET(result, a1[IDx] op a2[IDx]) \
+  void _ ## name (int len, float *result, \
+      const float *a1, bool t1, \
+      const float *a2, bool t2) { \
+    float IDx1 = t1 ? IDx_T : IDx; \
+    float IDx2 = t2 ? IDx_T : IDx; \
+    SET(result, a1[IDx1] op a2[IDx2]) \
   } \
   void elemwise_ ## name (const Matrix *m1, const Matrix *m2, Matrix *result) { \
     check_dims(m1, m2, result); \
-    DEFAULT_LAUNCH(_ ## name, result, m1->dev_array, m2->dev_array); \
+    DEFAULT_LAUNCH(_ ## name, result, \
+        m1->dev_array, m1->transpose, \
+        m2->dev_array, m2->transpose); \
   }
 
 void check_dims(const Matrix *m1, const Matrix *m2, const Matrix *result) { 
@@ -72,43 +79,20 @@ extern "C" {
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
   BIN_BROADCAST_REV(mul, *) // broadcast_mul_rev
 
-  void gemm(const Matrix *m1, bool trans1, const Matrix *m2, bool trans2, 
-      Matrix *result) {
+  void gemm(const Matrix *m1, const Matrix *m2, Matrix *result) {
 
-    if (trans1) {
-      check(m1->width != result->height, "m1->width must equal result->height");
-      if (trans2) {
-        check(m1->height != m2->width, "m1->height must equal m2->width");
-        check(m2->height != result->width, "m2->height must equal result->width");
-      } else {
-        check(m1->height != m2->height, "m1->height must equal m2->height");
-        check(m2->width != result->width, "m2->width must equal result->width");
-      }
-    } else {
-      check(m1->height != result->height, "m1->height must equal result->height");
-      if (trans2) {
-        check(m1->width != m2->width, "m1->width must equal m2->width");
-        check(m2->height != result->width, "m2->height must equal result->width");
-      } else {
-        check(m1->width != m2->height, "m1->width must equal m2->height");
-        check(m2->width != result->width, "m2->width must equal result->width");
-      }
-    }
+    check(m1->height != result->height, "m1->height must equal result->height");
+    check(m1->width != m2->height, "m1->width must equal m2->height");
+    check(m2->width != result->width, "m2->width must equal result->width");
 
-    printf("%d, %d", trans1, trans2);
-    printf("\n");
-    print_matrix(m1);
-    printf("\n");
-    print_matrix(m2);
-
-    int inner_dim = trans1 ? m1->height : m1->width;
-    cublasOperation_t trans1_op = trans1 ? CUBLAS_OP_T : CUBLAS_OP_N;
-    cublasOperation_t trans2_op = trans2 ? CUBLAS_OP_T : CUBLAS_OP_N;
+    int inner_dim = m1->transpose ? m1->height : m1->width;
+    cublasOperation_t trans1 = m1->transpose ? CUBLAS_OP_T : CUBLAS_OP_N;
+    cublasOperation_t trans2 = m2->transpose ? CUBLAS_OP_T : CUBLAS_OP_N;
 
     float alpha = 1;
     float beta = 0;
-    cublasStatus_t stat = cublasSgemm(handle, trans1_op, trans2_op,
-        result->height,         // m
+    cublasStatus_t stat = cublasSgemm(handle, trans1, trans2,
+        result->height,     // m
         result->width,      // n
         inner_dim,          // k
         &alpha,             // alpha
@@ -138,6 +122,11 @@ extern "C" {
         break;
     }
     check(stat != CUBLAS_STATUS_SUCCESS, "gemm failed :(");
+  }
+
+  void transpose(Matrix *m) {
+    std::swap(m->height, m->width);
+    m->transpose = !m->transpose;
   }
 
   __global__

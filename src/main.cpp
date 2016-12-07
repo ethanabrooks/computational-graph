@@ -33,6 +33,7 @@ int main (void){
   float weights_vals [] = {
     1, 2, 
     3, 4,
+    5, 6
   };
 
   int i, j;
@@ -49,19 +50,21 @@ int main (void){
   alloc_matrix(&m2, N, M);
   alloc_matrix(&result, L, N);
 
-  //init_matrix(&m1, input_vals, 2, 2);
-  //init_matrix(&m2, input_vals, 2, 2);
+  init_matrix(&m1, input_vals, 2, 2);
+  init_matrix(&m2, weights_vals, 2, 3);
 
-  fill_matrix(&m1, 1);
-  fill_matrix(&m2, 2);
+  //fill_matrix(&m1, 1);
+  //fill_matrix(&m2, 2);
 
-  fill_matrix(&result, 0);
-  print_matrix(&m1);
+  //fill_matrix(&result, 0);
+  print_matrix(&m2);
+  m2.transpose = true;
   printf("\n");
   print_matrix(&m2);
-  printf("\n");
-  gemm(&m1, false, &m2, true, &result);
-  print_matrix(&result);
+  //print_matrix(&m2);
+  //printf("\n");
+  //gemm(&m1, false, &m2, true, &result);
+  //print_matrix(&result);
   //fill_matrix(&m2, 3);
   //elemwise_add(&m1, &m2, &matrix);
   //printf("\n");
