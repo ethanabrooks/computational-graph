@@ -73,7 +73,7 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
             for i in 0..src.height {
 
                 for j in 0..src.width {
-                    result = write!(f, "{:^10}", unsafe {
+                    result = write!(f, "{:^10.3}", unsafe {
                         *dst.as_ptr().offset((i * src.width + j) as isize) 
                     });
                     if result.is_err() { return result }
@@ -315,10 +315,10 @@ impl SubAssign for Constant {
 //// FUNCTIONS
 
 // allocates on device
-pub fn matmul(c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) -> Constant {
+pub fn dot(c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) -> Constant {
     match (c1, c2) {
         (&Constant::Scalar(x1), &Constant::Scalar(x2)) =>
-            panic!("matmul should not be used for scalars"),
+            panic!("dot should not be used for scalars"),
         (&Constant::Scalar(x), &Constant::Matrix(ref m)) => {
             let mut result = empty_like(m);
             unsafe { broadcast_mul(x, m, &mut result) };

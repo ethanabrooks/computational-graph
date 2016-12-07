@@ -234,7 +234,7 @@ impl<'a> Mul for &'a Function {
 }
 
 // TODO: abstact some of this with bin_apply
-pub fn matmul(f1: &Function, f2: &Function) -> Function {
+pub fn dot(f1: &Function, f2: &Function) -> Function {
     let params1 = f1.params.clone();
     let params2 = f2.params.clone();
     let union = params1.union(&params2).cloned().collect();
@@ -299,15 +299,15 @@ pub fn matrix(height: i32, width: i32, values: Vec<f32>) -> Function {
 fn get_shared<T>(s: &Shared<T>) -> Ref<T> { s.borrow() }
 
 fn assign_and_apply(f: &Fn(Constant, Constant) -> Constant, 
-                    args: &HashMap<&str, Constant>,
-                    f1: &Function, f2: &Function) -> Option<Constant> {
+                    args: HashMap<&str, Constant>,
+                    f1: &Function, f2: &Function) -> Constant {
     f1.assign_outputs(args);
     f2.assign_outputs(args);
-    Some(f(f1.eval(args), f2.eval(args)))
+    f(f1.eval(&args), f2.eval(&args))
 }
 
 impl Function {
-    pub fn get_output(&self) -> Constant {
+    pub fn get_output(&self) -> &Constant {
         match *get_shared(&self.output) {
             Some(ref x) => x.clone(),
             None        => panic!("Need to run `assign_outputs` before `grad`"),
@@ -332,58 +332,9 @@ impl Function {
             Expr::Add(ref f1, ref f2)    => f1.eval(args) + f2.eval(args),
             Expr::Sub(ref f1, ref f2)    => f1.eval(args) - f2.eval(args),
             Expr::Mul(ref f1, ref f2)    => f1.eval(args) * f2.eval(args),
-            Expr::MatMul(ref f1, ref f2) => constant::matmul(&f1.eval(args), false,
+            Expr::MatMul(ref f1, ref f2) => constant::dot(&f1.eval(args), false,
                                                              &f2.eval(args), false)
         }
-    }
-
-
-    pub fn assign_outputs(&self, args: &HashMap<&str, Constant>) {
-        *self.output.borrow_mut() = match *self.body { 
-            Expr::Constant(ref x) => Some(x.clone()),
-            Expr::Input(ref arg) => args.get::<str>(&arg.name).cloned(),
-            Expr::Param(ref p) => Some(get_shared(&p.value).clone()),
-            Expr::Neg(ref f1) => {
-                f1.assign_outputs(args);
-                Some(-f1.get_output().clone())
-            }
-            Expr::Abs(ref f1) => {
-                f1.assign_outputs(args);
-                Some(f1.get_output().abs().clone())
-            }
-            Expr::Signum(ref f1) => {
-                writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
-                Running `backprop` on this function will cause an error");
-                f1.assign_outputs(args);
-                Some(f1.get_output().signum().clone())
-            }
-            Expr::Sigmoid(ref f1) => {
-                f1.assign_outputs(args);
-                Some(f1.get_output().sigmoid().clone())
-            }
-            Expr::Add(ref f1, ref f2) => assign_and_apply(&|x, y| x + y, args, f1, f2),
-            Expr::Sub(ref f1, ref f2) => assign_and_apply(&|x, y| x - y, args, f1, f2),
-            Expr::Mul(ref f1, ref f2) => assign_and_apply(&|x, y| x * y, args, f1, f2),
-            Expr::MatMul(ref f1, ref f2) => {
-                assign_and_apply(&|x, y| constant::matmul(&x, false, &y, false), 
-                                 args, f1, f2)
-            }
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
-        for _ in 0..iters {
-            self.assign_outputs(args);
-            self.backprop(&self.get_output()
-                               .copy_and_fill(1.), learn_rate);
-            //println!("{}", self.get_output());
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn maximize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
-        self.abs().minimize(args, learn_rate, iters);
     }
 
     pub fn grad(&self, param: &str) -> Function {
@@ -408,12 +359,63 @@ impl Function {
         }
     }
 
+    #[allow(dead_code)]
+    pub fn minimize(&self, args: HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
+        for _ in 0..iters {
+            self.assign_outputs(args);
+            self.backprop(&self.get_output()
+                               .copy_and_fill(1.), learn_rate);
+            println!("{}", self.get_output());
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn maximize(&self, args: HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
+        self.abs().minimize(args, learn_rate, iters);
+    }
+
+    pub fn assign_outputs(&self, args: HashMap<&str, Constant>) {
+        //let mut output = *get_shared(&self.output)
+        match *self.body { 
+            Expr::Constant(_) => assert!(self.get_output().is_some()),
+            Expr::Input(ref arg) => output = args.get::<str>(&arg.name),
+            Expr::Param(ref p) => output = get_shared(&p.value),
+            Expr::Neg(ref f1) => {
+                f1.assign_outputs(args);
+                output = -f1.get_output().clone()
+            }
+            Expr::Abs(ref f1) => {
+                f1.assign_outputs(args);
+                output = f1.get_output().abs().clone()
+            }
+            Expr::Signum(ref f1) => {
+                writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
+                Running `backprop` on this function will cause an error");
+                f1.assign_outputs(args);
+                output = f1.get_output().signum().clone()
+            }
+            Expr::Sigmoid(ref f1) => {
+                f1.assign_outputs(args);
+                output = f1.get_output().sigmoid().clone()
+            }
+            Expr::Add(ref f1, ref f2) => 
+                output = assign_and_apply(&|x, y| x + y, args, f1, f2),
+            Expr::Sub(ref f1, ref f2) => 
+                output = assign_and_apply(&|x, y| x - y, args, f1, f2),
+            Expr::Mul(ref f1, ref f2) =>
+                output = assign_and_apply(&|x, y| x * y, args, f1, f2),
+            Expr::MatMul(ref f1, ref f2) => {
+                output = assign_and_apply(&|x, y| constant::dot(&x, false, &y, false), 
+                                 args, f1, f2)
+            }
+        }
+    }
+
+
     fn backprop(&self, error: &Constant, learn_rate: f32) {
         if self.params.is_empty() { return; }
         match *self.body.clone() {
             Expr::Param(ref p) => { 
-                println!("value: {}", *p.value.borrow_mut());
-                println!("error: {}", error);
                 *p.value.borrow_mut() -= &Constant::Scalar(learn_rate) * error; 
             }
             Expr::Neg(ref f) => f.backprop(&-error, learn_rate),
@@ -441,10 +443,8 @@ impl Function {
                 // TODO! this is the problem for backprop
                 let output1 = f1.get_output();
                 let output2 = f2.get_output();
-                println!("error: {}", error);
-                println!("output2: {}", output2);
-                let error1 = constant::matmul(error, false, &output2, true);
-                let error2 = constant::matmul(&output1, true, error, false);
+                let error1 = constant::dot(error, false, &output2, true);
+                let error2 = constant::dot(&output1, true, error, false);
                 f1.backprop(&error1, learn_rate);
                 f2.backprop(&error2, learn_rate);
             }

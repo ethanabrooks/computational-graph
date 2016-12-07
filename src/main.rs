@@ -4,7 +4,7 @@ mod function;
 mod constant; 
 
 #[allow(unused_imports)]
-use function::{input, scalar, param, matrix, matmul};
+use function::{input, scalar, param, matrix, dot};
 use constant::Constant::Scalar;
 use constant::{new_matrix};
 use std::collections::HashMap;
@@ -20,12 +20,11 @@ fn main() {
     let x = param("x", Scalar(14.));
     let z = param("z", Scalar(10.));
     let x = param("x", new_matrix(2, 3, vec![
-                   1., 1., 1., 
-                   1., 1., 1.])); 
-    //let b = new_matrix(3, 2, vec![
-                       //2., 2., 
-                       //2., 2.,
-                       //2., 2.]); 
+                   1., 2., 3., 
+                   1., 2., 1.])); 
+    let b = matrix(2, 2, vec![
+                   1., 0., 
+                   0., 1.]); 
 
     //let x = param( "x", new_matrix( 2, 3, vec![
                                     //1., 1., 1., 
@@ -38,7 +37,7 @@ fn main() {
                    //2., 2.]); 
     let y = matrix(3, 2, vec![
                    2., 2., 
-                   2., 2.,
+                   2., -2.,
                    2., 2.]); 
 
     //unsafe { print_matrix(y) };
@@ -47,7 +46,7 @@ fn main() {
     //println!("x: {}", x);
     //let f = (&x + &b).abs() * (&z + &a);
 
-    let f = matmul(&x, &y);
+    let f = (dot(&x, &y) + b).abs();
     //let f = x .sigmoid();
     println!("f: {}", &f);
 
@@ -70,8 +69,8 @@ fn main() {
 
     //println!("grad x: {}", f.grad("x"));
 
-    f.minimize(&args, 0.1, 1000);
+    f.minimize(&args, 0.001, 1000);
 
-    //println!("f: {}", &f);
-    println!("output: {}", f.eval(&args));
+    println!("f: {}", &f);
+    //println!("output: {}", f.eval(&args));
 }

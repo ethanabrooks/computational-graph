@@ -49,7 +49,7 @@
     DEFAULT_LAUNCH(_ ## name, result, m1->dev_array, m2->dev_array); \
   }
 #define CHECK_EQUAL(side1, side2) \
-  check(side1 != side2,  "# side1 must equal # side2")
+  check(side1 != side2,  #side1 "must equaal" #side2)
 
 void check_all_eq(const Matrix *m1, const Matrix *m2, const Matrix *result) {
   CHECK_EQUAL(m1->height, m2->height);
