@@ -73,19 +73,21 @@ extern "C" {
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
   BIN_BROADCAST_REV(mul, *) // broadcast_mul_rev
 
-  void gemm(const Matrix *m1, const Matrix *m2, Matrix *result) {
+  void gemm(const Matrix *m1, bool trans1, 
+            const Matrix *m2, bool trans2,
+            Matrix *result) {
 
     check(m1->height != result->height, "m1->height must equal result->height");
     check(m1->width != m2->height, "m1->width must equal m2->height");
     check(m2->width != result->width, "m2->width must equal result->width");
 
-    int inner_dim = m1->transpose ? m1->height : m1->width;
-    cublasOperation_t trans1 = m1->transpose ? CUBLAS_OP_T : CUBLAS_OP_N;
-    cublasOperation_t trans2 = m2->transpose ? CUBLAS_OP_T : CUBLAS_OP_N;
+    int inner_dim = trans1 ? m1->height : m1->width;
+    cublasOperation_t transa = trans1 ? CUBLAS_OP_T : CUBLAS_OP_N;
+    cublasOperation_t transb = trans2 ? CUBLAS_OP_T : CUBLAS_OP_N;
 
     float alpha = 1;
     float beta = 0;
-    cublasStatus_t stat = cublasSgemm(handle, trans1, trans2,
+    cublasStatus_t stat = cublasSgemm(handle, transa, transb,
         result->height,     // m
         result->width,      // n
         inner_dim,          // k
@@ -116,11 +118,6 @@ extern "C" {
         break;
     }
     check(stat != CUBLAS_STATUS_SUCCESS, "gemm failed :(");
-  }
-
-  void transpose(Matrix *m) {
-    std::swap(m->height, m->width);
-    m->transpose = !m->transpose;
   }
 
   __global__

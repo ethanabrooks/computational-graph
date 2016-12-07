@@ -6,8 +6,7 @@
 #include "matrix.h" 
 #include "util.h" 
 
-#define MAT_IDX(i, j, width) ((i) + (width) * (j))
-#define MAT_IDX_T(i, j, width) ((j) + (width) * (i))
+#define MAT_IDX(i, j, width) ((i) * (width) + (j))
 
 cublasHandle_t handle;
 
@@ -68,7 +67,7 @@ extern "C" {
   }
 
 
-  void print_matrix(Matrix *matrix) {
+  void print_matrix(const Matrix *matrix) {
   // allocate space for matrix on CPU 
   float *array = safe_malloc<float>(size(matrix));
 
