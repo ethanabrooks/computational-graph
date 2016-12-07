@@ -106,8 +106,8 @@ impl fmt::Display for Constant {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt_(self, f) }
 }
 
-// allocates on device
 impl Constant {
+    // allocates on device
     fn apply(&self, scalar_fun: &Fn(f32) -> f32, 
              matrix_fun: unsafe extern "C" fn(*const Matrix, *mut Matrix)
              ) -> Constant {
@@ -181,6 +181,7 @@ fn bin_apply_comm(scalar_fun: &Fn(f32, f32) -> f32,
 }
 
 impl Constant {
+
     pub fn abs(&self) -> Constant {
         self.apply(&|x| x.abs(), map_abs)
     }
@@ -205,6 +206,25 @@ impl Constant {
         match *self {
             Constant::Scalar(x) => x == val,
             Constant::Matrix(ref m) => unsafe { reduce_equal(m, val) },
+        }
+    }
+
+
+    pub fn assign_dot(&mut self, c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) {
+        match (self, c1, c2) {
+            (&mut Constant::Matrix(ref mut m), 
+             &Constant::Scalar(x), &Constant::Matrix(ref m2)) => {
+                unsafe { broadcast_mul(x, m2, m) };
+            }
+            (&mut Constant::Matrix(ref mut m),
+            &Constant::Matrix(ref m1), &Constant::Scalar(x)) => {
+                unsafe { broadcast_mul_rev(m1, x, m) };
+            }
+            (&mut Constant::Matrix(ref mut m),
+            &Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
+                unsafe { gemm(m1, trans1, m2, trans2, m) };
+            }
+            _ => panic!("Bad argument types for assign_dot")
         }
     }
 }

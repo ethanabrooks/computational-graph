@@ -1,11 +1,11 @@
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <math.h> 
-#include <algorithm> 
-#include <cuda_runtime.h> 
-#include "cublas_v2.h" 
-#include "matrix.h" 
-#include "util.h" 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <algorithm>
+#include <cuda_runtime.h>
+#include "cublas_v2.h"
+#include "matrix.h"
+#include "util.h"
 
 #define IDx_T ((IDx) % (width)) * (width) + ((IDx) / (width))
 #define UN_MAP(name, f_body) \
@@ -45,15 +45,17 @@
     SET(result, a1[IDx] op a2[IDx]) \
   } \
   void elemwise_ ## name (const Matrix *m1, const Matrix *m2, Matrix *result) { \
-    check_dims(m1, m2, result); \
+    check_all_eq(m1, m2, result); \
     DEFAULT_LAUNCH(_ ## name, result, m1->dev_array, m2->dev_array); \
   }
+#define CHECK_EQUAL(side1, side2) \
+  check(side1 != side2, "# side1 must equal # side2")
 
-void check_dims(const Matrix *m1, const Matrix *m2, const Matrix *result) { 
-  check(m1->height != m2->height, "m1->height must equal m2->height");
-  check(m1->width != m2->width, "m1->width must equal m2->width");
-  check(m1->height != result->height, "m1->height must equal result->height");
-  check(m1->width != result->width, "m1->width must equal result->width");
+void check_all_eq(const Matrix *m1, const Matrix *m2, const Matrix *result) {
+  CHECK_EQUAL(m1->height, m2->height);
+  CHECK_EQUAL(m1->width, m2->width);
+  CHECK_EQUAL(m1->height, result->height);
+  CHECK_EQUAL(m1->width, result->width);
 }
 
 extern "C" {
@@ -73,34 +75,48 @@ extern "C" {
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
   BIN_BROADCAST_REV(mul, *) // broadcast_mul_rev
 
-  void gemm(const Matrix *m1, bool trans1, 
+  void gemm(const Matrix *m1, bool trans1,
             const Matrix *m2, bool trans2,
             Matrix *result) {
 
-    check(m1->height != result->height, "m1->height must equal result->height");
-    check(m1->width != m2->height, "m1->width must equal m2->height");
-    check(m2->width != result->width, "m2->width must equal result->width");
-
-    int inner_dim = trans1 ? m1->height : m1->width;
-    cublasOperation_t transa = trans1 ? CUBLAS_OP_T : CUBLAS_OP_N;
-    cublasOperation_t transb = trans2 ? CUBLAS_OP_T : CUBLAS_OP_N;
+    if (trans1) {
+      CHECK_EQUAL(m1->width, result->height);
+      if (trans2) {
+        CHECK_EQUAL(m1->height, m2->width);
+        CHECK_EQUAL(m2->height, result->width);
+      } else {
+        CHECK_EQUAL(m1->height, m2->height);
+        CHECK_EQUAL(m2->width, result->width);
+      }
+    } else {
+      CHECK_EQUAL(m1->height, result->height);
+      if (trans2) {
+        CHECK_EQUAL(m1->width, m2->width);
+        CHECK_EQUAL(m2->height, result->width);
+      } else {
+        CHECK_EQUAL(m1->width, m2->height);
+        CHECK_EQUAL(m2->width, result->width);
+      }
+    }
 
     float alpha = 1;
     float beta = 0;
-    cublasStatus_t stat = cublasSgemm(handle, transa, transb,
+    cublasStatus_t stat = cublasSgemm(handle,
+        trans1 ? CUBLAS_OP_T : CUBLAS_OP_N,
+        trans2 ? CUBLAS_OP_T : CUBLAS_OP_N,
         result->height,     // m
         result->width,      // n
-        inner_dim,          // k
+        trans1 ? m1->height : m1->width,
         &alpha,             // alpha
         m1->dev_array,      // A
-        m1->height,         // lda 
+        m1->height,         // lda
         m2->dev_array,      // B
         m2->height,         // ldb
         &beta,              // beta
         result->dev_array,  // C
         result->height);    // ldc
     switch (stat) {
-      case CUBLAS_STATUS_NOT_INITIALIZED: 
+      case CUBLAS_STATUS_NOT_INITIALIZED:
         fprintf(stderr,
             "GEMM failed. Cublas not initialized.\n");
         break;
@@ -108,12 +124,12 @@ extern "C" {
         fprintf(stderr,
             "GEMM failed. Invalid value.\n");
         break;
-      case CUBLAS_STATUS_ARCH_MISMATCH: 
+      case CUBLAS_STATUS_ARCH_MISMATCH:
         fprintf(stderr,
             "GEMM failed. The device does not support the operation.\n");
         break;
-      case CUBLAS_STATUS_EXECUTION_FAILED: 
-        fprintf(stderr, 
+      case CUBLAS_STATUS_EXECUTION_FAILED:
+        fprintf(stderr,
             "GEMM failed. The function failed to launch on the GPU.\n");
         break;
     }
@@ -123,13 +139,13 @@ extern "C" {
   __global__
   void _reduce_equal(int len, const float *a, unsigned int *boolean, float x) {
     if (IDx >= len) return;
-    atomicAnd(boolean, a[IDx] == x); 
+    atomicAnd(boolean, a[IDx] == x);
   }
 
   __global__
   void _reduce_sum(int len, const float *a, float *sum) {
     if (IDx >= len) return;
-    atomicAdd(sum, a[IDx]); 
+    atomicAdd(sum, a[IDx]);
   }
 
   bool reduce_equal(const Matrix *m, float x) {
@@ -137,13 +153,13 @@ extern "C" {
     unsigned int t = 1;
 
     cudaError_t cudaStat = host2device(1, &t, dev_bool);
-    check(cudaStat != cudaSuccess, "host2device failed in reduce_eq");
+    CHECK_EQUAL(cudaStat, cudaSuccess);
 
-    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> 
+    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>>
       (size(m), m->dev_array, dev_bool, x);
 
     cudaStat = device2host(1, dev_bool, &t);
-    check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
+    CHECK_EQUAL(cudaStat, cudaSuccess);
 
     cudaFree(dev_bool);
     return t == 1;
@@ -154,15 +170,16 @@ extern "C" {
     float sum = 0;
 
     cudaError_t cudaStat = host2device(1, &sum, dev_sum);
-    check(cudaStat != cudaSuccess, "host2device failed in reduce_sum");
+    CHECK_EQUAL(cudaStat, cudaSuccess);
 
     _reduce_sum<<<blockcount(size(m)), BLOCKSIZE>>>
       (size(m), m->dev_array, dev_sum);
 
     cudaStat = device2host(1, dev_sum, &sum);
-    check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
+    CHECK_EQUAL(cudaStat, cudaSuccess);
 
     cudaFree(dev_sum);
     return sum;
   }
 }
+
