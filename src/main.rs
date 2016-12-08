@@ -4,7 +4,7 @@ mod function;
 mod constant; 
 
 #[allow(unused_imports)]
-use function::{input, scalar, param, matrix, dot};
+use function::{input, param, scalar, matrix, dot};
 use constant::Constant::Scalar;
 use constant::{new_matrix};
 use std::collections::HashMap;
