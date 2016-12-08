@@ -357,6 +357,7 @@ fn empty_matrix(height: i32, width: i32) -> Matrix {
         width: width,
         dev_array: ptr::null_mut(),
     };
+    println!("allocating");
     unsafe { alloc_matrix(&mut matrix, height, width) };
     matrix
 }
