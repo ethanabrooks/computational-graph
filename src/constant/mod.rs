@@ -4,5 +4,5 @@ pub use self::ops::dot;
 mod constructors;
 mod datatypes;
 mod ops;
-mod traits;
+mod print;
 

@@ -1,3 +1,8 @@
+extern {
+    fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
+    fn free_matrix(m: *mut Matrix);
+}
+
 #[repr(C)]
 pub struct Matrix {
     pub height: i32,
@@ -17,3 +22,17 @@ impl Matrix {
     }
 }
 
+
+impl Clone for Matrix {
+    fn clone(&self) -> Self {
+        let mut m = Matrix::empty_like(self);
+        unsafe { copy_matrix(self as *const Matrix, &mut m) };
+        m
+    }
+}
+
+impl Drop for Matrix {
+    fn drop(&mut self) {
+        unsafe { free_matrix(self as *mut Matrix) };
+    }
+} 

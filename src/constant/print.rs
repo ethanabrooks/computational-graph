@@ -4,23 +4,7 @@ use constant::datatypes::{Matrix, Constant};
 
 extern {
     fn download_matrix(src: *const Matrix, dst: *mut f32);
-    fn free_matrix(m: *mut Matrix);
-    fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
 }
-
-impl Clone for Matrix {
-    fn clone(&self) -> Matrix {
-        let mut m = Matrix::empty_like(self);
-        unsafe { copy_matrix(self as *const Matrix, &mut m) };
-        m
-    }
-}
-
-impl Drop for Matrix {
-    fn drop(&mut self) {
-        unsafe { free_matrix(self as *mut Matrix) };
-    }
-} 
 
 fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
     match *c {

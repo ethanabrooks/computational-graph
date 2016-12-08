@@ -6,12 +6,9 @@ use std::ops::Deref;
 
 type Shared<T> = Rc<RefCell<T>>;
 
-pub fn get_shared<T>(s: &Shared<T>) -> Ref<T> { s.borrow() }
+//pub fn get_shared<T>(s: &Shared<T>) -> Ref<T> { s.borrow() }
 
-pub mod shared {
-    use std::{rc, cell};
-    use function::datatypes::Shared;
-
+impl<T> Shared<T> {
     pub fn new<T>(value: T) -> Shared<T> {
         rc::Rc::new(cell::RefCell::new(value))
     }
@@ -43,12 +40,14 @@ pub enum Expr {
     Dot(Function, Function),
 }
 
+const N_PLACEHOLDERS: usize = 1;
+
 #[derive(Debug, Clone)]
 pub struct Function {
     pub value: Shared<Option<Constant>>,
     pub params: HashSet<String>,
     pub body: Rc<Expr>,
-    pub placeholders: Vec<Constant>,
+    pub placeholders: RefCell<[Constant; N_PLACEHOLDERS]>,
 }
 
 impl Function {
@@ -72,5 +71,9 @@ impl Function {
             Some(x) => x,
             None => panic!("unwrap value failed on {:?}", self),
         })
+    }
+
+    pub fn alloc_placeholders(&mut self, c: [Constant]) {
+        self.placeholders.borrow_mut() = c;
     }
 }

@@ -147,9 +147,8 @@ impl Function {
                 f1.assign_values(args);
                 f2.assign_values(args);
                 self.maybe_allocate_for(expr.deref());
-                let m1 = f1.unwrap_value();
-                let m2 = f2.unwrap_value();
-                self.mutate_value(&|x| x.assign_dot(m1.deref(), m2.deref(), 
+                self.mutate_value(&|x| x.assign_dot(f1.unwrap_value().deref(), 
+                                                    f2.unwrap_value().deref(), 
                                                     false, false));
             }
         }
@@ -166,8 +165,8 @@ impl Function {
                     Constant::empty_like(f.unwrap_value().deref()),
                 &Expr::Dot(ref f1, ref f2) =>
                     Constant::empty_for_dot(f1.unwrap_value().deref(), 
-                                                        f2.unwrap_value().deref(), 
-                                                        false, false),
+                                            f2.unwrap_value().deref(), 
+                                            false, false),
             }
         };
         self.set_value(new_value);
@@ -207,10 +206,16 @@ impl Function {
                 f2.backprop(f1.unwrap_value().deref() * &error, learn_rate); // CLONE
             }
             Expr::Dot(ref f1, ref f2) => {
-                let error1 = constant::dot(&error, false, &f2.unwrap_value(), true); // CLONE
-                let error2 = constant::dot(&f1.unwrap_value(), true, &error, false); // CLONE
-                f1.backprop(error1, learn_rate);
-                f2.backprop(error2, learn_rate);
+                while self.placeholders.len() < 1 {
+                    self.placeholders.push(Constant::empty_like(&error));
+                }
+                self.placeholders[0].assign_dot(&f1.unwrap_value(), &error, true, false);
+                error.assign_dot(&error, &f2.unwrap_value(), false, true);
+
+                //let error1 = constant::dot(&error, false, &f2.unwrap_value(), true); // CLONE
+                //let error2 = constant::dot(&f1.unwrap_value(), true, &error, false); // CLONE
+                f1.backprop(error, learn_rate);
+                f2.backprop(self.placeholders[0], learn_rate);
             }
             Expr::Constant(_)| Expr::Input(_) => return,
         }
