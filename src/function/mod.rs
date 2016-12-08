@@ -77,12 +77,14 @@ impl Function {
 }
 
 impl Function {
-    fn assign_and_apply<'a>(&self, f: &Fn(Constant, Constant) -> Constant, 
-                        args: &HashMap<&str, Constant>,
-                        f1: &Function, f2: &Function) {
+    fn assign_and_apply<'a>(&self, //f: &Fn(&Constant, &Constant) -> Constant, 
+                        args: &'a HashMap<&str, Constant>,
+                        value: Constant,
+                        f1: &'a Function, f2: &'a Function) {
         f1.assign_values(args);
         f2.assign_values(args);
-        self.set_value(Some(f(f1.eval(args), f2.eval(args))));
+        //self.set_value(Some(f(f1.unwrap_value().deref(), f2.unwrap_value().deref())));
+        self.set_value(Some(value));
     }
 
     pub fn assign_values(&self, args: &HashMap<&str, Constant>) {
@@ -109,15 +111,32 @@ impl Function {
                 f1.assign_values(args);
                 self.set_value(Some(f1.unwrap_value().sigmoid().clone()))
             }
-            Expr::Add(ref f1, ref f2) => 
-                self.assign_and_apply(&|x, y| x + y, args, f1, f2),
-            Expr::Sub(ref f1, ref f2) => 
-                self.assign_and_apply(&|x, y| x - y, args, f1, f2),
-            Expr::Mul(ref f1, ref f2) =>
-                self.assign_and_apply(&|x, y| x * y, args, f1, f2),
+            Expr::Add(ref f1, ref f2) => {
+                f1.assign_values(args);
+                f2.assign_values(args);
+                self.set_value(Some(f1.unwrap_value().deref() + f2.unwrap_value().deref()));
+            }
+            Expr::Sub(ref f1, ref f2) => {
+                //f1.assign_values(args);
+                //f2.assign_values(args);
+                //self.set_value(Some(f1.unwrap_value().deref() - f2.unwrap_value().deref()));
+                self.assign_and_apply(args, 
+                                      f1.unwrap_value().deref() - f2.unwrap_value().deref(),
+                                      f1, f2);
+            }
+            Expr::Mul(ref f1, ref f2) => {
+                f1.assign_values(args);
+                f2.assign_values(args);
+                self.set_value(Some(f1.unwrap_value().deref() * f2.unwrap_value().deref()));
+                //self.assign_and_apply(&|x, y| x * y, args, f1, f2);
+            }
             Expr::MatMul(ref f1, ref f2) => {
-                self.assign_and_apply(&|x, y| constant::dot(&x, false, &y, false), 
-                                 args, f1, f2)
+                f1.assign_values(args);
+                f2.assign_values(args);
+                self.set_value(Some(constant::dot(f1.unwrap_value().deref(), false,
+                                                  f2.unwrap_value().deref(), false)));
+                //self.assign_and_apply(&|x, y| constant::dot(&x, false, &y, false), 
+                                 //args, f1, f2)
             }
         }
     }
@@ -132,7 +151,7 @@ impl Function {
                 self.mutate_value(&|x| x.sub_assign(&error));
             }
             Expr::Neg(ref f) => {
-                error *= Constant::Scalar(-1);
+                error *= Constant::Scalar(-1.);
                 f.backprop(error, learn_rate)
             }
             Expr::Abs(ref f) => f.backprop(f.unwrap_value()
@@ -141,24 +160,24 @@ impl Function {
             Expr::Sigmoid(ref f) => {
                 let value = self.unwrap_value();
                 error.mul_assign(value.deref());
-                error *= &Constant::Scalar(1.) - value.deref();
+                error *= &Constant::Scalar(1.) - value.deref(); // CLONE
                 f.backprop(error, learn_rate)
             }
             Expr::Add(ref f1, ref f2) => {
-                f1.backprop(error.clone(), learn_rate);
+                f1.backprop(error.clone(), learn_rate); // CLONE
                 f2.backprop(error, learn_rate);
             }
             Expr::Sub(ref f1, ref f2) => {
-                f2.backprop(-&error, learn_rate);
+                f2.backprop(-&error, learn_rate); // CLONE
                 f1.backprop(error, learn_rate);
             }
             Expr::Mul(ref f1, ref f2) => {
-                f1.backprop(f2.unwrap_value().deref() * &error, learn_rate);
-                f2.backprop(f1.unwrap_value().deref() * &error, learn_rate);
+                f1.backprop(f2.unwrap_value().deref() * &error, learn_rate); // CLONE
+                f2.backprop(f1.unwrap_value().deref() * &error, learn_rate); // CLONE
             }
             Expr::MatMul(ref f1, ref f2) => {
-                let error1 = constant::dot(&error, false, &f2.unwrap_value(), true);
-                let error2 = constant::dot(&f1.unwrap_value(), true, &error, false);
+                let error1 = constant::dot(&error, false, &f2.unwrap_value(), true); // CLONE
+                let error2 = constant::dot(&f1.unwrap_value(), true, &error, false); // CLONE
                 f1.backprop(error1, learn_rate);
                 f2.backprop(error2, learn_rate);
             }
