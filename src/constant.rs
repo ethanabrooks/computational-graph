@@ -334,6 +334,10 @@ impl Constant {
     pub fn mul_assign(&mut self, other: &Constant) {
         self.bin_assign(other, &|x1, x2| *x1 *= x2, broadcast_mul_rev, elemwise_mul);
     }
+
+    pub fn sub_assign(&mut self, other: &Constant) {
+        self.bin_assign(other, &|x1, x2| *x1 += x2, broadcast_sub_rev, elemwise_sub);
+    }
 }
 
 //// FUNCTIONS

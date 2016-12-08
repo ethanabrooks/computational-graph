@@ -71,6 +71,6 @@ fn main() {
 
     f.minimize(&args, 0.001, 1000);
 
-    println!("f: {}", &f);
+    //println!("f: {}", &f);
     //println!("output: {}", f.eval(&args));
 }
