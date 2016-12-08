@@ -131,7 +131,10 @@ impl Function {
                 error *= Constant::Scalar(learn_rate);
                 self.mutate_value(&|x| x.sub_assign(&error));
             }
-            Expr::Neg(ref f) => f.backprop(-error, learn_rate),
+            Expr::Neg(ref f) => {
+                error *= Constant::Scalar(-1);
+                f.backprop(error, learn_rate)
+            }
             Expr::Abs(ref f) => f.backprop(f.unwrap_value()
                                             .signum() * error, learn_rate),
             Expr::Signum(ref f) => panic!("sign is not differentiable"),
