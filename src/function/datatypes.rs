@@ -68,9 +68,9 @@ impl Function {
     }
 
     pub fn unwrap_value<'a>(&'a self) -> Ref<Constant> {
-        Ref::map(self.value.borrow(), |t| match t.as_ref() {
+        Ref::map(self.value.borrow(), |x| match x.as_ref() {
             Some(x) => x,
-            None => panic!("{:?} failed", self),
+            None => panic!("unwrap value failed on {:?}", self),
         })
     }
 }

@@ -146,27 +146,31 @@ impl Function {
             &Expr::Dot(ref f1, ref f2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
+                self.maybe_allocate_for(expr.deref());
                 let m1 = f1.unwrap_value();
                 let m2 = f2.unwrap_value();
-                self.maybe_allocate_for(expr.deref());
-                self.mutate_value(&|x| x.assign_dot(m1.deref(), m2.deref(), false, false));
+                self.mutate_value(&|x| x.assign_dot(m1.deref(), m2.deref(), 
+                                                    false, false));
             }
         }
     }
 
     fn maybe_allocate_for(&self, expr: &Expr) {
-        match *self.get_value() {
+        let new_value = match *self.get_value() {
             Some(_) => return,
             None => match expr {
                 &Expr::Constant(_)    | &Expr::Input(_)      | &Expr::Param(_) => return,
                 &Expr::Neg(ref f)     | &Expr::Abs(ref f)    | &Expr::Signum(ref f) | 
                 &Expr::Sigmoid(ref f) | &Expr::Add(ref f, _) | 
                 &Expr::Sub(ref f, _)  | &Expr::Mul(ref f, _) => 
-                    self.set_value(Constant::empty_like(f.unwrap_value().deref())),
-                &Expr::Dot(ref f1, ref f2) => self.set_value(Constant::empty_for_dot(
-                    f1.unwrap_value().deref(), f2.unwrap_value().deref(), false, false))
+                    Constant::empty_like(f.unwrap_value().deref()),
+                &Expr::Dot(ref f1, ref f2) =>
+                    Constant::empty_for_dot(f1.unwrap_value().deref(), 
+                                                        f2.unwrap_value().deref(), 
+                                                        false, false),
             }
-        }
+        };
+        self.set_value(new_value);
     }
 
     // TODO: preallocate error at every layer
