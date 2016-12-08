@@ -1,5 +1,5 @@
-use constant::{Constant, new_matrix};
-use std::cell::{RefCell, Ref};
+use constant::{Constant, Matrix};
+use std::cell::{RefCell, Ref, RefMut};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::ops::Deref;
@@ -16,7 +16,6 @@ pub mod shared {
         rc::Rc::new(cell::RefCell::new(value))
     }
 }
-
 
 #[derive(Debug)]
 pub struct Input {
@@ -41,7 +40,7 @@ pub enum Expr {
     Add(Function, Function),
     Sub(Function, Function),
     Mul(Function, Function),
-    MatMul(Function, Function),
+    Dot(Function, Function),
 }
 
 #[derive(Debug, Clone)]
@@ -49,29 +48,23 @@ pub struct Function {
     pub value: Shared<Option<Constant>>,
     pub params: HashSet<String>,
     pub body: Rc<Expr>,
+    pub placeholders: Vec<Constant>,
 }
 
 impl Function {
-    pub fn set_value(&self, value: Option<Constant>) {
-        *(&self.value).borrow_mut() = value;
-    }
-
-    pub fn mutate_value(&self, f: &Fn(&mut Constant)) {
-        match *self.value.borrow_mut() {
-            Some(ref mut value) => f(value),
-            None => panic!("Tried to mutate value that hasn't been assigned yet."),
-        }
-    }
-
-    pub fn mutate_or_set_value(&self, value: Option<Constant>, f: &Fn(&mut Constant)) {
-        match *self.value.borrow_mut() {
-            Some(ref mut v) => f(v),
-            None => self.set_value(value),
-        }
+    pub fn set_value(&self, value: Constant) {
+        *(&self.value).borrow_mut() = Some(value);
     }
 
     pub fn get_value(&self) -> Ref<Option<Constant>> {
         self.value.borrow()
+    }
+
+   pub fn mutate_value(&self, f: &Fn(&mut Constant)) {
+        match *self.value.borrow_mut() {
+            Some(ref mut value) => f(value),
+            None => panic!("Tried to mutate value that hasn't been assigned yet."),
+        }
     }
 
     pub fn unwrap_value<'a>(&'a self) -> Ref<Constant> {

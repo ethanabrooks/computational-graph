@@ -1,5 +1,4 @@
 use constant::datatypes::{Constant, Matrix};
-use constant::constructors::{empty_matrix, empty_like};
 use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign};
 
 extern {
@@ -30,17 +29,17 @@ fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32,
         (&Constant::Scalar(x1), &Constant::Scalar(x2)) => {
             Constant::Scalar(scalar_fun(x1, x2)) }
         (&Constant::Scalar(x), &Constant::Matrix(ref m)) => {
-            let mut result = empty_like(m);
+            let mut result = Matrix::empty_like(m);
             unsafe { scalar_matrix_fun(x, m, &mut result) };
             Constant::Matrix(result)
         }
         (&Constant::Matrix(ref m), &Constant::Scalar(x)) => {
-            let mut result = empty_like(m);
+            let mut result = Matrix::empty_like(m);
             unsafe { matrix_scalar_fun(m, x, &mut result) };
             Constant::Matrix(result)
         }
         (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-            let mut result = empty_like(m1);
+            let mut result = Matrix::empty_like(m1);
             unsafe { matrix_fun(m1, m2, &mut result) };
             Constant::Matrix(result)
         }
@@ -54,17 +53,18 @@ fn bin_apply_comm(scalar_fun: &Fn(f32, f32) -> f32,
              broadcast_matrix_fun: unsafe extern "C" fn(f32, *const Matrix, *mut Matrix),
              matrix_fun: unsafe extern "C" fn(*const Matrix, *const Matrix, *mut Matrix),
              c1: &Constant, c2: &Constant) -> Constant {
+    let mut result;
     match (c1, c2) {
         (&Constant::Scalar(x1), &Constant::Scalar(x2)) => {
             Constant::Scalar(scalar_fun(x1, x2)) }
         (&Constant::Scalar(x), &Constant::Matrix(ref m)) |
         (&Constant::Matrix(ref m), &Constant::Scalar(x)) => {
-            let mut result = empty_like(m);
+            result = Matrix::empty_like(m);
             unsafe { broadcast_matrix_fun(x, m, &mut result) };
             Constant::Matrix(result)
         }
         (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-            let mut result = empty_like(m1);
+            result = Matrix::empty_like(m1);
             unsafe { matrix_fun(m1, m2, &mut result) };
             Constant::Matrix(result)
         }
@@ -79,7 +79,7 @@ impl Constant {
         match self {
             &Constant::Scalar(x) => Constant::Scalar(scalar_fun(x)),
             &Constant::Matrix(ref m) => {
-                let mut result = empty_like(m);
+                let mut result = Matrix::empty_like(m);
                 unsafe { matrix_fun(m, &mut result) };
                 Constant::Matrix(result)
             }
@@ -140,7 +140,7 @@ impl Constant {
     }
 
     // TODO: use b_assign
-    pub fn assign_dot(&mut self, c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) {
+    pub fn assign_dot(&mut self, c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) {
         match (self, c1, c2) {
             (&mut Constant::Matrix(ref mut m), 
              &Constant::Scalar(x), &Constant::Matrix(ref m2)) => {
@@ -249,42 +249,33 @@ impl Constant {
         self.b_assign(other, &|x1: &mut f32, x2| *x1 += x2,
                       broadcast_sub_rev, elemwise_sub);
     }
+
+    pub fn negate(&mut self) {
+        *self *= Constant::Scalar(-1.)
+    }
 }
 
 //// FUNCTIONS
 
+// TODO!!! trans does not work with matrix / scalar stuff!
 // allocates on device
 pub fn dot(c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) -> Constant {
+    let mut result;
     match (c1, c2) {
         (&Constant::Scalar(x1), &Constant::Scalar(x2)) =>
             panic!("dot should not be used for scalars"),
         (&Constant::Scalar(x), &Constant::Matrix(ref m)) => {
-            let mut result = empty_like(m);
-            unsafe { broadcast_mul(x, m, &mut result) };
-            Constant::Matrix(result)
+            result = Matrix::empty_like(m);
+            unsafe { broadcast_mul(x, m, &mut result) }
         }
         (&Constant::Matrix(ref m), &Constant::Scalar(x)) => {
-            let mut result = empty_like(m);
-            unsafe { broadcast_mul_rev(m, x, &mut result) };
-            Constant::Matrix(result)
+            result = Matrix::empty_like(m);
+            unsafe { broadcast_mul_rev(m, x, &mut result) }
         }
         (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-            let mut result = 
-                if trans1 {
-                    if trans2 {
-                        empty_matrix(m1.width, m2.height)
-                    } else {
-                        empty_matrix(m1.width, m2.width)
-                    }
-                } else {
-                    if trans2 {
-                        empty_matrix(m1.height, m2.height)
-                    } else {
-                        empty_matrix(m1.height, m2.width)
-                    }
-                };
-            unsafe { gemm(m1, trans1, m2, trans2, &mut result) };
-            Constant::Matrix(result)
+            result = Matrix::empty_for_dot(m1, m2, trans1, trans2);
+            unsafe { gemm(m1, trans1, m2, trans2, &mut result) }
         }
-    }
+    };
+    Constant::Matrix(result)
 }

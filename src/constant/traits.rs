@@ -1,7 +1,6 @@
 use std::fmt;
 use std::io::{Write, stderr};
 use constant::datatypes::{Matrix, Constant};
-use constant::constructors::{empty_like};
 
 extern {
     fn download_matrix(src: *const Matrix, dst: *mut f32);
@@ -11,7 +10,7 @@ extern {
 
 impl Clone for Matrix {
     fn clone(&self) -> Matrix {
-        let mut m = empty_like(self);
+        let mut m = Matrix::empty_like(self);
         unsafe { copy_matrix(self as *const Matrix, &mut m) };
         m
     }

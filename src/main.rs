@@ -5,8 +5,8 @@ mod constant;
 
 #[allow(unused_imports)]
 use function::{input, param, scalar, matrix, dot};
+use constant::Matrix;
 use constant::Constant::Scalar;
-use constant::new_matrix;
 use std::collections::HashMap;
 
 extern { fn init_cublas(); }
@@ -19,7 +19,7 @@ fn main() {
     //println!("a * b: {}", &a * &b);
     let x = param("x", Scalar(14.));
     let z = param("z", Scalar(10.));
-    let x = param("x", new_matrix(2, 3, vec![
+    let x = param("x", Matrix::new(2, 3, vec![
                    1., 2., 3., 
                    1., 2., 1.])); 
     let b = matrix(2, 2, vec![

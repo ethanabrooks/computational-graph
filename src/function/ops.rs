@@ -1,5 +1,5 @@
 use function::datatypes::{shared, Function, Expr};
-use function::constructors::{new_function, new_constant};
+use function::constructors::new_constant;
 use constant::Constant;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -11,7 +11,7 @@ fn bin_apply(expr: &Fn(Function, Function) -> Expr,
     let params1 = f1.params.clone();
     let params2 = f2.params.clone();
     let union = params1.union(&params2).cloned().collect();
-    let function = new_function(None, union, expr(f1.clone(), f2.clone()));
+    let function = Function::new(None, union, expr(f1.clone(), f2.clone()));
     match (&*f1.body, &*f2.body) {
         (&Expr::Constant(_), &Expr::Constant(_)) =>
 
@@ -34,11 +34,7 @@ fn bin_apply(expr: &Fn(Function, Function) -> Expr,
 
 impl Function {
     fn apply(&self, expr: &Fn(Function) -> Expr) -> Function {
-        Function {
-            value: shared::new(None),
-            params: self.params.clone(),
-            body: Rc::new(expr(self.clone())),
-        }
+        Function::new(None, self.params.clone(), expr(self.clone()))
     }
 
     fn all_equal(&self, val:f32) -> bool {
@@ -131,7 +127,7 @@ pub fn dot(f1: &Function, f2: &Function) -> Function {
     let params1 = f1.params.clone();
     let params2 = f2.params.clone();
     let union = params1.union(&params2).cloned().collect();
-    let function = new_function(None, union, Expr::MatMul(f1.clone(), f2.clone()));
+    let function = Function::new(None, union, Expr::Dot(f1.clone(), f2.clone()));
 
     // optimization to combine constants
     match (&*f1.body, &*f2.body) { 

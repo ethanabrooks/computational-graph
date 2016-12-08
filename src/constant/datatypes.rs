@@ -1,4 +1,3 @@
-
 #[repr(C)]
 pub struct Matrix {
     pub height: i32,
