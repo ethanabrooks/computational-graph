@@ -96,39 +96,39 @@ impl Function {
     }
 
     pub fn assign_values(&self, args: &HashMap<&str, Constant>) {
-        let expr = *self.body;
-        match expr { 
-            Expr::Constant(_) | Expr::Param(_) => assert!(self.get_value().is_some(),
+        let ref expr = self.body;
+        match expr.deref() { 
+            &Expr::Constant(_) | &Expr::Param(_) => assert!(self.get_value().is_some(),
                 "Constants and Params must always have a value"),
-            Expr::Input(ref i) => {
+            &Expr::Input(ref i) => {
                 let arg = args.get::<str>(&i.name).expect("missing arg");
                 self.set_value(arg.clone());
             }
-            Expr::Neg(ref f1) => {
+            &Expr::Neg(ref f1) => {
                 f1.assign_values(args);
                 self.maybe_allocate_for(expr);
                 self.mutate_value(&|x| x.negate())
-           }
-            Expr::Abs(ref f1) => {
+            }
+            &Expr::Abs(ref f1) => {
                 f1.assign_values(args);
                 self.set_value(f1.unwrap_value().abs().clone())
             }
-            Expr::Signum(ref f1) => {
+            &Expr::Signum(ref f1) => {
                 writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
                 Running `backprop` on this function will cause an error");
                 f1.assign_values(args);
                 self.set_value(f1.unwrap_value().signum().clone())
             }
-            Expr::Sigmoid(ref f1) => {
+            &Expr::Sigmoid(ref f1) => {
                 f1.assign_values(args);
                 self.set_value(f1.unwrap_value().sigmoid().clone())
             }
-            Expr::Add(ref f1, ref f2) => {
+            &Expr::Add(ref f1, ref f2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
                 self.set_value(f1.unwrap_value().deref() + f2.unwrap_value().deref());
             }
-            Expr::Sub(ref f1, ref f2) => {
+            &Expr::Sub(ref f1, ref f2) => {
                 //self.rust_is_stupid(
                     //f1, f2, args,
                     //&|x: &Constant, y: &Constant| x - y)
@@ -137,32 +137,33 @@ impl Function {
                     //&|x, y| x - y)
                     f1.unwrap_value().deref() - f2.unwrap_value().deref())
             }
-            Expr::Mul(ref f1, ref f2) => {
+            &Expr::Mul(ref f1, ref f2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
                 self.set_value(f1.unwrap_value().deref() * f2.unwrap_value().deref());
                 //self.recurse_and_set_value(&|x, y| x * y, args, f1, f2);
             }
-            Expr::Dot(ref f1, ref f2) => {
+            &Expr::Dot(ref f1, ref f2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
                 let m1 = f1.unwrap_value();
                 let m2 = f2.unwrap_value();
-                self.maybe_allocate_for(expr);
+                self.maybe_allocate_for(expr.deref());
                 self.mutate_value(&|x| x.assign_dot(m1.deref(), m2.deref(), false, false));
             }
         }
     }
 
-    fn maybe_allocate_for(&self, expr: Expr) {
+    fn maybe_allocate_for(&self, expr: &Expr) {
         match *self.get_value() {
-            Some(v) => return,
+            Some(_) => return,
             None => match expr {
-                Expr::Constant(_) | Expr::Input(_)| Expr::Param(_) => return,
-                Expr::Neg(f) | Expr::Abs(f) | Expr::Signum(f) | Expr::Sigmoid(f) |
-                Expr::Add(f, _) | Expr::Sub(f, _) | Expr::Mul(f, _) => 
+                &Expr::Constant(_)    | &Expr::Input(_)      | &Expr::Param(_) => return,
+                &Expr::Neg(ref f)     | &Expr::Abs(ref f)    | &Expr::Signum(ref f) | 
+                &Expr::Sigmoid(ref f) | &Expr::Add(ref f, _) | 
+                &Expr::Sub(ref f, _)  | &Expr::Mul(ref f, _) => 
                     self.set_value(Constant::empty_like(f.unwrap_value().deref())),
-                Expr::Dot(f1, f2) => self.set_value(Constant::empty_for_dot(
+                &Expr::Dot(ref f1, ref f2) => self.set_value(Constant::empty_for_dot(
                     f1.unwrap_value().deref(), f2.unwrap_value().deref(), false, false))
             }
         }
