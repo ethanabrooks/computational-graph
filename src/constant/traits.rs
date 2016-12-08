@@ -1,3 +1,8 @@
+use std::fmt;
+use std::io::{Write, stderr};
+use constant::datatypes::{Matrix, Constant};
+use constant::traits::{copy_matrix, free_matrix, download_matrix};
+use constant::constructors::{empty_like};
 
 impl Clone for Matrix {
     fn clone(&self) -> Matrix {

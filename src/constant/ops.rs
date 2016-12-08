@@ -1,3 +1,25 @@
+use constant::datatypes::Constant;
+use constant::constructors::{empty_matrix, empty_like};
+use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign};
+
+extern {
+    fn map_neg(m: *const Matrix, result: *mut Matrix);
+    fn map_abs(m: *const Matrix, result: *mut Matrix);
+    fn map_signum(m: *const Matrix, result: *mut Matrix);
+    fn map_sigmoid(m: *const Matrix, result: *mut Matrix);
+    fn broadcast_mul(val: f32, m: *const Matrix, result: *mut Matrix);
+    fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
+    fn broadcast_sub(val: f32, m: *const Matrix, result: *mut Matrix);
+    fn broadcast_sub_rev(m: *const Matrix, val: f32, result: *mut Matrix);
+    fn broadcast_mul_rev(m: *const Matrix, val: f32, result: *mut Matrix);
+    fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn elemwise_sub(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn elemwise_mul(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn gemm(m1: *const Matrix, trans1: bool, m2: *const Matrix, trans2: bool,
+            result: *mut Matrix);
+    fn reduce_equal(matrix: *const Matrix, x: f32) -> bool;
+    fn reduce_sum(matrix: *const Matrix) -> f32;
+}
 
 fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32, 
              scalar_matrix_fun: unsafe extern "C" fn(f32, *const Matrix, *mut Matrix),
@@ -98,15 +120,15 @@ impl Constant {
     }
 
     pub fn abs(&self) -> Constant {
-        self.apply(&|x| x.abs(), map_abs)
+        self.apply(&|x: f32| x.abs(), map_abs)
     }
 
     pub fn signum(&self) -> Constant {
-        self.apply(&|x| x.signum(), map_signum)
+        self.apply(&|x: f32| x.signum(), map_signum)
     }
 
     pub fn sigmoid(&self) -> Constant {
-        self.apply(&|x| 1. / (1. + (-x).exp()), map_sigmoid)
+        self.apply(&|x: f32| 1. / (1. + (-x).exp()), map_sigmoid)
     }
 
 
@@ -165,7 +187,7 @@ impl Mul for Constant {
 impl<'a> Neg for &'a Constant {
     type Output = Constant;
     fn neg(self) -> Constant {
-        self.apply(&|x| -x, map_neg)
+        self.apply(&|x: f32| -x, map_neg)
     }
 }
 
@@ -173,7 +195,7 @@ impl<'a> Neg for &'a Constant {
 impl<'a> Add for &'a Constant {
     type Output = Constant;
     fn add(self, other: &'a Constant) -> Constant {
-        bin_apply_comm(&|x1, x2| x1 + x2,
+        bin_apply_comm(&|x1: f32, x2| x1 + x2,
                        broadcast_add,
                        elemwise_add,
                        &self, &other)
@@ -184,7 +206,7 @@ impl<'a> Add for &'a Constant {
 impl<'a> Sub for &'a Constant {
     type Output = Constant;
     fn sub(self, other: &'a Constant) -> Constant {
-        bin_apply(&|x1, x2| x1 - x2,
+        bin_apply(&|x1: f32, x2| x1 - x2,
                   broadcast_sub,
                   broadcast_sub_rev,
                   elemwise_sub,
@@ -205,23 +227,23 @@ impl<'a> Mul for &'a Constant {
 
 impl SubAssign for Constant {
     fn sub_assign(&mut self, other: Constant) {
-        self.b_assign(&other, &|x1, x2| *x1 -= x2, broadcast_sub_rev, elemwise_sub);
+        self.b_assign(&other, &|x1: &f32, x2| *x1 -= x2, broadcast_sub_rev, elemwise_sub);
     }
 }
 
 impl MulAssign for Constant {
     fn mul_assign(&mut self, other: Constant) {
-        self.b_assign(&other, &|x1, x2| *x1 *= x2, broadcast_mul_rev, elemwise_mul);
+        self.b_assign(&other, &|x1: &f32, x2| *x1 *= x2, broadcast_mul_rev, elemwise_mul);
     }
 }
 
 impl Constant {
     pub fn mul_assign(&mut self, other: &Constant) {
-        self.b_assign(other, &|x1, x2| *x1 *= x2, broadcast_mul_rev, elemwise_mul);
+        self.b_assign(other, &|x1: &f32, x2| *x1 *= x2, broadcast_mul_rev, elemwise_mul);
     }
 
     pub fn sub_assign(&mut self, other: &Constant) {
-        self.b_assign(other, &|x1, x2| *x1 += x2, broadcast_sub_rev, elemwise_sub);
+        self.b_assign(other, &|x1: &f32, x2| *x1 += x2, broadcast_sub_rev, elemwise_sub);
     }
 }
 

@@ -1,8 +1,8 @@
 
 #[repr(C)]
 pub struct Matrix {
-    height: i32,
-    width: i32,
+    pub height: i32,
+    pub width: i32,
     dev_array: *mut f32,
 }
 
