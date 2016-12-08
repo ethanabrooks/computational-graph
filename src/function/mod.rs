@@ -65,7 +65,7 @@ impl Function {
     pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
         for _ in 0..iters {
             self.assign_values(&args);
-            self.backprop(self.unwrap_value().copy_and_fill(1.), learn_rate);
+            self.backprop((*self.unwrap_value()).copy_and_fill(1.), learn_rate);
             println!("{}", self.unwrap_value().clone());
         }
     }

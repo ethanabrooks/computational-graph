@@ -1,4 +1,4 @@
-use constant::datatypes::Constant;
+use constant::datatypes::{Constant, Matrix};
 use constant::constructors::{empty_matrix, empty_like};
 use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign};
 
@@ -114,7 +114,7 @@ impl Constant {
         match self {
             &Constant::Scalar(x) => x,
             &Constant::Matrix(ref m) => {
-                (unsafe { reduce_sum(m) }) / size(m) as f32
+                (unsafe { reduce_sum(m) }) / m.size() as f32
             }
         }
     }
@@ -227,23 +227,27 @@ impl<'a> Mul for &'a Constant {
 
 impl SubAssign for Constant {
     fn sub_assign(&mut self, other: Constant) {
-        self.b_assign(&other, &|x1: &f32, x2| *x1 -= x2, broadcast_sub_rev, elemwise_sub);
+        self.b_assign(&other, &|x1: &mut f32, x2| *x1 -= x2, 
+                      broadcast_sub_rev, elemwise_sub);
     }
 }
 
 impl MulAssign for Constant {
     fn mul_assign(&mut self, other: Constant) {
-        self.b_assign(&other, &|x1: &f32, x2| *x1 *= x2, broadcast_mul_rev, elemwise_mul);
+        self.b_assign(&other, &|x1: &mut f32, x2| *x1 *= x2, 
+                      broadcast_mul_rev, elemwise_mul);
     }
 }
 
 impl Constant {
     pub fn mul_assign(&mut self, other: &Constant) {
-        self.b_assign(other, &|x1: &f32, x2| *x1 *= x2, broadcast_mul_rev, elemwise_mul);
+        self.b_assign(other, &|x1: &mut f32, x2| *x1 *= x2,
+                      broadcast_mul_rev, elemwise_mul);
     }
 
     pub fn sub_assign(&mut self, other: &Constant) {
-        self.b_assign(other, &|x1: &f32, x2| *x1 += x2, broadcast_sub_rev, elemwise_sub);
+        self.b_assign(other, &|x1: &mut f32, x2| *x1 += x2,
+                      broadcast_sub_rev, elemwise_sub);
     }
 }
 

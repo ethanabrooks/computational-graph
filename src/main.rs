@@ -6,7 +6,7 @@ mod constant;
 #[allow(unused_imports)]
 use function::{input, param, scalar, matrix, dot};
 use constant::Constant::Scalar;
-use constant::{new_matrix};
+use constant::new_matrix;
 use std::collections::HashMap;
 
 extern { fn init_cublas(); }

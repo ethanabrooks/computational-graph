@@ -1,8 +1,13 @@
 use std::fmt;
 use std::io::{Write, stderr};
 use constant::datatypes::{Matrix, Constant};
-use constant::traits::{copy_matrix, free_matrix, download_matrix};
 use constant::constructors::{empty_like};
+
+extern {
+    fn download_matrix(src: *const Matrix, dst: *mut f32);
+    fn free_matrix(m: *mut Matrix);
+    fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
+}
 
 impl Clone for Matrix {
     fn clone(&self) -> Matrix {
@@ -18,15 +23,11 @@ impl Drop for Matrix {
     }
 } 
 
-fn size(matrix: &Matrix) -> i32 {
-    matrix.height * matrix.width
-}
-
 fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
     match *c {
         Constant::Scalar(x) => write!(f, "{}", x),
         Constant::Matrix(ref src) => {
-            let mut dst = Vec::with_capacity(size(src) as usize);
+            let mut dst = Vec::with_capacity(src.size() as usize);
             unsafe { download_matrix(src, dst.as_mut_ptr()) };
             let mut result;
 
