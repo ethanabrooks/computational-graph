@@ -3,6 +3,7 @@ use std::ops::{Neg, Add, Mul, Sub, SubAssign, MulAssign};
 
 extern {
     fn alloc_matrix(m: *mut Matrix, width: i32, height: i32); // allocates on device
+    fn free_matrix(m: *mut Matrix);
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
     fn init_matrix(m: *mut Matrix, array: *const f32, width: i32, height: i32);
     fn fill_matrix(m: *mut Matrix, value: f32);
@@ -51,6 +52,12 @@ impl Clone for Matrix {
         m
     }
 }
+
+impl Drop for Matrix {
+    fn drop(&mut self) {
+        unsafe { free_matrix(self as *mut Matrix) };
+    }
+} 
 
 fn size(matrix: &Matrix) -> i32 {
     matrix.height * matrix.width
@@ -385,6 +392,7 @@ fn empty_matrix(height: i32, width: i32) -> Matrix {
         width: width,
         dev_array: ptr::null_mut(),
     };
+    println!("allocating");
     unsafe { alloc_matrix(&mut matrix, height, width) };
     matrix
 }
