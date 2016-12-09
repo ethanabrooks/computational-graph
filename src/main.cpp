@@ -8,7 +8,7 @@
 #include <time.h>
 #include "cublas_v2.h" 
 #include "matrix.h" 
-#include "op.h" 
+#include "ops.h" 
 #include "util.h" 
 
 #define L 2

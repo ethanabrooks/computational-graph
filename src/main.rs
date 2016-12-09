@@ -65,7 +65,11 @@ fn main() {
                    1., 3., 
                    1., 1.]))); 
 
-    let b = matrix(2, 2, vec![
+    let b = param("b", Constant::Matrix(Matrix::new(2, 2, vec![
+                   5., 3.,
+                   5., 1.]))); 
+
+    let c = matrix(2, 2, vec![
                    5., 3.,
                    5., 1.]); 
 
@@ -79,11 +83,11 @@ fn main() {
     //let y = param("y", Scalar(0.9));
 
     //let f = abs(&(dot(&a, &x, false, false) - b));
-    let f = abs(&(dot(&a, &x) - b));
+    let f = abs(&(sigmoid(&(dot(&a, &x) + b - c))));
     let mut args = HashMap::new();
     args.insert("y", Scalar(-3.));
 
-    f.minimize(&args, 0.1, 150);
+    f.minimize(&args, 0.01, 1000);
 
     println!("f: {}", &f);
     println!("eval f: {}", &f.eval(&args));

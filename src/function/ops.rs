@@ -51,13 +51,11 @@ impl Function {
         }
     }
 
-    // TODO: make methods assign in-place
     pub fn signum(&self) -> Function {
         self.apply(&|f| Expr::Signum(f))
     }
 }
 
-// TODO: macros!
 impl Neg for Function {
     type Output = Function;
     fn neg(self) -> Function { -&self }
@@ -120,8 +118,6 @@ impl<'a> Mul for &'a Function {
     }
 }
 
-// TODO: abstact some of this with apply2
-// TODO: optimization for identities?
 pub fn dot(f1: &Function, f2: &Function) -> Function {
     let params1 = f1.params.clone();
     let params2 = f2.params.clone();

@@ -142,7 +142,6 @@ impl Constant {
         }
     }
 
-    // TODO: use assign2
     pub fn assign_dot(&mut self, c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) {
         match (self, c1, c2) {
             (&mut Constant::Matrix(ref mut m), 

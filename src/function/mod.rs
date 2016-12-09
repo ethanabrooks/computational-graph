@@ -144,9 +144,7 @@ impl Function {
         if self.params.is_empty() { return; }
         match *self.body {
             Expr::Param(_) => {
-            println!("value: {}", self.unwrap_value().deref());
                 *error *= Constant::Scalar(learn_rate);
-            println!("error: {}", error);
                 self.mutate_value(&|x| sub_assign(x, &error));
             }
             Expr::Neg(ref f) => {
