@@ -8,6 +8,7 @@ extern "C" {
   void map_abs(Matrix *m, Matrix *result);
   void map_signum(Matrix *m, Matrix *result);
   void map_sigmoid(Matrix *m, Matrix *result);
+  void map_one_minus(Matrix *m, Matrix *result);
 
   void elemwise_mul(Matrix *m1, Matrix *m2, Matrix *result);
   void elemwise_add(Matrix *m1, Matrix *m2, Matrix *result);

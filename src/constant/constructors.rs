@@ -3,7 +3,6 @@ use std::ptr;
 
 extern {
     fn alloc_matrix(m: *mut Matrix, width: i32, height: i32); // allocates on device
-    fn free_matrix(m: *mut Matrix);
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
     fn init_matrix(m: *mut Matrix, array: *const f32, width: i32, height: i32);
     fn fill_matrix(m: *mut Matrix, value: f32);
@@ -42,7 +41,7 @@ impl Constant {
 
     pub fn empty_like(c: &Constant) -> Constant {
         match *c {
-            Constant::Scalar(x) => Constant::Scalar(0.),
+            Constant::Scalar(_) => Constant::Scalar(0.),
             Constant::Matrix(ref m) => Constant::Matrix(Matrix::empty_like(m))
         }
     }

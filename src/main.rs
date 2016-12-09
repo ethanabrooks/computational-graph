@@ -4,7 +4,7 @@ mod function;
 mod constant; 
 
 #[allow(unused_imports)]
-use function::{input, param, scalar, matrix, dot, new_constant};
+use function::{input, param, scalar, matrix, dot, new_constant, abs, sigmoid};
 #[allow(unused_imports)]
 use constant::{Matrix, Constant};
 #[allow(unused_imports)]
@@ -20,9 +20,9 @@ fn main() {
     //let b = scalar(-3.); 
     //let y = input("y", vec![]);
     //println!("a * b: {}", &a * &b);
-    //let x = param("x", Scalar(14.));
+    let x = param("x", Scalar(14.));
     //let z = param("z", Scalar(10.));
-    let x = param("x", Constant::new(vec![2000, 300], 1.));
+    //let x = param("x", Constant::new(vec![2000, 300], 1.));
                    //1., 2., 3., 
                    //1., 2., 1.])); 
     //let b = matrix(2, 2, vec![
@@ -32,7 +32,7 @@ fn main() {
 
     //let x = param( "x", new_matrix( 2, 3, vec![
                                     //1., 1., 1., 
-                                    //1., 1., 1.])); 
+                                    //7., 1., 1.])); 
 
     //unsafe { print_matrix(a) };
 
@@ -51,8 +51,8 @@ fn main() {
     //let f = (&x + &b).abs() * (&z + &a);
 
     //let f = (dot(&x, &y) + b).abs();
-    let f = dot(&x, &b);
-    //let f = x .sigmoid();
+    //let f = dot(&x, &b, false, false);
+    let f = sigmoid(&x); 
     //println!("f: {}", &f);
 
     let mut args = HashMap::new();
@@ -74,7 +74,7 @@ fn main() {
 
     //println!("grad x: {}", f.grad("x"));
 
-    f.minimize(&args, 0.1, 1000);
+    f.minimize(&args, 0.01, 1000);
 
     //println!("f: {}", &f);
     //println!("output: {}", f.eval(&args));

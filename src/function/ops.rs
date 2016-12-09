@@ -31,6 +31,13 @@ fn apply2(expr: &Fn(Function, Function) -> Expr,
     }
 }
 
+pub fn abs(f: &Function) -> Function {
+    f.apply(&|f| Expr::Abs(f))
+}
+
+pub fn sigmoid(f: &Function) -> Function {
+    f.apply(&|f| Expr::Sigmoid(f))
+}
 
 impl Function {
     fn apply(&self, expr: &Fn(Function) -> Expr) -> Function {
@@ -45,16 +52,8 @@ impl Function {
     }
 
     // TODO: make methods assign in-place
-    pub fn abs(&self) -> Function {
-        self.apply(&|f| Expr::Abs(f))
-    }
-
     pub fn signum(&self) -> Function {
         self.apply(&|f| Expr::Signum(f))
-    }
-
-    pub fn sigmoid(&self) -> Function {
-        self.apply(&|f| Expr::Sigmoid(f))
     }
 }
 
@@ -123,7 +122,7 @@ impl<'a> Mul for &'a Function {
 
 // TODO: abstact some of this with apply2
 // TODO: optimization for identities?
-pub fn dot(f1: &Function, f2: &Function) -> Function {
+pub fn dot(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
     let params1 = f1.params.clone();
     let params2 = f2.params.clone();
     let union = params1.union(&params2).cloned().collect();

@@ -63,6 +63,7 @@ extern "C" {
   UN_MAP(abs, x < 0 ? -x : x) // map_aps
   UN_MAP(signum, x < 0 ? -1 : 1) // map_signum
   UN_MAP(sigmoid, 1.0f / (1.0f + expf(-x))) // map_sigmoid
+  UN_MAP(one_minus, 1.0f - x) // map_one_minus
 
   BIN_ELEMWISE(mul, *) // elemwise_mult
   BIN_ELEMWISE(add, +) // elemwise_add
