@@ -23,7 +23,7 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
 
                 for j in 0..src.width {
                     result = write!(f, "{:^10.3}", unsafe {
-                        *dst.as_ptr().offset((i * src.width + j) as isize) 
+                        *dst.as_ptr().offset((j * src.height + i) as isize) 
                     });
                     if result.is_err() { return result }
                 }
