@@ -11,6 +11,7 @@ extern {
     fn broadcast_sub(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub_rev(m: *const Matrix, val: f32, result: *mut Matrix);
     fn broadcast_mul_rev(m: *const Matrix, val: f32, result: *mut Matrix);
+    fn broadcast_add_rev(m: *const Matrix, val: f32, result: *mut Matrix);
     fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn elemwise_sub(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn elemwise_mul(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
@@ -69,6 +70,19 @@ fn apply2_comm(scalar_fun: &Fn(f32, f32) -> f32,
     }
 }
 
+fn sigmoid_f32(x: f32) -> f32 {
+    1. / (1. + (-x).exp())
+}
+
+pub fn abs(c: &Constant) -> Constant {
+    c.apply(&|x: f32| x.abs(), map_abs)
+}
+
+pub fn sigmoid(c: &Constant) -> Constant {
+    c.apply(&sigmoid_f32, map_sigmoid)
+}
+
+
 impl Constant {
     // allocates on device
     fn apply(&self, scalar_fun: &Fn(f32) -> f32, 
@@ -84,10 +98,10 @@ impl Constant {
         }
     }
 
-    fn assign1(&mut self, scalar_fun: &Fn(f32), 
+    fn assign1(&mut self, scalar_fun: &Fn(f32) -> f32, 
                  matrix_fun: unsafe extern "C" fn(*const Matrix, *mut Matrix)) {
         match self {
-            &mut Constant::Scalar(x) => scalar_fun(x),
+            &mut Constant::Scalar(x) => *self = Constant::Scalar(scalar_fun(x)),
             &mut Constant::Matrix(ref mut m) => unsafe { matrix_fun(m, m) },
         }
     }
@@ -116,16 +130,8 @@ impl Constant {
         }
     }
 
-    pub fn abs(&self) -> Constant {
-        self.apply(&|x: f32| x.abs(), map_abs)
-    }
-
     pub fn signum(&self) -> Constant {
         self.apply(&|x: f32| x.signum(), map_signum)
-    }
-
-    pub fn sigmoid(&self) -> Constant {
-        self.apply(&|x: f32| 1. / (1. + (-x).exp()), map_sigmoid)
     }
 
     pub fn all_equal(&self, val: f32) -> bool {
@@ -241,14 +247,22 @@ impl Constant {
                       broadcast_mul_rev, elemwise_mul);
     }
 
-    pub fn sub_assign(&mut self, other: &Constant) {
+    pub fn add_assign(&mut self, other: &Constant) {
         self.assign2(other, &|x1: &mut f32, x2| *x1 += x2,
-                     broadcast_add, elemwise_add);
+                     broadcast_add_rev, elemwise_add);
     }
 
     pub fn sub_assign(&mut self, other: &Constant) {
         self.assign2(other, &|x1: &mut f32, x2| *x1 -= x2,
                      broadcast_sub_rev, elemwise_sub);
+    }
+
+    pub fn sigmoid_assign(&mut self) {
+        self.assign1(&sigmoid_f32, map_sigmoid);
+    }
+
+    pub fn abs_assign(&mut self) {
+        self.assign1(&|x| x.abs(), map_abs);
     }
 
     pub fn negate(&mut self) {

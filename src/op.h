@@ -19,6 +19,7 @@ extern "C" {
 
   void broadcast_sub_rev(Matrix *m, float val, Matrix *result); // e.g. [ [1 1] [1 1] ] - 1
   void broadcast_mul_rev(Matrix *m, float val, Matrix *result); // e.g. [ [1 1] [1 1] ] * 1
+  void broadcast_add_rev(Matrix *m, float val, Matrix *result); // for use with assign2
 
   bool reduce_equal(const Matrix *m, float x);
   float reduce_sum(const Matrix *m);

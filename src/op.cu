@@ -74,6 +74,7 @@ extern "C" {
 
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
   BIN_BROADCAST_REV(mul, *) // broadcast_mul_rev
+  BIN_BROADCAST_REV(add, +) // broadcast_add_rev
 
   void gemm(const Matrix *m1, bool trans1,
             const Matrix *m2, bool trans2,
