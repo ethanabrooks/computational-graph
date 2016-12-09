@@ -20,7 +20,7 @@ fn main() {
     //let b = scalar(-3.); 
     //let y = input("y", vec![]);
     //println!("a * b: {}", &a * &b);
-    let x = param("x", Scalar(14.));
+    let x = param("x", Scalar(1.));
     //let z = param("z", Scalar(10.));
     //let x = param("x", Constant::new(vec![2000, 300], 1.));
                    //1., 2., 3., 
@@ -74,7 +74,7 @@ fn main() {
 
     //println!("grad x: {}", f.grad("x"));
 
-    f.minimize(&args, 0.01, 1000);
+    f.minimize(&args, 0.1, 1000);
 
     //println!("f: {}", &f);
     //println!("output: {}", f.eval(&args));

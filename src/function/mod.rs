@@ -158,11 +158,12 @@ impl Function {
             }
             Expr::Signum(_) => panic!("sign is not differentiable"),
             Expr::Sigmoid(ref f) => {
+                let val = self.unwrap_value();
                 self.mutate_placeholder(0, &|x| {
-                    x.copy(f.unwrap_value().deref());        // out
-                    one_minus(x);                            // 1 - out
-                    mul_assign(x, f.unwrap_value().deref()); // out * (1 - out)
-                    mul_assign(x, error);                    // error * out * (1 - out)
+                    x.copy(val.deref());        // out
+                    one_minus(x);               // 1 - out
+                    mul_assign(x, val.deref()); // out * (1 - out)
+                    mul_assign(x, error);       // error * out * (1 - out)
                 });
 
                 f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
