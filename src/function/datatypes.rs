@@ -1,8 +1,7 @@
-use constant::{Constant, Matrix};
+use constant::Constant;
 use std::cell::{RefCell, Ref, RefMut};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::rc::Rc;
-use std::ops::Deref;
 
 type Shared<T> = Rc<RefCell<T>>;
 

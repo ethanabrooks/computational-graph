@@ -1,5 +1,4 @@
 use std::fmt;
-use std::io::{Write, stderr};
 use function::datatypes::{Function, Expr};
 
 // helper function for fmt

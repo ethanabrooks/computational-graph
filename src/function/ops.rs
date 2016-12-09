@@ -1,8 +1,6 @@
-use function::datatypes::{shared, Function, Expr};
+use function::datatypes::{Function, Expr};
 use function::constructors::new_constant;
-use constant::Constant;
 use std::collections::HashMap;
-use std::rc::Rc;
 use std::ops::{Neg, Add, Sub, Mul};
 
 fn apply2(expr: &Fn(Function, Function) -> Expr, 
@@ -31,10 +29,12 @@ fn apply2(expr: &Fn(Function, Function) -> Expr,
     }
 }
 
+#[allow(dead_code)]
 pub fn abs(f: &Function) -> Function {
     f.apply(&|f| Expr::Abs(f))
 }
 
+#[allow(dead_code)]
 pub fn sigmoid(f: &Function) -> Function {
     f.apply(&|f| Expr::Sigmoid(f))
 }
@@ -122,7 +122,7 @@ impl<'a> Mul for &'a Function {
 
 // TODO: abstact some of this with apply2
 // TODO: optimization for identities?
-pub fn dot(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
+pub fn dot(f1: &Function, f2: &Function) -> Function {
     let params1 = f1.params.clone();
     let params2 = f2.params.clone();
     let union = params1.union(&params2).cloned().collect();

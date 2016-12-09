@@ -6,14 +6,11 @@ mod datatypes;
 mod ops;
 mod print;
 
-use std;
-
 use std::collections::HashMap;
-use std::cell::Ref;
 use std::io::{Write, stderr};
 use std::ops::{Deref, DerefMut};
 use constant;
-use constant::{Constant, Matrix, mul_assign, add_assign, sub_assign,
+use constant::{Constant, mul_assign, add_assign, sub_assign,
                sigmoid_assign, signum_assign, abs_assign, negate, one_minus};
 use self::datatypes::{Function, Expr};
 
@@ -25,10 +22,10 @@ impl Function {
                 match args.get::<str>(&i.name) {
                     Some(val) => val.clone(),
                     None => panic!("`args` is missing {}. Content of `args`: \n{:#?}",
-                                   &i.name, args), 
+                                   &i.name, args),
                 }
             }
-            Expr::Param(ref p)        => self.unwrap_value().clone(),
+            Expr::Param(_)            => self.unwrap_value().clone(),
             Expr::Neg(ref f)          => -f.eval(args),
             Expr::Abs(ref f)          => f.eval(args).abs(),
             Expr::Sigmoid(ref f)      => f.eval(args).sigmoid(),
@@ -36,17 +33,17 @@ impl Function {
             Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
             Expr::Sub(ref f1, ref f2) => f1.eval(args) - f2.eval(args),
             Expr::Mul(ref f1, ref f2) => f1.eval(args) * f2.eval(args),
-            Expr::Dot(ref f1, ref f2) => 
+            Expr::Dot(ref f1, ref f2) =>
                 constant::dot(&f1.eval(args), &f2.eval(args), false, false)
         }
     }
 
     pub fn grad(&self, param: &str) -> Function {
         if self.params.contains::<str>(&param) {
-            match *self.body { 
+            match *self.body {
                 Expr::Neg(ref f)          => -f.grad(param),
                 Expr::Abs(ref f)          => f.signum() * f.grad(param),
-                Expr::Signum(ref f)       => panic!("signum is nondifferentiable"),
+                Expr::Signum(_)           => panic!("signum is nondifferentiable"),
                 Expr::Sigmoid(ref f)      =>
                     f.grad(param) * (self.clone() * (&scalar(1.) - self)),
                 Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
@@ -83,7 +80,7 @@ impl Function {
 }
 
 impl Function {
-    fn assign1(&self, child: &Function, args: &HashMap<&str, Constant>, 
+    fn assign1(&self, child: &Function, args: &HashMap<&str, Constant>,
                mutation: &Fn(&mut Constant)) {
         child.assign_values(args);
         if self.get_value().is_none() {
@@ -120,7 +117,7 @@ impl Function {
             Expr::Abs(ref f) => self.assign1(f, args, &abs_assign),
             Expr::Signum(ref f) => {
                 writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
-                Running `backprop` on this function will cause an error");
+                Running `backprop` on this function will cause an error").unwrap();
                 self.assign1(f, args, &signum_assign);
             }
             Expr::Sigmoid(ref f) => self.assign1(f, args, &sigmoid_assign),
@@ -136,21 +133,20 @@ impl Function {
                     self.set_value(Constant::empty_for_dot(val1.deref(), val2.deref(),
                                                           false, false));
                 }
-                self.mutate_value(&|x| x.assign_dot(val1.deref(), val2.deref(), 
+                self.mutate_value(&|x| x.assign_dot(val1.deref(), val2.deref(),
                                                     false, false));
             }
         }
     }
 
-    // TODO: preallocate error at every layer
     fn backprop(&self, error: &mut Constant, learn_rate: f32) {
         self.maybe_alloc_placeholders(error);
         if self.params.is_empty() { return; }
         match *self.body {
             Expr::Param(_) => {
-            println!("value: {}", self.unwrap_value().deref()); 
+            println!("value: {}", self.unwrap_value().deref());
                 *error *= Constant::Scalar(learn_rate);
-            println!("error: {}", error); 
+            println!("error: {}", error);
                 self.mutate_value(&|x| sub_assign(x, &error));
             }
             Expr::Neg(ref f) => {
@@ -159,9 +155,9 @@ impl Function {
             }
             Expr::Abs(ref f) => {
                 self.mutate_placeholder(0, &|x| {
-                    x.copy(f.unwrap_value().deref());  // out
-                    signum_assign(x);                   // signum(out)
-                    mul_assign(x, error); // error * signum(out)
+                    x.copy(f.unwrap_value().deref()); // out
+                    signum_assign(x);                 // signum(out)
+                    mul_assign(x, error);             // error * signum(out)
                 });
                 f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             }
@@ -176,13 +172,9 @@ impl Function {
                 });
 
                 f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-
-                //let value = self.unwrap_value();
-                //f.backprop(error, learn_rate)
             }
             Expr::Add(ref f1, ref f2) => {
                 self.mutate_placeholder(0, &|x| x.copy(error));
-
                 f1.backprop(error, learn_rate);
                 f2.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             }
@@ -194,9 +186,6 @@ impl Function {
 
                 f1.backprop(error, learn_rate);
                 f2.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-
-                //f2.backprop(&mut -error.clone(), learn_rate); // CLONE
-                //f1.backprop(error, learn_rate);
             }
             Expr::Mul(ref f1, ref f2) => {
                 self.mutate_placeholder(0, &|x| {
@@ -207,26 +196,17 @@ impl Function {
 
                 f1.backprop(error, learn_rate);
                 f2.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-
-                //f1.backprop(&mut (f2.unwrap_value().deref() * &error), learn_rate);
-                //f2.backprop(&mut (f1.unwrap_value().deref() * &error), learn_rate);
             }
             Expr::Dot(ref f1, ref f2) => {
                 // placeholder[0]: dot(error, f2.T)
-                self.mutate_placeholder(0, &|x| x.assign_dot(&error, &f2.unwrap_value(), 
+                self.mutate_placeholder(0, &|x| x.assign_dot(&error, &f2.unwrap_value(),
                                                              false, true));
                 // placeholder[1]: dot(f1.T, error)
-                self.mutate_placeholder(1, &|x| x.assign_dot(&f1.unwrap_value(), 
+                self.mutate_placeholder(1, &|x| x.assign_dot(&f1.unwrap_value(),
                                                              &error, true, false));
-                                                             
+
                 f1.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
                 f2.backprop(self.get_placeholder(1).deref_mut(), learn_rate);
-
-                //let mut error1 = dot(&error, &f2.unwrap_value(), false, true);
-                //let mut error2 = dot(&f1.unwrap_value(), &error, true, false);
-
-                //f1.backprop(&mut error1, learn_rate);
-                //f2.backprop(&mut error2, learn_rate);
             }
             Expr::Constant(_)| Expr::Input(_) => return,
         }
@@ -236,7 +216,7 @@ impl Function {
         match *self.body {
             Expr::Constant(_) | Expr::Input(_)   | Expr::Param(_) |
             Expr::Neg(_)      | Expr::Signum(_) => return,
-            Expr::Sigmoid(ref f) | Expr::Add(ref f, _) | 
+            Expr::Sigmoid(ref f) | Expr::Add(ref f, _) |
             Expr::Sub(ref f, _)  | Expr::Mul(ref f, _) | Expr::Abs(ref f) => {
                 if self.num_placeholders() < 1 {
                     self.alloc_placeholders(
@@ -245,7 +225,7 @@ impl Function {
 
                 }
             }
-            Expr::Dot(ref f1, ref f2) => 
+            Expr::Dot(ref f1, ref f2) =>
                 if self.num_placeholders() < 2 {
                     self.alloc_placeholders(
                         vec![Constant::empty_for_dot(
@@ -257,3 +237,4 @@ impl Function {
     }
 
 }
+

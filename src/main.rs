@@ -79,7 +79,7 @@ fn main() {
     //let y = param("y", Scalar(0.9));
 
     //let f = abs(&(dot(&a, &x, false, false) - b));
-    let f = abs(&(dot(&a, &x, false, false) - b));
+    let f = abs(&(dot(&a, &x) - b));
     let mut args = HashMap::new();
     args.insert("y", Scalar(-3.));
 

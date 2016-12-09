@@ -1,5 +1,3 @@
-use std::process::exit;
-
 extern {
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
     fn free_matrix(m: *mut Matrix);
