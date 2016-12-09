@@ -26,10 +26,20 @@ extern "C" {
     check(stat != CUBLAS_STATUS_SUCCESS, "download_matrix failed");
   }
 
+
+  __global__ 
+  void _transpose(int len, float *out, const float *in, int lda, int ldb) {
+    SET(out, in[(IDx % lda) * ldb + int(IDx / lda)])
+  }
+
   void upload_matrix(const float *src, Matrix *dst) {
-    cublasStatus_t blas_stat = cublasSetMatrix(dst->width, dst->height, 
-        sizeof(*src), src, dst->width, dst->dev_array, dst->width); 
-    check(blas_stat != CUBLAS_STATUS_SUCCESS, "upload_matrix failed"); 
+    float *temp = safe_cuda_malloc<float>(size(dst));
+    host2device<float>(size(dst), src, temp);
+    /*cublasStatus_t blas_stat = cublasSetMatrix(dst->width, dst->height, */
+        /*sizeof(*src), src, dst->width, dst->dev_array, dst->width); */
+    /*check(blas_stat != CUBLAS_STATUS_SUCCESS, "upload_matrix failed"); */
+    DEFAULT_LAUNCH(_transpose, dst, temp, dst->height, dst->width);
+    cudaFree(temp);
   }
 
   // allocates on device
@@ -63,7 +73,7 @@ extern "C" {
   }
 
   void fill_matrix(Matrix *matrix, float value) {
-    DEFAULT_LAUNCH(_memset, matrix, value)
+    DEFAULT_LAUNCH(_memset, matrix, value);
   }
 
 
@@ -77,7 +87,7 @@ extern "C" {
   int i, j;
   rng(i, 0, matrix->height) {
     rng(j, 0, matrix->width) {
-      printf("%7.0f", array[MAT_IDX(i, j, matrix->width)]);
+      printf("%7.0f", array[MAT_IDX(j, i, matrix->height)]);
     }
     printf("\n");
   }

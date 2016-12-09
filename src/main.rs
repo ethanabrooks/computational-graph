@@ -12,6 +12,8 @@ use constant::{Matrix, Constant};
 use constant::Constant::Scalar;
 #[allow(unused_imports)]
 use std::collections::HashMap;
+#[allow(unused_imports)]
+use std::ops::Deref;
 
 extern { fn init_cublas(); }
 
@@ -22,10 +24,6 @@ fn main() {
                    //1., 0., 
                    //0., 1.]); 
     //let b = new_constant(Constant::new(vec![300, 2000], 4.));
-
-    //let x = param( "x", new_matrix( 2, 3, vec![
-                                    //1., 1., 1., 
-                                    //7., 1., 1.])); 
 
     //unsafe { print_matrix(a) };
 
@@ -59,26 +57,37 @@ fn main() {
     //println!("a * b: {}", &a * &b);
     //let a = scalar(2.); 
     //let b = scalar(3.); 
-    let b = matrix(3, 2, vec![
-                   2., 2., 
-                   2., -2.,
-                   2., 2.]); 
-    //let a = matrix(2, 2, vec![
-                   //2., 2., 
-                   //2., 2.]); 
+    let a = matrix(2, 2, vec![
+                   1., 2., 
+                  -3., 4.]); 
 
-    let x = param("x", Constant::Matrix(Matrix::new(2, 3, vec![
-                   1., 2., 3., 
-                   1., 2., 1.]))); 
-    //let x = param("x", Scalar(1.));
-    //let z = param("z", Scalar(10.));
-    let f = x;
+    let x = param("x", Constant::Matrix(Matrix::new(2, 2, vec![
+                   1., 3., 
+                   1., 1.]))); 
+
+    let b = matrix(2, 2, vec![
+                   5., 3.,
+                   5., 1.]); 
+
+    //let y = param( "y", Constant::Matrix(Matrix::new(3, 2, vec![
+                                    //1., 1., 
+                                    //7., 1.,
+                                    //2., 5.]))); 
+
+
+    //let x = param("x", Scalar(0.9));
+    //let y = param("y", Scalar(0.9));
+
+    //let f = abs(&(dot(&a, &x, false, false) - b));
+    let f = dot(&a, &x, false, false);
     let mut args = HashMap::new();
     args.insert("y", Scalar(-3.));
 
-    f.minimize(&args, 0.1, 1000);
+    //f.minimize(&args, 0.1, 150);
 
     println!("f: {}", &f);
+    println!("eval f: {}", &f.eval(&args));
+    //println!("output f: {}", &f.unwrap_value().deref());
 
     //println!("{}", Constant::Matrix(Matrix::new(2, 3, vec![
                    //1., 2., 3., 

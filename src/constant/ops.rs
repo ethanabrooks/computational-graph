@@ -109,8 +109,8 @@ impl Constant {
                 unsafe { matrix_scalar_fun(m, x, m) },
             (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) =>
                 unsafe { matrix_fun(m1, m2, m1) },
-            (&mut Constant::Scalar(_), &Constant::Matrix(_)) =>
-                panic!("Can't assign from a matrix to a scalar without doing weird stuff."),
+            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) =>
+                scalar_fun(x, other.avg())
         }
     }
 

@@ -38,7 +38,7 @@ impl fmt::Display for Expr {
             Expr::Add(ref a, ref b) => write_with_parens(a, "+", b, f),
             Expr::Sub(ref a, ref b) => write_with_parens(a, "-", b, f),
             Expr::Mul(ref a, ref b) => write_with_parens(a, "×", b, f),
-            Expr::Dot(ref a, ref b) => write_with_parens(a, "", b, f),
+            Expr::Dot(ref a, ref b) => write_with_parens(a, "·", b, f),
         }
     }
 }

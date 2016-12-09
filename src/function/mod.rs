@@ -130,9 +130,14 @@ impl Function {
             Expr::Dot(ref f1, ref f2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
-                self.mutate_value(&|x| x.assign_dot(f1.unwrap_value().deref(), 
-                                                    f2.unwrap_value().deref(), 
-                                                    false, false))
+                let val1 = f1.unwrap_value();
+                let val2 = f2.unwrap_value();
+                if self.get_value().is_none() {
+                    self.set_value(Constant::empty_for_dot(val1.deref(), val2.deref(),
+                                                          false, false));
+                }
+                self.mutate_value(&|x| x.assign_dot(val1.deref(), val2.deref(), 
+                                                    false, false));
             }
         }
     }
@@ -143,9 +148,9 @@ impl Function {
         if self.params.is_empty() { return; }
         match *self.body {
             Expr::Param(_) => {
-            //println!("error: {}", error); 
-            //println!("value: {}", self.unwrap_value().deref()); 
+            println!("value: {}", self.unwrap_value().deref()); 
                 *error *= Constant::Scalar(learn_rate);
+            println!("error: {}", error); 
                 self.mutate_value(&|x| sub_assign(x, &error));
             }
             Expr::Neg(ref f) => {

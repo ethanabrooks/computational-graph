@@ -1,8 +1,6 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#define SET(result, value) if (IDx < len) { result[IDx] = value; }
-
 typedef struct matrix_struct {
    unsigned height;
    unsigned width;
