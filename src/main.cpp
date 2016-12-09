@@ -46,24 +46,24 @@ int main (void){
   check(!array, "host memory allocation failed"); 
 
   init_cublas();
-  alloc_matrix(&m1, 3, 2);
-  alloc_matrix(&m2, 2, 3);
-  alloc_matrix(&result, 3, 3);
+  //alloc_matrix(&m1, 2, 2);
+  alloc_matrix(&m2, 3, 2);
+  //alloc_matrix(&result, 3, 3);
 
-  init_matrix(&m1, weights_vals, 3, 2);
-  init_matrix(&m2, weights_vals, 2, 3);
+  //init_matrix(&m1, input_vals, 2, 2);
+  init_matrix(&m2, weights_vals, 3, 2);
 
   //fill_matrix(&m1, 1);
   //fill_matrix(&m2, 2);
 
   //fill_matrix(&result, 0);
-  print_matrix(&m1);
-  printf("\n");
   print_matrix(&m2);
+  //printf("\n");
+  //print_matrix(&m2);
   //print_matrix(&result);
-  printf("\n");
-  gemm(&m1, false, &m2, false, &result);
-  print_matrix(&result);
+  //printf("\n");
+  //gemm(&m1, false, &m2, false, &result);
+  //print_matrix(&result);
   //fill_matrix(&m2, 3);
   //elemwise_add(&m1, &m2, &matrix);
   //printf("\n");

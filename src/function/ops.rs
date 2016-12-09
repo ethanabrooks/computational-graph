@@ -1,17 +1,17 @@
 use function::datatypes::{shared, Function, Expr};
-use function::constructors::{new_function, new_constant};
+use function::constructors::new_constant;
 use constant::Constant;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::ops::{Neg, Add, Sub, Mul};
 
-fn bin_apply(expr: &Fn(Function, Function) -> Expr, 
+fn apply2(expr: &Fn(Function, Function) -> Expr, 
              f1: &Function, f2: &Function, 
              identity: f32) -> Function {
     let params1 = f1.params.clone();
     let params2 = f2.params.clone();
     let union = params1.union(&params2).cloned().collect();
-    let function = new_function(None, union, expr(f1.clone(), f2.clone()));
+    let function = Function::new(None, union, expr(f1.clone(), f2.clone()));
     match (&*f1.body, &*f2.body) {
         (&Expr::Constant(_), &Expr::Constant(_)) =>
 
@@ -31,14 +31,17 @@ fn bin_apply(expr: &Fn(Function, Function) -> Expr,
     }
 }
 
+pub fn abs(f: &Function) -> Function {
+    f.apply(&|f| Expr::Abs(f))
+}
+
+pub fn sigmoid(f: &Function) -> Function {
+    f.apply(&|f| Expr::Sigmoid(f))
+}
 
 impl Function {
     fn apply(&self, expr: &Fn(Function) -> Expr) -> Function {
-        Function {
-            value: shared::new(None),
-            params: self.params.clone(),
-            body: Rc::new(expr(self.clone())),
-        }
+        Function::new(None, self.params.clone(), expr(self.clone()))
     }
 
     fn all_equal(&self, val:f32) -> bool {
@@ -49,16 +52,8 @@ impl Function {
     }
 
     // TODO: make methods assign in-place
-    pub fn abs(&self) -> Function {
-        self.apply(&|f| Expr::Abs(f))
-    }
-
     pub fn signum(&self) -> Function {
         self.apply(&|f| Expr::Signum(f))
-    }
-
-    pub fn sigmoid(&self) -> Function {
-        self.apply(&|f| Expr::Sigmoid(f))
     }
 }
 
@@ -99,14 +94,14 @@ impl <'a> Neg for &'a Function {
 impl<'a> Add for &'a Function {
     type Output = Function;
     fn add(self, other: &Function) -> Function {
-        bin_apply(&|f1, f2| Expr::Add(f1, f2), self, other, 0.) 
+        apply2(&|f1, f2| Expr::Add(f1, f2), self, other, 0.) 
     }
 }
 
 impl<'a> Sub for &'a Function {
     type Output = Function;
     fn sub(self, other: &Function) -> Function {
-        bin_apply(&|f1, f2| Expr::Sub(f1, f2), self, other, 0.) 
+        apply2(&|f1, f2| Expr::Sub(f1, f2), self, other, 0.) 
     }
 }
 
@@ -121,17 +116,17 @@ impl<'a> Mul for &'a Function {
         if other.all_equal(0.) {
             return other.clone()
         }
-        bin_apply(&|f1, f2| Expr::Mul(f1, f2), self, other, 1.) 
+        apply2(&|f1, f2| Expr::Mul(f1, f2), self, other, 1.) 
     }
 }
 
-// TODO: abstact some of this with bin_apply
+// TODO: abstact some of this with apply2
 // TODO: optimization for identities?
-pub fn dot(f1: &Function, f2: &Function) -> Function {
+pub fn dot(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
     let params1 = f1.params.clone();
     let params2 = f2.params.clone();
     let union = params1.union(&params2).cloned().collect();
-    let function = new_function(None, union, Expr::MatMul(f1.clone(), f2.clone()));
+    let function = Function::new(None, union, Expr::Dot(f1.clone(), f2.clone()));
 
     // optimization to combine constants
     match (&*f1.body, &*f2.body) { 

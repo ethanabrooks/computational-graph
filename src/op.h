@@ -8,6 +8,7 @@ extern "C" {
   void map_abs(Matrix *m, Matrix *result);
   void map_signum(Matrix *m, Matrix *result);
   void map_sigmoid(Matrix *m, Matrix *result);
+  void map_one_minus(Matrix *m, Matrix *result);
 
   void elemwise_mul(Matrix *m1, Matrix *m2, Matrix *result);
   void elemwise_add(Matrix *m1, Matrix *m2, Matrix *result);
@@ -19,6 +20,7 @@ extern "C" {
 
   void broadcast_sub_rev(Matrix *m, float val, Matrix *result); // e.g. [ [1 1] [1 1] ] - 1
   void broadcast_mul_rev(Matrix *m, float val, Matrix *result); // e.g. [ [1 1] [1 1] ] * 1
+  void broadcast_add_rev(Matrix *m, float val, Matrix *result); // for use with assign2
 
   bool reduce_equal(const Matrix *m, float x);
   float reduce_sum(const Matrix *m);

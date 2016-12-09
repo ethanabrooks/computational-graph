@@ -49,7 +49,7 @@
     DEFAULT_LAUNCH(_ ## name, result, m1->dev_array, m2->dev_array); \
   }
 #define CHECK_EQUAL(side1, side2) \
-  check(side1 != side2,  "# side1 must equal # side2")
+  check(side1 != side2,  #side1 " must equal " #side2)
 
 void check_all_eq(const Matrix *m1, const Matrix *m2, const Matrix *result) {
   CHECK_EQUAL(m1->height, m2->height);
@@ -63,6 +63,7 @@ extern "C" {
   UN_MAP(abs, x < 0 ? -x : x) // map_aps
   UN_MAP(signum, x < 0 ? -1 : 1) // map_signum
   UN_MAP(sigmoid, 1.0f / (1.0f + expf(-x))) // map_sigmoid
+  UN_MAP(one_minus, 1.0f - x) // map_one_minus
 
   BIN_ELEMWISE(mul, *) // elemwise_mult
   BIN_ELEMWISE(add, +) // elemwise_add
@@ -74,6 +75,7 @@ extern "C" {
 
   BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
   BIN_BROADCAST_REV(mul, *) // broadcast_mul_rev
+  BIN_BROADCAST_REV(add, +) // broadcast_add_rev
 
   void gemm(const Matrix *m1, bool trans1,
             const Matrix *m2, bool trans2,
