@@ -11,7 +11,7 @@ extern {
 
 impl Constant {
     // allocates on device
-    pub fn new(dims: &Vec<i32>, val: f32) -> Constant {
+    pub fn new(dims: Vec<i32>, val: f32) -> Constant {
         match dims.len() {
             0 => Constant::Scalar(val),
             2 => {
@@ -27,7 +27,7 @@ impl Constant {
     pub fn copy_and_fill(&self, val: f32) -> Constant {
         match *self {
             Constant::Scalar(_) => Constant::Scalar(val),
-            Constant::Matrix(ref m) => Constant::new(&vec![m.height, m.width], val),
+            Constant::Matrix(ref m) => Constant::new(vec![m.height, m.width], val),
         }
     }
 
@@ -58,7 +58,7 @@ impl Matrix {
             width: width,
             dev_array: ptr::null_mut(),
         };
-        println!("allocating");
+        //println!("allocating");
         unsafe { alloc_matrix(&mut matrix, height, width) };
         matrix
     }
@@ -67,11 +67,11 @@ impl Matrix {
     pub fn empty_like(m: &Matrix) -> Matrix { Matrix::empty(m.height, m.width) }
 
     // allocates on device
-    pub fn new(height: i32, width: i32, values: Vec<f32>) -> Constant {
+    pub fn new(height: i32, width: i32, values: Vec<f32>) -> Matrix {
         assert!(values.len() as i32 == height * width, "wrong number of values");
         let mut matrix = Matrix::empty(height, width);
         unsafe { init_matrix(&mut matrix, values.as_ptr(), height, width) };
-        Constant::Matrix(matrix)
+        matrix
     }
 
     pub fn empty_for_dot(m1: &Matrix, m2: &Matrix, 

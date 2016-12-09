@@ -4,8 +4,8 @@
 #define SET(result, value) if (IDx < len) { result[IDx] = value; }
 
 typedef struct matrix_struct {
-   int height;
-   int width;
+   unsigned height;
+   unsigned width;
    float *dev_array;
 } Matrix;
 

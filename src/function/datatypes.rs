@@ -8,7 +8,10 @@ type Shared<T> = Rc<RefCell<T>>;
 
 //pub fn get_shared<T>(s: &Shared<T>) -> Ref<T> { s.borrow() }
 
-impl<T> Shared<T> {
+pub mod shared {
+    use function::datatypes::Shared;
+    use std::{cell, rc};
+
     pub fn new<T>(value: T) -> Shared<T> {
         rc::Rc::new(cell::RefCell::new(value))
     }
@@ -47,7 +50,7 @@ pub struct Function {
     pub value: Shared<Option<Constant>>,
     pub params: HashSet<String>,
     pub body: Rc<Expr>,
-    pub placeholders: RefCell<[Constant; N_PLACEHOLDERS]>,
+    pub placeholders: RefCell<Vec<Constant>>,
 }
 
 impl Function {
@@ -73,7 +76,26 @@ impl Function {
         })
     }
 
-    pub fn alloc_placeholders(&mut self, c: [Constant]) {
-        self.placeholders.borrow_mut() = c;
+    pub fn alloc_placeholders(&self, c: Vec<Constant>) {
+        *self.placeholders.borrow_mut() = c;
+    }
+
+    pub fn get_placeholder(&self, i: usize) -> RefMut<Constant> {
+        RefMut::map(self.placeholders.borrow_mut(), |x| match x.get_mut(i) {
+            Some(x) => x,
+            None => panic!("Can't access placeholders[{}].", i),
+        })
+        //self.placeholders.borrow_mut().get_mut(i).unwrap()
+    }
+
+    pub fn mutate_placeholder(&self, i: usize, f: &Fn(&mut Constant)) {
+        match self.placeholders.borrow_mut().get_mut(i) {
+            Some(ref mut placeholder) => f(placeholder),
+            None => panic!("Tried to mutate a placeholder that hasn't been assigned yet."),
+        }
+    }
+
+    pub fn num_placeholders(&self) -> usize {
+        self.placeholders.borrow().len()
     }
 }

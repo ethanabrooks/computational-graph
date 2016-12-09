@@ -20,7 +20,7 @@ extern {
     fn reduce_sum(matrix: *const Matrix) -> f32;
 }
 
-fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32, 
+fn apply2(scalar_fun: &Fn(f32, f32) -> f32, 
              scalar_matrix_fun: unsafe extern "C" fn(f32, *const Matrix, *mut Matrix),
              matrix_scalar_fun: unsafe extern "C" fn(*const Matrix, f32, *mut Matrix),
              matrix_fun: unsafe extern "C" fn(*const Matrix, *const Matrix, *mut Matrix),
@@ -46,10 +46,8 @@ fn bin_apply(scalar_fun: &Fn(f32, f32) -> f32,
     }
 }
 
-
-
 // allocates on device
-fn bin_apply_comm(scalar_fun: &Fn(f32, f32) -> f32, 
+fn apply2_comm(scalar_fun: &Fn(f32, f32) -> f32, 
              broadcast_matrix_fun: unsafe extern "C" fn(f32, *const Matrix, *mut Matrix),
              matrix_fun: unsafe extern "C" fn(*const Matrix, *const Matrix, *mut Matrix),
              c1: &Constant, c2: &Constant) -> Constant {
@@ -86,7 +84,7 @@ impl Constant {
         }
     }
 
-    fn u_assign(&mut self, scalar_fun: &Fn(f32), 
+    fn assign1(&mut self, scalar_fun: &Fn(f32), 
                  matrix_fun: unsafe extern "C" fn(*const Matrix, *mut Matrix)) {
         match self {
             &mut Constant::Scalar(x) => scalar_fun(x),
@@ -94,18 +92,17 @@ impl Constant {
         }
     }
 
-    fn b_assign(&mut self, other: &Constant, 
+    fn assign2(&mut self, other: &Constant, 
                   scalar_fun: &Fn(&mut f32, f32), 
                   matrix_scalar_fun: unsafe extern "C" fn(*const Matrix, f32, *mut Matrix),
                   matrix_fun: unsafe extern "C" fn(*const Matrix, *const Matrix, *mut Matrix)) {
         match (self, other) {
-            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) =>
-                scalar_fun(x1, x2),
+            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) => scalar_fun(x1, x2),
             (&mut Constant::Matrix(ref mut m), &Constant::Scalar(x)) =>
                 unsafe { matrix_scalar_fun(m, x, m) },
             (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) =>
                 unsafe { matrix_fun(m1, m2, m1) },
-            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(ref m)) =>
+            (&mut Constant::Scalar(_), &Constant::Matrix(_)) =>
                 panic!("Can't assign from a matrix to a scalar without doing weird stuff."),
         }
     }
@@ -131,7 +128,6 @@ impl Constant {
         self.apply(&|x: f32| 1. / (1. + (-x).exp()), map_sigmoid)
     }
 
-
     pub fn all_equal(&self, val: f32) -> bool {
         match *self {
             Constant::Scalar(x) => x == val,
@@ -139,7 +135,7 @@ impl Constant {
         }
     }
 
-    // TODO: use b_assign
+    // TODO: use assign2
     pub fn assign_dot(&mut self, c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) {
         match (self, c1, c2) {
             (&mut Constant::Matrix(ref mut m), 
@@ -195,7 +191,7 @@ impl<'a> Neg for &'a Constant {
 impl<'a> Add for &'a Constant {
     type Output = Constant;
     fn add(self, other: &'a Constant) -> Constant {
-        bin_apply_comm(&|x1: f32, x2| x1 + x2,
+        apply2_comm(&|x1: f32, x2| x1 + x2,
                        broadcast_add,
                        elemwise_add,
                        &self, &other)
@@ -206,7 +202,7 @@ impl<'a> Add for &'a Constant {
 impl<'a> Sub for &'a Constant {
     type Output = Constant;
     fn sub(self, other: &'a Constant) -> Constant {
-        bin_apply(&|x1: f32, x2| x1 - x2,
+        apply2(&|x1: f32, x2| x1 - x2,
                   broadcast_sub,
                   broadcast_sub_rev,
                   elemwise_sub,
@@ -218,7 +214,7 @@ impl<'a> Sub for &'a Constant {
 impl<'a> Mul for &'a Constant {
     type Output = Constant;
     fn mul(self, other: &'a Constant) -> Constant { 
-        bin_apply_comm(&|x1, x2| x1 * x2,
+        apply2_comm(&|x1, x2| x1 * x2,
                        broadcast_mul,
                        elemwise_mul,
                        &self, &other)
@@ -227,27 +223,27 @@ impl<'a> Mul for &'a Constant {
 
 impl SubAssign for Constant {
     fn sub_assign(&mut self, other: Constant) {
-        self.b_assign(&other, &|x1: &mut f32, x2| *x1 -= x2, 
+        self.assign2(&other, &|x1: &mut f32, x2| *x1 -= x2, 
                       broadcast_sub_rev, elemwise_sub);
     }
 }
 
 impl MulAssign for Constant {
     fn mul_assign(&mut self, other: Constant) {
-        self.b_assign(&other, &|x1: &mut f32, x2| *x1 *= x2, 
+        self.assign2(&other, &|x1: &mut f32, x2| *x1 *= x2, 
                       broadcast_mul_rev, elemwise_mul);
     }
 }
 
 impl Constant {
     pub fn mul_assign(&mut self, other: &Constant) {
-        self.b_assign(other, &|x1: &mut f32, x2| *x1 *= x2,
+        self.assign2(other, &|x1: &mut f32, x2| *x1 *= x2,
                       broadcast_mul_rev, elemwise_mul);
     }
 
     pub fn sub_assign(&mut self, other: &Constant) {
-        self.b_assign(other, &|x1: &mut f32, x2| *x1 += x2,
-                      broadcast_sub_rev, elemwise_sub);
+        self.assign2(other, &|x1: &mut f32, x2| *x1 += x2,
+                     broadcast_sub_rev, elemwise_sub);
     }
 
     pub fn negate(&mut self) {
@@ -259,10 +255,10 @@ impl Constant {
 
 // TODO!!! trans does not work with matrix / scalar stuff!
 // allocates on device
-pub fn dot(c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) -> Constant {
+pub fn dot(c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) -> Constant {
     let mut result;
     match (c1, c2) {
-        (&Constant::Scalar(x1), &Constant::Scalar(x2)) =>
+        (&Constant::Scalar(_), &Constant::Scalar(_)) =>
             panic!("dot should not be used for scalars"),
         (&Constant::Scalar(x), &Constant::Matrix(ref m)) => {
             result = Matrix::empty_like(m);

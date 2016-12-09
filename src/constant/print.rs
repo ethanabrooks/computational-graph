@@ -1,5 +1,4 @@
 use std::fmt;
-use std::io::{Write, stderr};
 use constant::datatypes::{Matrix, Constant};
 
 extern {

@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::ops::{Neg, Add, Sub, Mul};
 
-fn bin_apply(expr: &Fn(Function, Function) -> Expr, 
+fn apply2(expr: &Fn(Function, Function) -> Expr, 
              f1: &Function, f2: &Function, 
              identity: f32) -> Function {
     let params1 = f1.params.clone();
@@ -95,14 +95,14 @@ impl <'a> Neg for &'a Function {
 impl<'a> Add for &'a Function {
     type Output = Function;
     fn add(self, other: &Function) -> Function {
-        bin_apply(&|f1, f2| Expr::Add(f1, f2), self, other, 0.) 
+        apply2(&|f1, f2| Expr::Add(f1, f2), self, other, 0.) 
     }
 }
 
 impl<'a> Sub for &'a Function {
     type Output = Function;
     fn sub(self, other: &Function) -> Function {
-        bin_apply(&|f1, f2| Expr::Sub(f1, f2), self, other, 0.) 
+        apply2(&|f1, f2| Expr::Sub(f1, f2), self, other, 0.) 
     }
 }
 
@@ -117,11 +117,11 @@ impl<'a> Mul for &'a Function {
         if other.all_equal(0.) {
             return other.clone()
         }
-        bin_apply(&|f1, f2| Expr::Mul(f1, f2), self, other, 1.) 
+        apply2(&|f1, f2| Expr::Mul(f1, f2), self, other, 1.) 
     }
 }
 
-// TODO: abstact some of this with bin_apply
+// TODO: abstact some of this with apply2
 // TODO: optimization for identities?
 pub fn dot(f1: &Function, f2: &Function) -> Function {
     let params1 = f1.params.clone();
