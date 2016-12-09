@@ -31,6 +31,15 @@ impl Constant {
         }
     }
 
+    pub fn copy(&mut self, other: &Constant) {
+        match (self, other) {
+            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(ref x2)) => *x1 = *x2,
+            (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) => 
+                unsafe { copy_matrix(m2, m1) },
+            _ => panic!("Can't copy from mismatched constant type.")
+        }
+    }
+
     pub fn empty_like(c: &Constant) -> Constant {
         match *c {
             Constant::Scalar(x) => Constant::Scalar(0.),

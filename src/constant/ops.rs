@@ -243,6 +243,11 @@ impl Constant {
 
     pub fn sub_assign(&mut self, other: &Constant) {
         self.assign2(other, &|x1: &mut f32, x2| *x1 += x2,
+                     broadcast_add, elemwise_add);
+    }
+
+    pub fn sub_assign(&mut self, other: &Constant) {
+        self.assign2(other, &|x1: &mut f32, x2| *x1 -= x2,
                      broadcast_sub_rev, elemwise_sub);
     }
 

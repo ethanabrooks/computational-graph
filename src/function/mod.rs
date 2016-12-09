@@ -65,7 +65,7 @@ impl Function {
         for _ in 0..iters {
             self.assign_values(&args);
             self.backprop(&mut self.unwrap_value().copy_and_fill(1.), learn_rate);
-            println!("{}", self.unwrap_value().clone());
+            //println!("{}", self.unwrap_value().clone());
         }
     }
 
@@ -86,74 +86,94 @@ impl Function {
     }
 
     pub fn assign_values(&self, args: &HashMap<&str, Constant>) {
-        let ref expr = self.body;
-        match expr.deref() { 
-            &Expr::Constant(_) | &Expr::Param(_) => assert!(self.get_value().is_some(),
+        self.assign_to_branches(args);
+        self.maybe_alloc_value();
+        match *self.body { 
+            Expr::Constant(_) | Expr::Param(_) => assert!(self.get_value().is_some(),
                 "Constants and Params must always have a value"),
-            &Expr::Input(ref i) => {
+            Expr::Input(ref i) => {
                 let arg = args.get::<str>(&i.name).expect("missing arg");
                 self.set_value(arg.clone());
             }
-            &Expr::Neg(ref f1) => {
-                f1.assign_values(args);
-                self.maybe_alloc_value(expr);
+            Expr::Neg(ref f1) => {
                 self.mutate_value(&|x| x.negate())
             }
-            &Expr::Abs(ref f1) => {
+            Expr::Abs(ref f1) => {
                 f1.assign_values(args);
                 self.set_value(f1.unwrap_value().abs().clone())
             }
-            &Expr::Signum(ref f1) => {
+            Expr::Signum(ref f1) => {
                 writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
                 Running `backprop` on this function will cause an error");
                 f1.assign_values(args);
                 self.set_value(f1.unwrap_value().signum().clone())
             }
-            &Expr::Sigmoid(ref f1) => {
-                f1.assign_values(args);
-                self.set_value(f1.unwrap_value().sigmoid().clone())
+            Expr::Sigmoid(ref f1) => {
+                self.mutate_value(&|x| {
+                    x.copy(f1.unwrap_value().deref());
+                    x.add_assign(f2.unwrap_value().deref());
+                })
+                //f1.assign_values(args);
+                //self.set_value(f1.unwrap_value().sigmoid().clone())
             }
-            &Expr::Add(ref f1, ref f2) => {
-                f1.assign_values(args);
-                f2.assign_values(args);
-                self.set_value(f1.unwrap_value().deref() + f2.unwrap_value().deref());
+            Expr::Add(ref f1, ref f2) => {
+                self.mutate_value(&|x| {
+                    x.copy(f1.unwrap_value().deref());
+                    x.add_assign(f2.unwrap_value().deref());
+                })
             }
-            &Expr::Sub(ref f1, ref f2) => {
-                //self.rust_is_stupid(
+            Expr::Sub(ref f1, ref f2) => {
+                self.mutate_value(&|x| {
+                    x.copy(f1.unwrap_value().deref());
+                    x.sub_assign(f2.unwrap_value().deref());
+                })
+                //self.recurse_and_set_value(
                     //f1, f2, args,
-                    //&|x: &Constant, y: &Constant| x - y)
-                self.recurse_and_set_value(
-                    f1, f2, args,
-                    //&|x, y| x - y)
-                    f1.unwrap_value().deref() - f2.unwrap_value().deref())
+                    ////&|x, y| x - y)
+                    //f1.unwrap_value().deref() - f2.unwrap_value().deref())
             }
-            &Expr::Mul(ref f1, ref f2) => {
-                f1.assign_values(args);
-                f2.assign_values(args);
-                self.set_value(f1.unwrap_value().deref() * f2.unwrap_value().deref());
+            Expr::Mul(ref f1, ref f2) => {
+                self.mutate_value(&|x| {
+                    x.copy(f1.unwrap_value().deref());
+                    x.mul_assign(f2.unwrap_value().deref());
+                })
+                //self.set_value(f1.unwrap_value().deref() * f2.unwrap_value().deref());
                 //self.recurse_and_set_value(&|x, y| x * y, args, f1, f2);
             }
-            &Expr::Dot(ref f1, ref f2) => {
-                f1.assign_values(args);
-                f2.assign_values(args);
-                self.maybe_alloc_value(expr.deref());
+            Expr::Dot(ref f1, ref f2) => {
                 self.mutate_value(&|x| x.assign_dot(f1.unwrap_value().deref(), 
                                                     f2.unwrap_value().deref(), 
                                                     false, false));
+                //self.set_value(constant::dot(f1.unwrap_value().deref(), 
+                                             //f2.unwrap_value().deref(), 
+                                             //false, false));
             }
         }
     }
 
-    fn maybe_alloc_value(&self, expr: &Expr) {
+    fn assign_to_branches(&self, args: &HashMap<&str, Constant>) {
+        match *self.body {
+            Expr::Constant(_)   | Expr::Input(_)   | Expr::Param(_) => return,
+            Expr::Neg(ref f)    | Expr::Abs(ref f) | 
+            Expr::Signum(ref f) | Expr::Sigmoid(ref f) => f.assign_values(args),
+            Expr::Add(ref f1, ref f2) | Expr::Sub(ref f1, ref f2) | 
+            Expr::Mul(ref f1, ref f2) | Expr::Dot(ref f1, ref f2) => {
+                f1.assign_values(args);
+                f2.assign_values(args);
+            }
+        }
+    }
+
+    fn maybe_alloc_value(&self) {
         let new_value = match *self.get_value() {
             Some(_) => return,
-            None => match expr {
-                &Expr::Constant(_)    | &Expr::Input(_)      | &Expr::Param(_) => return,
-                &Expr::Neg(ref f)     | &Expr::Abs(ref f)    | &Expr::Signum(ref f) | 
-                &Expr::Sigmoid(ref f) | &Expr::Add(ref f, _) | 
-                &Expr::Sub(ref f, _)  | &Expr::Mul(ref f, _) => 
-                    Constant::empty_like(f.unwrap_value().deref()),
-                &Expr::Dot(ref f1, ref f2) =>
+            None => match *self.body {
+                Expr::Constant(_)    | Expr::Input(_)      | Expr::Param(_) => return,
+                Expr::Neg(ref f)     | Expr::Abs(ref f)    | Expr::Signum(ref f) | 
+                Expr::Sigmoid(ref f) | Expr::Add(ref f, _) | 
+                Expr::Sub(ref f, _)  | Expr::Mul(ref f, _) => 
+                   Constant::empty_like(f.unwrap_value().deref()),
+                Expr::Dot(ref f1, ref f2) =>
                     Constant::empty_for_dot(f1.unwrap_value().deref(), 
                                             f2.unwrap_value().deref(), 
                                             false, false),
@@ -197,17 +217,20 @@ impl Function {
                 f2.backprop(&mut (f1.unwrap_value().deref() * &error), learn_rate);
             }
             Expr::Dot(ref f1, ref f2) => {
-                self.maybe_alloc_placeholders(expr, error);
-                self.mutate_placeholder(0, &|x| x.assign_dot(&error, &f2.unwrap_value(), 
-                                                             false, true));
-                self.mutate_placeholder(1, &|x| x.assign_dot(&f1.unwrap_value(), 
-                                                             &error, true, false));
+                //self.maybe_alloc_placeholders(expr, error);
+                //self.mutate_placeholder(0, &|x| x.assign_dot(&error, &f2.unwrap_value(), 
+                                                             //false, true));
+                //self.mutate_placeholder(1, &|x| x.assign_dot(&f1.unwrap_value(), 
+                                                             //&error, true, false));
+                                                             
+                //f1.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
+                //f2.backprop(self.get_placeholder(1).deref_mut(), learn_rate);
 
-                //let error1 = constant::dot(&error, false, &f2.unwrap_value(), true);
-                //let error2 = constant::dot(&f1.unwrap_value(), true, &error, false);
+                let mut error1 = constant::dot(&error, &f2.unwrap_value(), false, true);
+                let mut error2 = constant::dot(&f1.unwrap_value(), &error, true, false);
 
-                f1.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-                f2.backprop(self.get_placeholder(1).deref_mut(), learn_rate);
+                f1.backprop(&mut error1, learn_rate);
+                f2.backprop(&mut error2, learn_rate);
             }
             Expr::Constant(_)| Expr::Input(_) => return,
         }
