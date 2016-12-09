@@ -6,6 +6,8 @@ mod datatypes;
 mod ops;
 mod print;
 
+use std;
+
 use std::collections::HashMap;
 use std::cell::Ref;
 use std::io::{Write, stderr};
@@ -141,6 +143,8 @@ impl Function {
         if self.params.is_empty() { return; }
         match *self.body {
             Expr::Param(_) => {
+            //println!("error: {}", error); 
+            //println!("value: {}", self.unwrap_value().deref()); 
                 *error *= Constant::Scalar(learn_rate);
                 self.mutate_value(&|x| sub_assign(x, &error));
             }
@@ -228,11 +232,14 @@ impl Function {
             Expr::Constant(_) | Expr::Input(_)   | Expr::Param(_) |
             Expr::Neg(_)      | Expr::Signum(_) => return,
             Expr::Sigmoid(ref f) | Expr::Add(ref f, _) | 
-            Expr::Sub(ref f, _)  | Expr::Mul(ref f, _) | Expr::Abs(ref f) =>
+            Expr::Sub(ref f, _)  | Expr::Mul(ref f, _) | Expr::Abs(ref f) => {
                 if self.num_placeholders() < 1 {
                     self.alloc_placeholders(
-                        vec![Constant::empty_like(f.unwrap_value().deref())])
-                },
+                        vec![Constant::empty_like(f.unwrap_value().deref())]);
+
+
+                }
+            }
             Expr::Dot(ref f1, ref f2) => 
                 if self.num_placeholders() < 2 {
                     self.alloc_placeholders(

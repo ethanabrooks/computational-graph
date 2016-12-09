@@ -19,7 +19,7 @@ pub mod shared {
 
 #[derive(Debug)]
 pub struct Input {
-    pub dims: Vec<i32>, 
+    pub dims: Vec<u32>, 
     pub name: String,
 }
 
@@ -42,8 +42,6 @@ pub enum Expr {
     Mul(Function, Function),
     Dot(Function, Function),
 }
-
-const N_PLACEHOLDERS: usize = 1;
 
 #[derive(Debug, Clone)]
 pub struct Function {
@@ -80,12 +78,17 @@ impl Function {
         *self.placeholders.borrow_mut() = c;
     }
 
+    //pub fn set_placeholder_dims(height: u32, width: u32) {
+        //self.placeholders.set_option(PoolBuilder {
+            //supplier: Matrix::empty(height, width)
+        //})
+    //}
+
     pub fn get_placeholder(&self, i: usize) -> RefMut<Constant> {
         RefMut::map(self.placeholders.borrow_mut(), |x| match x.get_mut(i) {
             Some(x) => x,
             None => panic!("Can't access placeholders[{}].", i),
         })
-        //self.placeholders.borrow_mut().get_mut(i).unwrap()
     }
 
     pub fn mutate_placeholder(&self, i: usize, f: &Fn(&mut Constant)) {

@@ -30,7 +30,7 @@ pub fn new_constant(value: Constant) -> Function {
 }
 
 #[allow(dead_code)]
-pub fn input(s: &str, dims: Vec<i32>) -> Function {
+pub fn input(s: &str, dims: Vec<u32>) -> Function {
     let params = hashset![String::from(s)];
     Function::new(None, params, 
                  Expr::Input(Input {
@@ -51,12 +51,12 @@ pub fn scalar(x: f32) -> Function {
 }
 
 #[allow(dead_code)]
-pub fn matrix(height: i32, width: i32, values: Vec<f32>) -> Function {
+pub fn matrix(height: u32, width: u32, values: Vec<f32>) -> Function {
     new_constant(Constant::Matrix(Matrix::new(height, width, values)))
 }
 
 #[allow(dead_code)]
-pub fn fill_matrix(height: i32, width: i32, value: f32) -> Function {
+pub fn fill_matrix(height: u32, width: u32, value: f32) -> Function {
     new_constant(Constant::new(vec![height, width], value))
 }
 

@@ -1,16 +1,18 @@
 use constant::datatypes::{Constant, Matrix};
 use std::ptr;
+use libc;
 
 extern {
-    fn alloc_matrix(m: *mut Matrix, width: i32, height: i32); // allocates on device
+    fn alloc_matrix(m: *mut Matrix, width: u32, height: u32); // allocates on device
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
-    fn init_matrix(m: *mut Matrix, array: *const f32, width: i32, height: i32);
+    fn init_matrix(m: *mut Matrix, array: *const f32, 
+                   width: libc::c_uint, height: libc::c_uint);
     fn fill_matrix(m: *mut Matrix, value: f32);
 }
 
 impl Constant {
     // allocates on device
-    pub fn new(dims: Vec<i32>, val: f32) -> Constant {
+    pub fn new(dims: Vec<u32>, val: f32) -> Constant {
         match dims.len() {
             0 => Constant::Scalar(val),
             2 => {
@@ -32,7 +34,9 @@ impl Constant {
 
     pub fn copy(&mut self, other: &Constant) {
         match (self, other) {
-            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(ref x2)) => *x1 = *x2,
+            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(ref x2)) => {
+                *x1 = *x2;
+            }
             (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) => 
                 unsafe { copy_matrix(m2, m1) },
             _ => panic!("Can't copy from mismatched constant type.")
@@ -60,7 +64,7 @@ impl Constant {
 
 impl Matrix {
     // allocates on device
-    pub fn empty(height: i32, width: i32) -> Matrix {
+    pub fn empty(height: u32, width: u32) -> Matrix {
         let mut matrix = Matrix { 
             height: height,
             width: width,
@@ -75,9 +79,10 @@ impl Matrix {
     pub fn empty_like(m: &Matrix) -> Matrix { Matrix::empty(m.height, m.width) }
 
     // allocates on device
-    pub fn new(height: i32, width: i32, values: Vec<f32>) -> Matrix {
-        assert!(values.len() as i32 == height * width, "wrong number of values");
+    pub fn new(height: u32, width: u32, values: Vec<f32>) -> Matrix {
+        assert!(values.len() as u32 == height * width, "wrong number of values");
         let mut matrix = Matrix::empty(height, width);
+
         unsafe { init_matrix(&mut matrix, values.as_ptr(), height, width) };
         matrix
     }

@@ -1,3 +1,5 @@
+use std::process::exit;
+
 extern {
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
     fn free_matrix(m: *mut Matrix);
@@ -5,8 +7,8 @@ extern {
 
 #[repr(C)]
 pub struct Matrix {
-    pub height: i32,
-    pub width: i32,
+    pub height: u32,
+    pub width: u32,
     pub dev_array: *mut f32,
 }
 
@@ -17,7 +19,7 @@ pub enum Constant {
 }
 
 impl Matrix {
-    pub fn size(&self) -> i32 {
+    pub fn size(&self) -> u32 {
         self.height * self.width
     }
 }
