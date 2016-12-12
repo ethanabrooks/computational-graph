@@ -1,3 +1,5 @@
+#![feature(advanced_slice_patterns, slice_patterns)]
+
 extern crate libc;
 extern crate lifeguard;
 
@@ -5,7 +7,8 @@ mod function;
 mod constant; 
 
 #[allow(unused_imports)]
-use function::{input, param, scalar, matrix, sq, dot, new_constant, abs, sigmoid};
+use function::{input, param, scalar, matrix, sq, 
+               dot, new_constant, abs, sigmoid, rnn};
 #[allow(unused_imports)]
 use constant::{Matrix, Constant};
 #[allow(unused_imports)]
@@ -57,7 +60,11 @@ fn main() {
     //println!("a * b: {}", &a * &b);
     //let a = scalar(2.); 
     //let b = scalar(3.); 
-    let a = matrix(2, 2, vec![
+    let c1 = Constant::new_matrix(2, 2, vec![
+                   1., 2., 
+                  -3., 4.]); 
+
+    let c2 = Constant::new_matrix(2, 2, vec![
                    1., 2., 
                   -3., 4.]); 
 
@@ -69,9 +76,9 @@ fn main() {
                    5., 3.,
                    5., 1.])); 
 
-    let c = matrix(2, 2, vec![
-                   5., 3.,
-                   5., 1.]); 
+    //let c = matrix(2, 2, vec![
+                   //5., 3.,
+                   //5., 1.]); 
 
     //let y = param( "y", Constant::Matrix(Matrix::new(3, 2, vec![
                                     //1., 1., 
@@ -83,15 +90,17 @@ fn main() {
     //let y = param("y", Scalar(0.9));
 
     //let f = abs(&(dot(&a, &x, false, false) - b));
-    let f = sq(&(sigmoid(&(dot(&a, &x, false, false) + b - c))));
+    //let f = sq(&(sigmoid(&(dot(&a, &x, false, false) + b - c))));
+    //let f = dot(&a, &x, false, false);
+    let f = rnn(vec![c1, c2], x, b);
     //let f = sq(&x);
     let mut args = HashMap::new();
     args.insert("y", Scalar(-3.));
 
-    f.minimize(&args, 0.01, 1000);
+    f.minimize(&args, 0.1, 1000);
 
     println!("f: {}", &f);
-    println!("eval f: {}", &f.eval(&args));
+    //println!("eval f: {}", &f.eval(&args));
     //println!("output f: {}", &f.unwrap_value().deref());
 
     //println!("{}", Constant::Matrix(Matrix::new(2, 3, vec![

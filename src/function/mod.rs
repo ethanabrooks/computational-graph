@@ -1,10 +1,12 @@
 pub use self::constructors::{input, param, scalar, matrix, new_constant};
 pub use self::ops::{dot, abs, sigmoid, sq};
+pub use self::lstm::rnn;
 
 mod constructors;
 mod datatypes;
 mod ops;
 mod print;
+mod lstm;
 
 use std::collections::HashMap;
 use std::io::{Write, stderr};
