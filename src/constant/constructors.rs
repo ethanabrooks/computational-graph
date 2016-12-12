@@ -14,7 +14,7 @@ extern {
 
 impl Constant {
     // allocates on device
-    pub fn new_single_val(dims: Vec<u32>, val: f32) -> Constant {
+    pub fn single_val(dims: Vec<u32>, val: f32) -> Constant {
         match dims.len() {
             0 => Constant::Scalar(val),
             2 => {
@@ -26,7 +26,7 @@ impl Constant {
         }
     }
 
-    pub fn new_random(dims: Vec<u32>, lo: f32, hi: f32) -> Constant {
+    pub fn random(dims: Vec<u32>, lo: f32, hi: f32) -> Constant {
         let between = Range::new(lo, hi);
         let mut rng = rand::thread_rng();
         match dims.len() {
@@ -37,14 +37,15 @@ impl Constant {
                 for _ in 0..len {
                     vals.push(between.ind_sample(&mut rng));
                 }
-                Constant::new_matrix(dims[0], dims[1], vals)
+                Constant::matrix(dims[0], dims[1], vals)
             },
             _ => panic!("not supported"),
         }
     }
 
-    pub fn new_matrix(height: u32, width: u32, vals: Vec<f32>) -> Constant {
-        Constant::Matrix(Matrix::new(height, width, vals))
+    pub fn matrix(height: u32, width: u32, vals: Vec<f32>) -> Constant {
+        //assert!(height > 0 && width > 0);
+        Constant::Matrix(Matrix::new(height as u32, width as u32, vals))
     }
 
     // allocates on device
@@ -52,7 +53,7 @@ impl Constant {
         match *self {
             Constant::Scalar(_) => Constant::Scalar(val),
             Constant::Matrix(ref m) => 
-                Constant::new_single_val(vec![m.height, m.width], val),
+                Constant::single_val(vec![m.height, m.width], val),
         }
     }
 

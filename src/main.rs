@@ -8,8 +8,7 @@ mod function;
 mod constant; 
 
 #[allow(unused_imports)]
-use function::{input, param, scalar, matrix, sq, 
-               dot, new_constant, abs, sigmoid, rnn};
+use function::{sq, dot, abs, sigmoid, rnn, Function};
 #[allow(unused_imports)]
 use constant::{Matrix, Constant};
 #[allow(unused_imports)]
@@ -25,89 +24,74 @@ extern { fn init_cublas(); }
 
 fn main() {
     unsafe { init_cublas() };
-    //let a = scalar(-2.); 
-    //let b = matrix(2, 2, vec![
-                   //1., 0., 
-                   //0., 1.]); 
-    //let b = new_constant(Constant::new(vec![300, 2000], 4.));
+    let args = HashMap::new();
 
-    //unsafe { print_matrix(a) };
+    ///DEMO 1
+    //let x = Function::param("x", Constant::Scalar(1.));
+    //let f = &x;
+    //f.minimize(&args, 0.1, 1000);
 
-    //unsafe { print_matrix(y) };
-
-    //println!("a * x: {}", &a * &x);
-    //println!("x: {}", x);
-    //let f = (&x + &b).abs() * (&z + &a);
-
-    //let f = (dot(&x, &y) + b).abs();
-    //let f = dot(&x, &b, false, false);
-    //println!("f: {}", &f);
-
-    //let g = f.clone();
-    //f.assign_outputs(&args);
-    //println!("f.output: {}", f.get_output());
-    //println!("g.output: {}", g.get_output());
-
-    //args.insert("y", Scalar(10.));
-    //f.assign_outputs(&args);
-    //println!("f.output: {}", f.get_output());
-    //println!("g.output: {}", g.get_output());
-    //println!("args: {:#?}", args);
-
-    //if let Some(c) = f.eval(&args) {
-        //println!("eval: {}", c);
-    //}
-
-    //println!("grad x: {}", f.grad("x"));
-    //let y = input("y", vec![]);
-    //println!("a * b: {}", &a * &b);
-    //let a = scalar(2.); 
-    //let b = scalar(3.); 
-    let c1 = Constant::new_matrix(2, 2, vec![
-                   1., 2., 
-                  -3., 4.]); 
-
-    let c2 = Constant::new_matrix(2, 2, vec![
-                   1., 2., 
-                  -3., 4.]); 
-
-    let x = param("x", Constant::new_matrix(2, 2, vec![
-                   1., 3., 
-                   1., 1.])); 
-
-    let b = param("b", Constant::new_matrix(2, 2, vec![
-                   5., 3.,
-                   5., 1.])); 
-
-    //let c = matrix(2, 2, vec![
-                   //5., 3.,
-                   //5., 1.]); 
-
-    //let y = param( "y", Constant::Matrix(Matrix::new(3, 2, vec![
-                                    //1., 1., 
-                                    //7., 1.,
-                                    //2., 5.]))); 
-
-
-    //let x = param("x", Scalar(0.9));
-    //let y = param("y", Scalar(0.9));
-
-    //let f = abs(&(dot(&a, &x, false, false) - b));
-    //let f = sq(&(sigmoid(&(dot(&a, &x, false, false) + b - c))));
-    //let f = dot(&a, &x, false, false);
-    let f = rnn(vec![c1, c2], x, b);
+    ///DEMO 2
+    //let x = Function::param("x", Constant::Scalar(1.));
     //let f = sq(&x);
-    let mut args = HashMap::new();
-    args.insert("y", Scalar(-3.));
+    //f.minimize(&args, 0.01, 1000);
 
-    f.minimize(&args, 0.1, 1000);
+    ///DEMO 3
+    //let x = Function::param("x", Constant::Scalar(1.));
+    //let a = Function::constant(Constant::Scalar(3.));
+    //let f = sq(&(x + a));
+    //f.minimize(&args, 0.1, 1000);
+
+    ///DEMO 4
+    //let x = Function::param("x", Constant::Scalar(1.));
+    //let a = Function::constant(Constant::Scalar(2.));
+    //let f = sq(&(sq(&x) - a));
+    //f.minimize(&args, 0.1, 1000);
+
+    ///DEMO 5
+    //let x = Function::param("x", Constant::Scalar(1.));
+    //let a = Function::constant(Constant::Scalar(2.));
+    //let b = Function::constant(Constant::Scalar(1.));
+    //let c = Function::constant(Constant::Scalar(10.));
+    //let f = sq(&((&x - &a) * (&x + &b) - c));
+    //f.minimize(&args, 0.01, 1000);
+
+    ///DEMO 5
+    //let x = Function::param("x", Constant::matrix(2, 2, vec![
+
+                                                  //5., -6.,
+                                                  //2.,  8.
+
+                                                  //]));
+    //let a = Function::constant(Constant::Scalar(2.));
+    //let b = Function::constant(Constant::Scalar(1.));
+    //let c = Function::constant(Constant::Scalar(10.));
+    //let f = sq(&((&x - &a) * (&x + &b) - c));
+    //f.minimize(&args, 0.0001, 1000);
+
+    ///DEMO 5
+    //let x = Function::param("x", Constant::matrix(2, 2, vec![
+
+                                                  //0.01, 0.01,
+                                                  //0.01, 0.01
+
+                                                  //]));
+
+    //let a = Function::constant(Constant::matrix(2, 2, vec![
+
+                                                  //4., 3.,
+                                                  //3., 2.
+
+                                                  //]));
+    //let b = Function::constant(Constant::matrix(2, 2, vec![
+
+                                                //1., 0.,
+                                                //0., 1.
+                                                 
+                                                //]));
+
+    //let f = sq(&(dot(&a, &x) - b));
+    //f.minimize(&args, 0.01, 10000);
 
     println!("f: {}", &f);
-    //println!("eval f: {}", &f.eval(&args));
-    //println!("output f: {}", &f.unwrap_value().deref());
-
-    //println!("{}", Constant::Matrix(Matrix::new(2, 3, vec![
-                   //1., 2., 3., 
-                   //1., 2., 1.]))); 
-    //println!("output: {}", f.eval(&args));
 }

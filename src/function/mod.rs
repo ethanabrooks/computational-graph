@@ -1,5 +1,5 @@
-pub use self::constructors::{input, param, scalar, matrix, new_constant};
 pub use self::ops::{dot_transpose, dot, abs, sigmoid, sq, tanh};
+pub use self::datatypes::Function;
 pub use self::lstm::rnn;
 
 mod constructors;
@@ -14,7 +14,7 @@ use std::ops::{Deref, DerefMut};
 use constant;
 use constant::{Constant, mul_assign, add_assign, sub_assign,
                tanh_assign, sigmoid_assign, signum_assign, abs_assign, sq_assign, negate, one_minus};
-use self::datatypes::{Function, Expr};
+use self::datatypes::Expr;
 
 impl Function {
     pub fn eval(&self, args: &HashMap<&str, Constant>) -> Constant {
@@ -50,29 +50,32 @@ impl Function {
                 Expr::Abs(ref f)          => f.signum() * f.grad(param),
                 Expr::Signum(_)           => panic!("signum is nondifferentiable"),
                 Expr::Sigmoid(ref f)      =>
-                    f.grad(param) * (self.clone() * (&scalar(1.) - self)),
+                    f.grad(param) * (self.clone() * (&Function::scalar(1.) - self)),
                 Expr::Tanh(ref f)         => 
-                    f.grad(param) * (scalar(1.) - sq(&self)),
+                    f.grad(param) * (Function::scalar(1.) - sq(&self)),
                 Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
                 Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
                 Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
                                              &f2.grad(param) * f1,
                 Expr::Dot(_, _, _, _) => panic!("not implemented"),
-                Expr::Param(_) => new_constant(self.unwrap_value()
+                Expr::Param(_) => Function::constant(self.unwrap_value()
                                                        .copy_and_fill(1.)),
                 Expr::Constant(_) | Expr::Input(_) => panic!("should never reach here"),
             }
         } else {
-            scalar(0.)
+            Function::scalar(0.)
         }
     }
 
     #[allow(dead_code)]
     pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
-        for _ in 0..iters {
+        for i in 0..iters {
             self.assign_values(&args);
-            self.backprop(&mut self.unwrap_value().copy_and_fill(1.), learn_rate);
-            println!("{}", self.unwrap_value().clone());
+            let mut error = self.unwrap_value().copy_and_fill(1.);
+            self.backprop(&mut error, learn_rate);
+            if i % 100 == 0 {
+                println!("{}", self.unwrap_value().clone());
+            }
         }
     }
 

@@ -1,5 +1,4 @@
 use function::datatypes::{Function, Expr};
-use function::constructors::new_constant;
 use std::collections::HashMap;
 use std::ops::{Neg, Add, Sub, Mul};
 
@@ -14,7 +13,7 @@ fn apply2(expr: &Fn(Function, Function) -> Expr,
         (&Expr::Constant(_), &Expr::Constant(_)) =>
 
             // optimization to combine constants
-            new_constant(function.eval(&HashMap::new())),
+            Function::constant(function.eval(&HashMap::new())),
         _ => {
 
             // optimization to eliminate identities
@@ -142,7 +141,7 @@ pub fn dot_transpose(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -
     // optimization to combine constants
     match (&*f1.body, &*f2.body) { 
         (&Expr::Constant(_), &Expr::Constant(_)) =>
-            new_constant(function.eval(&HashMap::new())),
+            Function::constant(function.eval(&HashMap::new())),
         _ => function
     }
 }

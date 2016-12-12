@@ -23,18 +23,6 @@ fn write_with_parens(a: &Function,
 }
 
 
-                    //Constant::Matrix(m) => {
-                        //let mut i = 0;
-                        //let mut repr;
-                        //loop {
-                            //repr = format!("m{}", i);
-                            //if !matrices.contains(repr) {
-                                //break;
-                            //}
-                            //i += 1;
-                        //}
-                        //matrices.insert(repr, m);
-                    //},
 impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
