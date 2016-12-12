@@ -7,6 +7,7 @@ extern {
     fn map_abs(m: *const Matrix, result: *mut Matrix);
     fn map_signum(m: *const Matrix, result: *mut Matrix);
     fn map_sigmoid(m: *const Matrix, result: *mut Matrix);
+    fn map_tanh(m: *const Matrix, result: *mut Matrix);
     fn map_one_minus(m: *const Matrix, result: *mut Matrix);
     fn broadcast_mul(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
@@ -136,6 +137,10 @@ impl Constant {
         self.apply(&sigmoid_f32, map_sigmoid)
     }
 
+    pub fn tanh(&self) -> Constant {
+        self.apply(&|x: f32| x.tanh(), map_tanh)
+    }
+
     pub fn sq(&self) -> Constant {
         self.apply(&|x| x * x, map_sq)
     }
@@ -263,6 +268,10 @@ pub fn sub_assign(c: &mut Constant, other: &Constant) {
 
 pub fn sigmoid_assign(c: &mut Constant) {
     c.assign1(&sigmoid_f32, map_sigmoid);
+}
+
+pub fn tanh_assign(c: &mut Constant) {
+    c.assign1(&|x| x.tanh(), map_tanh);
 }
 
 pub fn sq_assign(c: &mut Constant) {

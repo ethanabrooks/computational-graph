@@ -1,5 +1,5 @@
 pub use self::constructors::{input, param, scalar, matrix, new_constant};
-pub use self::ops::{dot, abs, sigmoid, sq};
+pub use self::ops::{dot_transpose, dot, abs, sigmoid, sq, tanh};
 pub use self::lstm::rnn;
 
 mod constructors;
@@ -13,7 +13,7 @@ use std::io::{Write, stderr};
 use std::ops::{Deref, DerefMut};
 use constant;
 use constant::{Constant, mul_assign, add_assign, sub_assign,
-               sigmoid_assign, signum_assign, abs_assign, sq_assign, negate, one_minus};
+               tanh_assign, sigmoid_assign, signum_assign, abs_assign, sq_assign, negate, one_minus};
 use self::datatypes::{Function, Expr};
 
 impl Function {
@@ -32,6 +32,7 @@ impl Function {
             Expr::Sq(ref f)           => f.eval(args) * f.eval(args),
             Expr::Abs(ref f)          => f.eval(args).abs(),
             Expr::Sigmoid(ref f)      => f.eval(args).sigmoid(),
+            Expr::Tanh(ref f)         => f.eval(args).tanh(),
             Expr::Signum(ref f)       => f.eval(args).signum(),
             Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
             Expr::Sub(ref f1, ref f2) => f1.eval(args) - f2.eval(args),
@@ -50,6 +51,8 @@ impl Function {
                 Expr::Signum(_)           => panic!("signum is nondifferentiable"),
                 Expr::Sigmoid(ref f)      =>
                     f.grad(param) * (self.clone() * (&scalar(1.) - self)),
+                Expr::Tanh(ref f)         => 
+                    f.grad(param) * (scalar(1.) - sq(&self)),
                 Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
                 Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
                 Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
@@ -122,6 +125,7 @@ impl Function {
                 self.assign1(f, args, &signum_assign);
             }
             Expr::Sigmoid(ref f) => self.assign1(f, args, &sigmoid_assign),
+            Expr::Tanh(ref f) => self.assign1(f, args, &tanh_assign),
             Expr::Add(ref f1, ref f2) => self.assign2(f1, f2, args, &add_assign),
             Expr::Sub(ref f1, ref f2) => self.assign2(f1, f2, args, &sub_assign),
             Expr::Mul(ref f1, ref f2) => self.assign2(f1, f2, args, &mul_assign),
@@ -176,6 +180,17 @@ impl Function {
 
                 f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             }
+            Expr::Tanh(ref f) => {
+                let val = self.unwrap_value();
+                self.mutate_placeholder(0, &|x| {
+                    x.copy(val.deref());        // out
+                    sq_assign(x);               // out^2
+                    one_minus(x);               // 1 - out^2
+                    mul_assign(x, error);       // error * (1 - out^2)
+                });
+
+                f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
+            }
             Expr::Add(ref f1, ref f2) => {
                 self.mutate_placeholder(0, &|x| x.copy(error));
                 f1.backprop(error, learn_rate);
@@ -219,7 +234,7 @@ impl Function {
         match *self.body {
             Expr::Constant(_) | Expr::Input(_) | Expr::Param(_) |
             Expr::Neg(_)      | Expr::Sq(_)    | Expr::Signum(_) => return,
-            Expr::Sigmoid(ref f) | Expr::Add(ref f, _) |
+            Expr::Sigmoid(ref f) | Expr::Tanh(ref f)   | Expr::Add(ref f, _) |
             Expr::Sub(ref f, _)  | Expr::Mul(ref f, _) | Expr::Abs(ref f) => {
                 if self.num_placeholders() < 1 {
                     self.alloc_placeholders(

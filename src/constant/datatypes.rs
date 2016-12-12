@@ -36,3 +36,19 @@ impl Drop for Matrix {
         unsafe { free_matrix(self as *mut Matrix) };
     }
 } 
+
+impl Constant {
+    pub fn width(&self) -> u32 {
+        match *self {
+            Constant::Scalar(_) => 1,
+            Constant::Matrix(ref m) => m.width,
+        }
+    }
+
+    pub fn height(&self) -> u32 {
+        match *self {
+            Constant::Scalar(_) => 1,
+            Constant::Matrix(ref m) => m.height,
+        }
+    }
+}

@@ -1,4 +1,6 @@
 use constant::datatypes::{Constant, Matrix};
+use rand::distributions::{IndependentSample, Range};
+use rand;
 use std::ptr;
 use libc;
 
@@ -12,13 +14,30 @@ extern {
 
 impl Constant {
     // allocates on device
-    pub fn new(dims: Vec<u32>, val: f32) -> Constant {
+    pub fn new_single_val(dims: Vec<u32>, val: f32) -> Constant {
         match dims.len() {
             0 => Constant::Scalar(val),
             2 => {
                 let mut matrix = Matrix::empty(dims[0], dims[1]);
                 unsafe { fill_matrix(&mut matrix, val) };
                 Constant::Matrix(matrix)
+            },
+            _ => panic!("not supported"),
+        }
+    }
+
+    pub fn new_random(dims: Vec<u32>, lo: f32, hi: f32) -> Constant {
+        let between = Range::new(lo, hi);
+        let mut rng = rand::thread_rng();
+        match dims.len() {
+            0 => Constant::Scalar(between.ind_sample(&mut rng)),
+            2 => {
+                let len = dims[0] * dims[1];
+                let mut vals = Vec::with_capacity(len as usize);
+                for _ in 0..len {
+                    vals.push(between.ind_sample(&mut rng));
+                }
+                Constant::new_matrix(dims[0], dims[1], vals)
             },
             _ => panic!("not supported"),
         }
@@ -32,7 +51,8 @@ impl Constant {
     pub fn copy_and_fill(&self, val: f32) -> Constant {
         match *self {
             Constant::Scalar(_) => Constant::Scalar(val),
-            Constant::Matrix(ref m) => Constant::new(vec![m.height, m.width], val),
+            Constant::Matrix(ref m) => 
+                Constant::new_single_val(vec![m.height, m.width], val),
         }
     }
 

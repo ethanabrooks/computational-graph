@@ -2,6 +2,7 @@
 
 extern crate libc;
 extern crate lifeguard;
+extern crate rand;
 
 mod function; 
 mod constant; 
@@ -19,6 +20,8 @@ use std::collections::HashMap;
 use std::ops::Deref;
 
 extern { fn init_cublas(); }
+
+//static POOL: Vec<Matrix> = vec![];
 
 fn main() {
     unsafe { init_cublas() };

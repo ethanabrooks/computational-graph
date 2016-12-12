@@ -6,6 +6,7 @@ build = "build.rs"
 
 [dependencies]
 libc = "0.2"
+rand = "0.3.15"
 lifeguard = "0.5"
 num = "0.1"
 

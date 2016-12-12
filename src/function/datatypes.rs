@@ -37,6 +37,7 @@ pub enum Expr {
     Abs(Function),
     Signum(Function),
     Sigmoid(Function),
+    Tanh(Function),
     Add(Function, Function),
     Sub(Function, Function),
     Mul(Function, Function),

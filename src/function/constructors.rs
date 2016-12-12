@@ -46,6 +46,13 @@ pub fn param(s: &str, value: Constant) -> Function {
 }
 
 #[allow(dead_code)]
+pub fn random_param(s: &str, dims: Vec<u32>, lo: f32, hi: f32) -> Function {
+    let params = hashset![String::from(s)];
+    let value = Constant::new_random(dims, lo, hi);
+    Function::new(Some(value), params, Expr::Param(Param { name: String::from(s) }))
+}
+
+#[allow(dead_code)]
 pub fn scalar(x: f32) -> Function {
     new_constant(Constant::Scalar(x)) 
 }
@@ -57,6 +64,6 @@ pub fn matrix(height: u32, width: u32, values: Vec<f32>) -> Function {
 
 #[allow(dead_code)]
 pub fn fill_matrix(height: u32, width: u32, value: f32) -> Function {
-    new_constant(Constant::new(vec![height, width], value))
+    new_constant(Constant::new_single_val(vec![height, width], value))
 }
 

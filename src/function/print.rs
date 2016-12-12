@@ -52,6 +52,7 @@ impl fmt::Display for Expr {
             Expr::Abs(ref x)        => write!(f, "|{}|", x),
             Expr::Signum(ref x)     => write!(f, "sign({})", x),
             Expr::Sigmoid(ref x)    => write!(f, "σ({})", x),
+            Expr::Tanh(ref x)    => write!(f, "tanh({})", x),
             Expr::Add(ref a, ref b) => write_with_parens(a, "+", b, f),
             Expr::Sub(ref a, ref b) => write_with_parens(a, "-", b, f),
             Expr::Mul(ref a, ref b) => write_with_parens(a, "×", b, f),

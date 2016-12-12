@@ -40,6 +40,11 @@ pub fn sigmoid(f: &Function) -> Function {
 }
 
 #[allow(dead_code)]
+pub fn tanh(f: &Function) -> Function {
+    f.apply(&|f| Expr::Tanh(f))
+}
+
+#[allow(dead_code)]
 pub fn sq(f: &Function) -> Function {
     f.apply(&|f| Expr::Sq(f))
 }
@@ -123,7 +128,11 @@ impl<'a> Mul for &'a Function {
     }
 }
 
-pub fn dot(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
+pub fn dot(f1: &Function, f2: &Function) -> Function {
+    dot_transpose(f1, f2, false, false)
+}
+
+pub fn dot_transpose(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
     let params1 = f1.params.clone();
     let params2 = f2.params.clone();
     let union = params1.union(&params2).cloned().collect();
