@@ -24,6 +24,10 @@ impl Constant {
         }
     }
 
+    pub fn new_matrix(height: u32, width: u32, vals: Vec<f32>) -> Constant {
+        Constant::Matrix(Matrix::new(height, width, vals))
+    }
+
     // allocates on device
     pub fn copy_and_fill(&self, val: f32) -> Constant {
         match *self {

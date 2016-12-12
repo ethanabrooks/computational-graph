@@ -3,6 +3,7 @@ use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign};
 
 extern {
     fn map_neg(m: *const Matrix, result: *mut Matrix);
+    fn map_sq(m: *const Matrix, result: *mut Matrix);
     fn map_abs(m: *const Matrix, result: *mut Matrix);
     fn map_signum(m: *const Matrix, result: *mut Matrix);
     fn map_sigmoid(m: *const Matrix, result: *mut Matrix);
@@ -135,6 +136,10 @@ impl Constant {
         self.apply(&sigmoid_f32, map_sigmoid)
     }
 
+    pub fn sq(&self) -> Constant {
+        self.apply(&|x| x * x, map_sq)
+    }
+
     pub fn all_equal(&self, val: f32) -> bool {
         match *self {
             Constant::Scalar(x) => x == val,
@@ -258,6 +263,10 @@ pub fn sub_assign(c: &mut Constant, other: &Constant) {
 
 pub fn sigmoid_assign(c: &mut Constant) {
     c.assign1(&sigmoid_f32, map_sigmoid);
+}
+
+pub fn sq_assign(c: &mut Constant) {
+    c.assign1(&|x| x * x, map_sq);
 }
 
 pub fn signum_assign(c: &mut Constant) {

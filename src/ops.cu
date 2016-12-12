@@ -60,6 +60,7 @@ void check_all_eq(const Matrix *m1, const Matrix *m2, const Matrix *result) {
 
 extern "C" {
   UN_MAP(neg, -x) // map_neg
+  UN_MAP(sq, x * x) // map_sq
   UN_MAP(abs, x < 0 ? -x : x) // map_aps
   UN_MAP(signum, x < 0 ? -1 : 1) // map_signum
   UN_MAP(sigmoid, 1.0f / (1.0f + expf(-x))) // map_sigmoid

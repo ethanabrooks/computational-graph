@@ -33,13 +33,14 @@ pub enum Expr {
     Input(Input),
     Param(Param),
     Neg(Function),
+    Sq(Function),
     Abs(Function),
     Signum(Function),
     Sigmoid(Function),
     Add(Function, Function),
     Sub(Function, Function),
     Mul(Function, Function),
-    Dot(Function, Function),
+    Dot(Function, Function, bool, bool),
 }
 
 #[derive(Debug, Clone)]
@@ -69,6 +70,13 @@ impl Function {
     pub fn unwrap_value<'a>(&'a self) -> Ref<Constant> {
         Ref::map(self.value.borrow(), |x| match x.as_ref() {
             Some(x) => x,
+            None => panic!("unwrap value failed on {:?}", self),
+        })
+    }
+
+    pub fn unwrap_value_mut<'a>(&'a self) -> RefMut<Constant> {
+        RefMut::map(self.value.borrow_mut(), |x| match *x {
+            Some(ref mut x) => x,
             None => panic!("unwrap value failed on {:?}", self),
         })
     }

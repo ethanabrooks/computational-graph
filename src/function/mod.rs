@@ -1,5 +1,5 @@
 pub use self::constructors::{input, param, scalar, matrix, new_constant};
-pub use self::ops::{dot, abs, sigmoid};
+pub use self::ops::{dot, abs, sigmoid, sq};
 
 mod constructors;
 mod datatypes;
@@ -11,7 +11,7 @@ use std::io::{Write, stderr};
 use std::ops::{Deref, DerefMut};
 use constant;
 use constant::{Constant, mul_assign, add_assign, sub_assign,
-               sigmoid_assign, signum_assign, abs_assign, negate, one_minus};
+               sigmoid_assign, signum_assign, abs_assign, sq_assign, negate, one_minus};
 use self::datatypes::{Function, Expr};
 
 impl Function {
@@ -27,14 +27,15 @@ impl Function {
             }
             Expr::Param(_)            => self.unwrap_value().clone(),
             Expr::Neg(ref f)          => -f.eval(args),
+            Expr::Sq(ref f)           => f.eval(args) * f.eval(args),
             Expr::Abs(ref f)          => f.eval(args).abs(),
             Expr::Sigmoid(ref f)      => f.eval(args).sigmoid(),
             Expr::Signum(ref f)       => f.eval(args).signum(),
             Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
             Expr::Sub(ref f1, ref f2) => f1.eval(args) - f2.eval(args),
             Expr::Mul(ref f1, ref f2) => f1.eval(args) * f2.eval(args),
-            Expr::Dot(ref f1, ref f2) =>
-                constant::dot(&f1.eval(args), &f2.eval(args), false, false)
+            Expr::Dot(ref f1, ref f2, trans1, trans2) =>
+                constant::dot(&f1.eval(args), &f2.eval(args), trans1, trans2)
         }
     }
 
@@ -42,6 +43,7 @@ impl Function {
         if self.params.contains::<str>(&param) {
             match *self.body {
                 Expr::Neg(ref f)          => -f.grad(param),
+                Expr::Sq(ref f)           => &f.grad(param) * f,
                 Expr::Abs(ref f)          => f.signum() * f.grad(param),
                 Expr::Signum(_)           => panic!("signum is nondifferentiable"),
                 Expr::Sigmoid(ref f)      =>
@@ -50,10 +52,7 @@ impl Function {
                 Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
                 Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
                                              &f2.grad(param) * f1,
-                Expr::Dot(_, _) => panic!("not implemented"),
-                    //let ones = self.unwrap_value().copy_and_fill(1.);
-                    //dot(ones, f2, false, !trans2) * f1.grad(param) +
-                    //dot(ones, f1, false, !trans1) * f2.grad(param)
+                Expr::Dot(_, _, _, _) => panic!("not implemented"),
                 Expr::Param(_) => new_constant(self.unwrap_value()
                                                        .copy_and_fill(1.)),
                 Expr::Constant(_) | Expr::Input(_) => panic!("should never reach here"),
@@ -67,8 +66,7 @@ impl Function {
     pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
         for _ in 0..iters {
             self.assign_values(&args);
-            let ref mut ones = self.unwrap_value().copy_and_fill(1.);
-            self.backprop(ones, learn_rate);
+            self.backprop(&mut self.unwrap_value().copy_and_fill(1.), learn_rate);
             println!("{}", self.unwrap_value().clone());
         }
     }
@@ -114,6 +112,7 @@ impl Function {
                 self.set_value(args.get::<str>(&i.name).expect("missing arg").clone()),
                 // TODO: avoid clone?
             Expr::Neg(ref f) => self.assign1(f, args, &negate),
+            Expr::Sq(ref f) => self.assign1(f, args, &sq_assign),
             Expr::Abs(ref f) => self.assign1(f, args, &abs_assign),
             Expr::Signum(ref f) => {
                 writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
@@ -124,17 +123,17 @@ impl Function {
             Expr::Add(ref f1, ref f2) => self.assign2(f1, f2, args, &add_assign),
             Expr::Sub(ref f1, ref f2) => self.assign2(f1, f2, args, &sub_assign),
             Expr::Mul(ref f1, ref f2) => self.assign2(f1, f2, args, &mul_assign),
-            Expr::Dot(ref f1, ref f2) => {
+            Expr::Dot(ref f1, ref f2, trans1, trans2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
                 let val1 = f1.unwrap_value();
                 let val2 = f2.unwrap_value();
                 if self.get_value().is_none() {
                     self.set_value(Constant::empty_for_dot(val1.deref(), val2.deref(),
-                                                          false, false));
+                                                          trans1, trans2));
                 }
                 self.mutate_value(&|x| x.assign_dot(val1.deref(), val2.deref(),
-                                                    false, false));
+                                                    trans1, trans2));
             }
         }
     }
@@ -149,6 +148,10 @@ impl Function {
             }
             Expr::Neg(ref f) => {
                 negate(error);
+                f.backprop(error, learn_rate)
+            }
+            Expr::Sq(ref f) => {
+                mul_assign(error, f.unwrap_value().deref());
                 f.backprop(error, learn_rate)
             }
             Expr::Abs(ref f) => {
@@ -195,13 +198,13 @@ impl Function {
                 f1.backprop(error, learn_rate);
                 f2.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             }
-            Expr::Dot(ref f1, ref f2) => {
+            Expr::Dot(ref f1, ref f2, trans1, trans2) => {
                 // placeholder[0]: dot(error, f2.T)
                 self.mutate_placeholder(0, &|x| x.assign_dot(&error, &f2.unwrap_value(),
-                                                             false, true));
+                                                             false, !trans2));
                 // placeholder[1]: dot(f1.T, error)
                 self.mutate_placeholder(1, &|x| x.assign_dot(&f1.unwrap_value(),
-                                                             &error, true, false));
+                                                             &error, !trans1, false));
 
                 f1.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
                 f2.backprop(self.get_placeholder(1).deref_mut(), learn_rate);
@@ -212,8 +215,8 @@ impl Function {
 
     fn maybe_alloc_placeholders(&self, error: &Constant) {
         match *self.body {
-            Expr::Constant(_) | Expr::Input(_)   | Expr::Param(_) |
-            Expr::Neg(_)      | Expr::Signum(_) => return,
+            Expr::Constant(_) | Expr::Input(_) | Expr::Param(_) |
+            Expr::Neg(_)      | Expr::Sq(_)    | Expr::Signum(_) => return,
             Expr::Sigmoid(ref f) | Expr::Add(ref f, _) |
             Expr::Sub(ref f, _)  | Expr::Mul(ref f, _) | Expr::Abs(ref f) => {
                 if self.num_placeholders() < 1 {
@@ -223,13 +226,13 @@ impl Function {
 
                 }
             }
-            Expr::Dot(ref f1, ref f2) =>
+            Expr::Dot(ref f1, ref f2, trans1, trans2) =>
                 if self.num_placeholders() < 2 {
                     self.alloc_placeholders(
                         vec![Constant::empty_for_dot(
-                                &error, &f2.unwrap_value().deref(), false, true),
+                                &error, &f2.unwrap_value().deref(), false, !trans2),
                             Constant::empty_for_dot(
-                                &f1.unwrap_value().deref(), &error, true, false)])
+                                &f1.unwrap_value().deref(), &error, !trans1, false)])
                 }
         };
     }

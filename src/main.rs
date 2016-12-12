@@ -5,7 +5,7 @@ mod function;
 mod constant; 
 
 #[allow(unused_imports)]
-use function::{input, param, scalar, matrix, dot, new_constant, abs, sigmoid};
+use function::{input, param, scalar, matrix, sq, dot, new_constant, abs, sigmoid};
 #[allow(unused_imports)]
 use constant::{Matrix, Constant};
 #[allow(unused_imports)]
@@ -61,13 +61,13 @@ fn main() {
                    1., 2., 
                   -3., 4.]); 
 
-    let x = param("x", Constant::Matrix(Matrix::new(2, 2, vec![
+    let x = param("x", Constant::new_matrix(2, 2, vec![
                    1., 3., 
-                   1., 1.]))); 
+                   1., 1.])); 
 
-    let b = param("b", Constant::Matrix(Matrix::new(2, 2, vec![
+    let b = param("b", Constant::new_matrix(2, 2, vec![
                    5., 3.,
-                   5., 1.]))); 
+                   5., 1.])); 
 
     let c = matrix(2, 2, vec![
                    5., 3.,
@@ -83,7 +83,8 @@ fn main() {
     //let y = param("y", Scalar(0.9));
 
     //let f = abs(&(dot(&a, &x, false, false) - b));
-    let f = abs(&(sigmoid(&(dot(&a, &x) + b - c))));
+    let f = sq(&(sigmoid(&(dot(&a, &x, false, false) + b - c))));
+    //let f = sq(&x);
     let mut args = HashMap::new();
     args.insert("y", Scalar(-3.));
 

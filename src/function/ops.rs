@@ -39,6 +39,11 @@ pub fn sigmoid(f: &Function) -> Function {
     f.apply(&|f| Expr::Sigmoid(f))
 }
 
+#[allow(dead_code)]
+pub fn sq(f: &Function) -> Function {
+    f.apply(&|f| Expr::Sq(f))
+}
+
 impl Function {
     fn apply(&self, expr: &Fn(Function) -> Expr) -> Function {
         Function::new(None, self.params.clone(), expr(self.clone()))
@@ -118,11 +123,12 @@ impl<'a> Mul for &'a Function {
     }
 }
 
-pub fn dot(f1: &Function, f2: &Function) -> Function {
+pub fn dot(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
     let params1 = f1.params.clone();
     let params2 = f2.params.clone();
     let union = params1.union(&params2).cloned().collect();
-    let function = Function::new(None, union, Expr::Dot(f1.clone(), f2.clone()));
+    let function = Function::new(None, union, 
+                                 Expr::Dot(f1.clone(), f2.clone(), trans1, trans2));
 
     // optimization to combine constants
     match (&*f1.body, &*f2.body) { 
