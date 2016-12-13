@@ -83,25 +83,14 @@ extern "C" {
             const Matrix *m2, bool trans2,
             Matrix *result) {
 
-    if (trans1) {
-      CHECK_EQUAL(m1->width, result->height);
-      if (trans2) {
-        CHECK_EQUAL(m1->height, m2->width);
-        CHECK_EQUAL(m2->height, result->width);
-      } else {
-        CHECK_EQUAL(m1->height, m2->height);
-        CHECK_EQUAL(m2->width, result->width);
-      }
-    } else {
-      CHECK_EQUAL(m1->height, result->height);
-      if (trans2) {
-        CHECK_EQUAL(m1->width, m2->width);
-        CHECK_EQUAL(m2->height, result->width);
-      } else {
-        CHECK_EQUAL(m1->width, m2->height);
-        CHECK_EQUAL(m2->width, result->width);
-      }
-    }
+    int height1 = trans1 ? m1->width : m1->height;
+    int inner_dim = trans1 ? m1->height : m1->width;
+    int height2 = trans2 ? m1->width : m1->height;
+    int width2 = trans2 ? m1->height : m1->width;
+
+    CHECK_EQUAL(height1, result->height);
+    CHECK_EQUAL(inner_dim, height2);
+    CHECK_EQUAL(width2, result->width);
 
     float alpha = 1;
     float beta = 0;
