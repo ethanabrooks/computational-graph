@@ -1,14 +1,13 @@
 #![feature(advanced_slice_patterns, slice_patterns)]
 
 extern crate libc;
-extern crate lifeguard;
 extern crate rand;
 
 mod function; 
 mod constant; 
 
 #[allow(unused_imports)]
-use function::{sq, dot, abs, sigmoid, rnn, Function};
+use function::{sq, dot, abs, sigmoid, rnn, Function, lstm};
 #[allow(unused_imports)]
 use constant::{Matrix, Constant};
 #[allow(unused_imports)]
@@ -18,12 +17,24 @@ use std::collections::HashMap;
 #[allow(unused_imports)]
 use std::ops::Deref;
 
-extern { fn init_cublas(); }
+//extern { fn init_cublas(); }
 
 //static POOL: Vec<Matrix> = vec![];
 
 fn main() {
-    unsafe { init_cublas() };
+    //unsafe { init_cublas() };
     let args = HashMap::new();
+    let dims = vec![10, 10];
+    let inputs = vec![
+        Constant::random(dims.clone(), -0.1, 0.1),
+        Constant::random(dims.clone(), -0.1, 0.1),
+        Constant::random(dims.clone(), -0.1, 0.1),
+        Constant::random(dims.clone(), -0.1, 0.1),
+    ];
+    let target = Function::constant(Constant::random(dims.clone(), -10., 10.));
+    println!("target: {}", &target);
+    let f = sq(&(lstm(inputs) - target));
+    f.slow_minimize(&args, 0.01, 100000);
+
     println!("f: {}", &f);
 }

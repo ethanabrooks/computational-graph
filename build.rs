@@ -27,15 +27,15 @@ fn main() {
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
 
     for i in 0..c_names.len() {
-        let src_name = format!("src/{}.cu", c_names[i]);
+        let src_name = format!("src/{}.cpp", c_names[i]);
         let out_name = get_out_name(c_names[i]);
          
         if more_recent_than(&vec![src_name.clone()], &out_name).unwrap() {
-            assert!(Command::new("nvcc")
+            assert!(Command::new("c++")
                 .arg(&src_name)
-                .args(&["-c", "-Xcompiler", "-fPIC", "-lcublas", "-o"]) 
+                .args(&["-c", "-std=c++11", "-o"]) //"-Xcompiler", "-fPIC", "-std=c++11"]) 
                 .arg(&out_name)
-                .status().unwrap().success(), "nvcc {} failed", src_name);
+                .status().unwrap().success(), "c++ {} failed", src_name);
         }
     }
 
@@ -57,8 +57,8 @@ fn main() {
     }
 
     println!("cargo:rustc-link-search=native={}", out_dir);
-    println!("cargo:rustc-link-search=native={}", "/usr/local/cuda-7.5/lib64");
     println!("cargo:rustc-link-lib=static=matrix");
-    println!("cargo:rustc-link-lib=dylib=cublas");
-    println!("cargo:rustc-link-lib=dylib=cudart");
+    //println!("cargo:rustc-link-search=native={}", "/usr/local/cuda-7.5/lib64");
+    //println!("cargo:rustc-link-lib=dylib=cublas");
+    //println!("cargo:rustc-link-lib=dylib=cudart");
 }
