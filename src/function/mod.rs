@@ -1,6 +1,6 @@
 pub use self::ops::{dot_transpose, dot, abs, sigmoid, sq, tanh};
 pub use self::datatypes::Function;
-pub use self::lstm::rnn;
+pub use self::lstm::{rnn, lstm};
 
 mod constructors;
 mod datatypes;

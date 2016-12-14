@@ -10,7 +10,9 @@ fn check_params(functions: Vec<&Function>) {
     for function in functions {
         match *function.body {
             Expr::Param(_) => {},
-            _ => panic!("{} must be a param", &function),
+            _ => {
+                panic!("This function should be a param but is not: {}", &function)
+            }
         }
     }
 }
@@ -34,7 +36,7 @@ pub fn lstm_custom_params(input: Vec<Constant>,
             h: Function,
             ) -> Function {
     check_params(vec![&Wi, &Ui, &bi, &Wc, &Uc, &bc,
-                      &Wf, &Uf, &bf, &Wo, &Uo, &Vo, &bo, &C, &h]);
+                      &Wf, &Uf, &bf, &Wo, &Uo, &Vo, &bo]);
     match &input[..] {
         &[] => C,
         &[ref head, ref tail..] => {
@@ -68,24 +70,24 @@ fn get_input_dim(inputs: &Vec<Constant>) -> u32 {
 #[allow(non_snake_case, dead_code)]
 pub fn lstm(inputs: Vec<Constant>) -> Function {
     let d = get_input_dim(&inputs);
-    let Wi = Function::random_param("Wi", vec![d, d], -1., 1.); 
-    let Ui = Function::random_param("Ui", vec![d, d], -1., 1.); 
-    let bi = Function::random_param("bi", vec![d, d], -1., 1.); 
-    let Wc = Function::random_param("Wc", vec![d, d], -1., 1.); 
-    let Uc = Function::random_param("Uc", vec![d, d], -1., 1.); 
-    let bc = Function::random_param("bc", vec![d, d], -1., 1.); 
-    let Wf = Function::random_param("Wf", vec![d, d], -1., 1.); 
-    let Uf = Function::random_param("Uf", vec![d, d], -1., 1.); 
-    let bf = Function::random_param("bf", vec![d, d], -1., 1.); 
-    let Wo = Function::random_param("Wo", vec![d, d], -1., 1.); 
-    let Uo = Function::random_param("Uo", vec![d, d], -1., 1.); 
-    let Vo = Function::random_param("Vo", vec![d, d], -1., 1.); 
-    let bo = Function::random_param("bo", vec![d, d], -1., 1.); 
-    let C = Function::random_param("C", vec![d, d], -1., 1.);
-    let h = Function::random_param("h", vec![d, d], -1., 1.);
 
-    lstm_custom_params(inputs, Wi, Ui, bi, Wc, Uc, bc, 
-                       Wf, Uf, bf, Wo, Uo, Vo, bo, C, h)
+    lstm_custom_params(inputs, 
+        Function::random_param("Wi", vec![d, d], -1., 1.),
+        Function::random_param("Ui", vec![d, d], -1., 1.),
+        Function::random_param("bi", vec![d, d], -1., 1.),
+        Function::random_param("Wc", vec![d, d], -1., 1.),
+        Function::random_param("Uc", vec![d, d], -1., 1.),
+        Function::random_param("bc", vec![d, d], -1., 1.),
+        Function::random_param("Wf", vec![d, d], -1., 1.),
+        Function::random_param("Uf", vec![d, d], -1., 1.),
+        Function::random_param("bf", vec![d, d], -1., 1.),
+        Function::random_param("Wo", vec![d, d], -1., 1.),
+        Function::random_param("Uo", vec![d, d], -1., 1.),
+        Function::random_param("Vo", vec![d, d], -1., 1.),
+        Function::random_param("bo", vec![d, d], -1., 1.),
+        Function::random_param("C", vec![d, d], -1., 1.),
+        Function::random_param("h", vec![d, d], -1., 1.)
+    )
 }
 
 #[allow(non_snake_case, dead_code)]
