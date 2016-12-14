@@ -1,6 +1,5 @@
 extern {
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
-    fn free_matrix(m: *mut Matrix);
 }
 
 #[repr(C)]
@@ -30,12 +29,6 @@ impl Clone for Matrix {
         m
     }
 }
-
-impl Drop for Matrix {
-    fn drop(&mut self) {
-        unsafe { free_matrix(self as *mut Matrix) };
-    }
-} 
 
 impl Constant {
     pub fn width(&self) -> u32 {

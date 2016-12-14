@@ -1,16 +1,11 @@
 use std::fmt;
 use constant::datatypes::{Matrix, Constant};
 
-extern {
-    fn download_matrix(src: *const Matrix, dst: *mut f32);
-}
-
 fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
     match *c {
         Constant::Scalar(x) => write!(f, "{}", x),
         Constant::Matrix(ref src) => {
-            let mut dst = Vec::with_capacity(src.size() as usize);
-            unsafe { download_matrix(src, dst.as_mut_ptr()) };
+            let mut dst = src.dev_array;
             let mut result;
 
             let h = src.height - 1;
@@ -23,7 +18,7 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
 
                 for j in 0..src.width {
                     result = write!(f, "{:^10.3}", unsafe {
-                        *dst.as_ptr().offset((j * src.height + i) as isize) 
+                        *dst.offset((j * src.height + i) as isize) 
                     });
                     if result.is_err() { return result }
                 }

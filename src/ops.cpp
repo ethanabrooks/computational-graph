@@ -35,7 +35,7 @@
   float f_broadcast_rev_ ## name(float val1, float val2) { \
     return val1 op val2; \
   } \
-  void broadcast_rev_ ## name(float val, const Matrix *m, Matrix *result) { \
+  void broadcast_ ## name ## _rev(float val, const Matrix *m, Matrix *result) { \
     CHECK_EQUAL(m->height, result->height); \
     CHECK_EQUAL(m->width, result->width); \
     int i; \
