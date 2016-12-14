@@ -17,7 +17,7 @@ use std::collections::HashMap;
 #[allow(unused_imports)]
 use std::ops::Deref;
 
-extern { fn init_cublas(); }
+//extern { fn init_cublas(); }
 
 //static POOL: Vec<Matrix> = vec![];
 
@@ -86,17 +86,17 @@ fn main() {
     //f.minimize(&args, 0.001, 1000);
 
 
-    //let dims = vec![10, 10];
-    //let inputs = vec![
-        //Constant::random(dims.clone(), -0.1, 0.1),
-        //Constant::random(dims.clone(), -0.1, 0.1),
-        //Constant::random(dims.clone(), -0.1, 0.1),
-        //Constant::random(dims.clone(), -0.1, 0.1),
-    //];
-    //let target = Function::constant(Constant::random(dims.clone(), -10., 10.));
-    //println!("target: {}", &target);
-    //let f = sq(&(lstm(inputs) - target));
-    //f.minimize(&args, 0.01, 100000);
+    let dims = vec![10, 10];
+    let inputs = vec![
+        Constant::random(dims.clone(), -0.1, 0.1),
+        Constant::random(dims.clone(), -0.1, 0.1),
+        Constant::random(dims.clone(), -0.1, 0.1),
+        Constant::random(dims.clone(), -0.1, 0.1),
+    ];
+    let target = Function::constant(Constant::random(dims.clone(), -10., 10.));
+    println!("target: {}", &target);
+    let f = sq(&(lstm(inputs) - target));
+    f.minimize(&args, 0.01, 100000);
 
     println!("f: {}", &f);
 }

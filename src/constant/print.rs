@@ -1,11 +1,11 @@
 use std::fmt;
-use constant::datatypes::{Matrix, Constant};
+use constant::datatypes::Constant;
 
 fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
     match *c {
         Constant::Scalar(x) => write!(f, "{}", x),
         Constant::Matrix(ref src) => {
-            let mut dst = src.dev_array;
+            let dst = src.dev_array;
             let mut result;
 
             let h = src.height - 1;

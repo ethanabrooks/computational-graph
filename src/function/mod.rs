@@ -57,10 +57,10 @@ impl Function {
                 Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
                 Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2+
                                              &f2.grad(param) * f1,
-                Expr::Dot(ref f1, ref f2, tran1, trans2) => {
+                Expr::Dot(ref f1, ref f2, trans1, trans2) => {
                     let ones = Function::constant(self.unwrap_value().copy_and_fill(1.));
-                    dot_transpose(&ones, f2, false, true) * f1.grad(param) +
-                    dot_transpose(f1, &ones, true, false) * f2.grad(param)
+                    dot_transpose(&ones, f2, false, !trans2) * f1.grad(param) +
+                    dot_transpose(f1, &ones, !trans1, false) * f2.grad(param)
                 }
                 Expr::Param(_) => Function::constant(self.unwrap_value()
                                                        .copy_and_fill(1.)),
@@ -92,7 +92,6 @@ impl Function {
     pub fn slow_minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
         for i in 0..iters {
             self.assign_values(&args);
-            let mut error = self.unwrap_value().copy_and_fill(1.);
             self.slow_backprop(args, learn_rate);
             if i % 100 == 0 {
                 println!("{}", self.unwrap_value().clone());
@@ -102,7 +101,7 @@ impl Function {
 
     fn slow_backprop(&self, args: &HashMap<&str, Constant>, learn_rate: f32) {
         for param in &self.params {
-            let mut error = self.grad(&param).eval(args) * Constant::Scalar(learn_rate);
+            let error = self.grad(&param).eval(args) * Constant::Scalar(learn_rate);
             self.mutate_value(&|x| sub_assign(x, &error));
         }
     }
