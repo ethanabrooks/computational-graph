@@ -1,6 +1,6 @@
 pub use self::ops::{dot_transpose, dot, abs, sigmoid, sq, tanh};
 pub use self::datatypes::Function;
-pub use self::lstm::rnn;
+pub use self::lstm::{rnn, lstm};
 
 mod constructors;
 mod datatypes;
@@ -12,8 +12,8 @@ use std::collections::HashMap;
 use std::io::{Write, stderr};
 use std::ops::{Deref, DerefMut};
 use constant;
-use constant::{Constant, mul_assign, add_assign, sub_assign,
-               tanh_assign, sigmoid_assign, signum_assign, abs_assign, sq_assign, negate, one_minus};
+use constant::{Constant, mul_assign, add_assign, sub_assign, tanh_assign, 
+    sigmoid_assign, signum_assign, abs_assign, sq_assign, negate, one_minus};
 use self::datatypes::Expr;
 
 impl Function {
@@ -55,9 +55,13 @@ impl Function {
                     f.grad(param) * (Function::scalar(1.) - sq(&self)),
                 Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
                 Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
-                Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
+                Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2+
                                              &f2.grad(param) * f1,
-                Expr::Dot(_, _, _, _) => panic!("not implemented"),
+                Expr::Dot(ref f1, ref f2, trans1, trans2) => {
+                    let ones = Function::constant(self.unwrap_value().copy_and_fill(1.));
+                    dot_transpose(&ones, f2, false, !trans2) * f1.grad(param) +
+                    dot_transpose(f1, &ones, !trans1, false) * f2.grad(param)
+                }
                 Expr::Param(_) => Function::constant(self.unwrap_value()
                                                        .copy_and_fill(1.)),
                 Expr::Constant(_) | Expr::Input(_) => panic!("should never reach here"),
@@ -69,13 +73,13 @@ impl Function {
 
     #[allow(dead_code)]
     pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
-        for i in 0..iters {
+        for _ in 0..iters {
             self.assign_values(&args);
             let mut error = self.unwrap_value().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
-            if i % 100 == 0 {
-                println!("{}", self.unwrap_value().clone());
-            }
+            //if i % 100 == 0 {
+                println!("{}", self.unwrap_value().clone().avg());
+            //}
         }
     }
 
@@ -83,9 +87,25 @@ impl Function {
     pub fn maximize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
         (-self).minimize(args, learn_rate, iters);
     }
-}
 
-impl Function {
+    #[allow(dead_code)]
+    pub fn slow_minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
+        for i in 0..iters {
+            self.assign_values(&args);
+            self.slow_backprop(args, learn_rate);
+            if i % 100 == 0 {
+                println!("{}", self.unwrap_value().clone().avg());
+            }
+        }
+    }
+
+    fn slow_backprop(&self, args: &HashMap<&str, Constant>, learn_rate: f32) {
+        for param in &self.params {
+            let error = self.grad(&param).eval(args) * Constant::Scalar(learn_rate);
+            self.mutate_value(&|x| sub_assign(x, &error));
+        }
+    }
+
     fn assign1(&self, child: &Function, args: &HashMap<&str, Constant>,
                mutation: &Fn(&mut Constant)) {
         child.assign_values(args);
