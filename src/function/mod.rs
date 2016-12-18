@@ -73,13 +73,13 @@ impl Function {
 
     #[allow(dead_code)]
     pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
-        for i in 0..iters {
+        for _ in 0..iters {
             self.assign_values(&args);
             let mut error = self.unwrap_value().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
-            if i % 100 == 0 {
-                println!("{}", self.unwrap_value().clone());
-            }
+            //if i % 1 == 0 {
+                println!("{}", self.unwrap_value().clone().avg());
+            //}
         }
     }
 

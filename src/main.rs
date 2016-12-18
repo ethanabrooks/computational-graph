@@ -24,17 +24,17 @@ use std::ops::Deref;
 fn main() {
     //unsafe { init_cublas() };
     let args = HashMap::new();
-    let dims = vec![10, 10];
+    let dims = vec![20, 20];
     let inputs = vec![
         Constant::random(dims.clone(), -0.1, 0.1),
         Constant::random(dims.clone(), -0.1, 0.1),
-        Constant::random(dims.clone(), -0.1, 0.1),
-        Constant::random(dims.clone(), -0.1, 0.1),
+        //Constant::random(dims.clone(), -0.1, 0.1),
+        //Constant::random(dims.clone(), -0.1, 0.1),
     ];
     let target = Function::constant(Constant::random(dims.clone(), -10., 10.));
-    println!("target: {}", &target);
+    //println!("target: {}", &target);
     let f = sq(&(lstm(inputs) - target));
-    f.slow_minimize(&args, 0.01, 100000);
+    f.minimize(&args, 0.01, 1000);
 
-    println!("f: {}", &f);
+    //println!("f: {}", &f);
 }
