@@ -18,7 +18,7 @@ fn check_params(functions: Vec<&Function>) {
 }
 
 #[allow(non_snake_case)]
-pub fn lstm(input: Vec<Constant>, 
+pub fn lstm_custom_params(input: Vec<Constant>, 
             Wi: Function,
             Ui: Function,
             bi: Function,
@@ -50,7 +50,7 @@ pub fn lstm(input: Vec<Constant>,
             let o = sigmoid(&(dot(&x, &Wo) + dot(&h, &Uo) + (&dot(&C_new, &Vo) + &bo)));
             let h_new = o * tanh(&C);
 
-            lstm(tail.to_vec(), Wi, Ui, bi, Wc, Uc, bc, Wf, Uf, bf,
+            lstm_custom_params(tail.to_vec(), Wi, Ui, bi, Wc, Uc, bc, Wf, Uf, bf,
                                               Wo, Uo, Vo, bo, C_new, h_new)
         }
     }
