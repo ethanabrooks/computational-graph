@@ -24,16 +24,18 @@ extern { fn init_cublas(); }
 fn main() {
     unsafe { init_cublas() };
     let args = HashMap::new();
-    let dims = vec![20, 20];
-    let inputs = vec![
-        Constant::random(dims.clone(), -0.1, 0.1),
-        Constant::random(dims.clone(), -0.1, 0.1),
+    let dim = 20;
+    //let dims = vec![20, 20];
+    //let inputs = vec![
         //Constant::random(dims.clone(), -0.1, 0.1),
         //Constant::random(dims.clone(), -0.1, 0.1),
-    ];
-    let target = Function::constant(Constant::random(dims.clone(), -10., 10.));
+        ////Constant::random(dims.clone(), -0.1, 0.1),
+        ////Constant::random(dims.clone(), -0.1, 0.1),
+    //];
+    //let target = Function::constant(Constant::random(dims.clone(), -10., 10.));
     //println!("target: {}", &target);
-    let f = sq(&(lstm(inputs) - target));
+    let x = Function::constant(Constant::random(vec![dim, dim], -0.1, 0.1));
+    let f = dot(&x, &x);
     f.minimize(&args, 0.01, 1000);
 
     //println!("f: {}", &f);
