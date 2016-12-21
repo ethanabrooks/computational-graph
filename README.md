@@ -46,7 +46,22 @@ Currently the program implements the following operations for scalars and 2d mat
 The library is easily extensible for anyone familiar with Rust and CUDA. This library is obviously not as extensive as Tensorflow or Torch, but it implements the same core capabilities. The goal of this project was not to replace either of those libraries, but to get a better understanding of how they work by reimplementing them myself.
 
 # Usage
-The master branch is configured to work on CPU. For GPU, switch to the `gpu` branch. 
+The master branch is configured to work on CPU. For GPU, switch to the `gpu` branch.
+To test the program on a function, you need to write that function in `main.rs` and run `cargo run`, which compiles and runs the program.
+
+Here's an example program:
+
+```
+let args = HashMap::new();                          // this hashmap can be populated with constants at runtime
+let x = Function::param("x", Constant::Scalar(1.)); // a tunable `parameter` Function initialized to 1.
+let a = Function::constant(Constant::Scalar(3.));   // a constant scalar Function with value 3.
+let f = sq(&(x + a));                               // the function to minimize: (x + a)^2
+f.minimize(&args, 0.01, 1000);                      // minimize the function with learning rate of 0.01 and 1000 iterations.
+```
+
+An API is pending. For now, check `function/constructors` and `constant/constructors` for different ways to create functions and constants (scalars/matrices).
+
+As for arithmetic operations, most can either take a `Function` type or an `&Function` type (a reference to a `Function`). In general, it is always safe to provide a reference in place of a `Function` since the borrow checker will sometimes complain otherwise.
 
 # Performance
 
