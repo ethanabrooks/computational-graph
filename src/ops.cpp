@@ -103,9 +103,6 @@ extern "C" {
     bzero(result->array, size(result) * sizeof(float));
 
     int i, j, k;
-    rng(i, 0, size(m1)) {
-      printf("m1[%d] = %f\n", i, m1->array[i]);
-    }
     rng(i, 0, height1) {
       rng(j, 0, width2) {
         rng(k, 0, inner_dim) {
