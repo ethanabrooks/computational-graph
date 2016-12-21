@@ -59,7 +59,7 @@ let f = sq(&(x + a));                               // the function to minimize:
 f.minimize(&args, 0.01, 1000);                      // minimize the function with learning rate of 0.01 and 1000 iterations.
 ```
 
-An API is pending. For now, check `function/constructors` and `constant/constructors` for different ways to create functions and constants (scalars/matrices).
+An API is pending. For now, check `function/constructors.rs` and `constant/constructors.rs` for different ways to create functions and constants (scalars/matrices).
 
 As for arithmetic operations, most can either take a `Function` type or an `&Function` type (a reference to a `Function`). In general, it is always safe to provide a reference in place of a `Function` since the borrow checker will sometimes complain otherwise.
 
