@@ -78,7 +78,7 @@ impl Function {
             let mut error = self.unwrap_value().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
             //if i % 1 == 0 {
-                println!("{}", self.unwrap_value().clone().avg());
+                //println!("{}", self.unwrap_value().clone().avg());
             //}
         }
     }
