@@ -48,7 +48,7 @@ extern "C" {
     int i, j;
     rng(i, 0, matrix->height) {
       rng(j, 0, matrix->width) {
-        printf("%7.0f", matrix->array[MAT_IDX(j, i, matrix->height)]);
+        printf("%7.2f", matrix->array[MAT_IDX(j, i, matrix->height)]);
       }
       printf("\n");
     }

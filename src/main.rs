@@ -3,8 +3,8 @@
 extern crate libc;
 extern crate rand;
 
-mod function; 
-mod constant; 
+mod function;
+mod constant;
 
 #[allow(unused_imports)]
 use function::{sq, dot, abs, sigmoid, rnn, Function, lstm};
@@ -24,17 +24,22 @@ use std::ops::Deref;
 fn main() {
     //unsafe { init_cublas() };
     let args = HashMap::new();
-    let dims = vec![20, 20];
-    let inputs = vec![
-        Constant::random(dims.clone(), -0.1, 0.1),
-        Constant::random(dims.clone(), -0.1, 0.1),
+    let dim = 2;
+    //let dims = vec![20, 20];
+    //let inputs = vec![
         //Constant::random(dims.clone(), -0.1, 0.1),
         //Constant::random(dims.clone(), -0.1, 0.1),
-    ];
-    let target = Function::constant(Constant::random(dims.clone(), -10., 10.));
+        ////Constant::random(dims.clone(), -0.1, 0.1),
+        ////Constant::random(dims.clone(), -0.1, 0.1),
+    //];
+    //let target = Function::constant(Constant::random(dims.clone(), -10., 10.));
     //println!("target: {}", &target);
-    let f = sq(&(lstm(inputs) - target));
-    f.minimize(&args, 0.01, 1000);
+    let x = Function::constant(Constant::random(vec![dim, dim], -1.1, 1.1));
+    let f = dot(&x, &x);
+	println!("f: {}", f.eval(&args));
+
+    //f.minimize(&args, 0.01, 1000);
 
     //println!("f: {}", &f);
 }
+
