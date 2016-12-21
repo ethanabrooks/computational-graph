@@ -51,7 +51,7 @@ To test the program on a function, you need to write that function in `main.rs` 
 
 Here's an example program:
 
-```
+```rust
 let args = HashMap::new();                          // this hashmap can be populated with constants at runtime
 let x = Function::param("x", Constant::Scalar(1.)); // a tunable `parameter` Function initialized to 1.
 let a = Function::constant(Constant::Scalar(3.));   // a constant scalar Function with value 3.
