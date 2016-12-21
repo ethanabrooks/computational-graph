@@ -59,7 +59,7 @@ int main (void){
   //print_matrix(&m2);
   printf("\n");
   //elemwise_mul(&m1, &m2, &result);
-  broadcast_sub_rev(&m1, 3, &result);
+  gemm(&m1, true, &m2, false, &result);
   print_matrix(&result);
   //printf("\n");
   //gemm(&m1, false, &m2, false, &result);

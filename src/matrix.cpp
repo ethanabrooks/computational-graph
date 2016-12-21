@@ -33,7 +33,7 @@ extern "C" {
     assert(size(dst) == size(src));
     dst->height = src->height;
     dst->width = src->width;
-    memcpy(dst->array, src->array, size(src));
+    memcpy(dst->array, src->array, size(src) * sizeof(float));
   }
 
   void fill_matrix(Matrix *matrix, float value) {

@@ -103,13 +103,16 @@ extern "C" {
     bzero(result->array, size(result) * sizeof(float));
 
     int i, j, k;
+    rng(i, 0, size(m1)) {
+      printf("m1[%d] = %f\n", i, m1->array[i]);
+    }
     rng(i, 0, height1) {
       rng(j, 0, width2) {
         rng(k, 0, inner_dim) {
           int idx1 = trans1 ? IDX(k, i, m1->height) : IDX(i, k, m1->height);
-          int m1_ik = m1->array[idx1];
+          float m1_ik = m1->array[idx1];
           int idx2 = trans2 ? IDX(j, k, m2->height) : IDX(k, j, m2->height);
-          int m2_kj = m2->array[idx2];
+          float m2_kj = m2->array[idx2];
           result->array[IDX(i, j, result->width)] += m1_ik * m2_kj;
         }
       }
