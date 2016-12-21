@@ -45,6 +45,6 @@ Currently the program implements the following operations for scalars and 2d mat
 
 The library is easily extensible for anyone familiar with Rust and CUDA. This library is obviously not as extensive as Tensorflow or Torch, but it implements the same core capabilities. The goal of this project was not to replace either of those libraries, but to get a better understanding of how they work by reimplementing them myself.
 
-# Stats
+# Performance
 
 This graph compares four implementations of my program: backpropation with naive optimization (explained in detail in the video) both on and off the GPU.
