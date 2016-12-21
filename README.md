@@ -24,7 +24,7 @@ In our program, we are not just interested in evaluating expressions, we are int
 
 How do we do this? The technique that this program uses -- and which is fairly ubiquitous in the world of optimization -- is gradient descent. That means that we calculate the gradient of the function with respect to each of its parameters and then add that gradient to the parameter. A gradient is simply a measure of how much the value of the function changes when the value of a parameter changes. For example,
 
-[](image)
+[](https://github.com/lobachevzky/computational-graph/blob/master/dydx.png)
 
 means that `y` depends on `x` and increasing `x` by one roughly increases `y` by two. Most importantly, it means that increasing `x` also increases `y`. If the result of the expression were negative, it would mean that *decreasing* `x` would increase `y`. Adding gradients to parameters maximizes an expression. Subtracting gradients minimizes it.
 
