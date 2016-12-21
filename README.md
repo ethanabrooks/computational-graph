@@ -66,3 +66,7 @@ As for arithmetic operations, most can either take a `Function` type or an `&Fun
 # Performance
 
 This graph compares four implementations of my program: backpropation with naive optimization (explained in detail in the video) both on and off the GPU.
+
+Besides the backpropation algorithm itself, a second major optimization used by the algorithm is an object pool for matrices. When a matrix goes out of scope, instead of being deallocated, the program moves the matrix into a global object pool. When the program needs a new matrix, instead of simply allocating one, the program first checks the object pool to see if an unused matrix is available. This the matrices that the backpropation algorithm handles maintain a fixed size, the program only allocates matrices on the first iteration, not subsequently.
+
+The following graph depicts the difference in seconds of optimizing the multiplication of two 2 x 2 matrices with 1000 iterations:
