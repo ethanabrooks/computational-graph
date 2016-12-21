@@ -313,11 +313,8 @@ pub fn dot(c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) -> Constant
         }
         (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
             result = Matrix::empty_for_dot(m1, m2, trans1, trans2);
-            println!("m1: {}", Constant::Matrix(m1.clone()));
             unsafe { gemm(m1, trans1, m2, trans2, &mut result) }
         }
     };
-    let x = Constant::Matrix(result);
-    println!("res: {}", x);
-    x 
+    Constant::Matrix(result)
 }
