@@ -3,10 +3,7 @@
 #include <math.h> 
 #include <string.h> 
 #include <iostream> 
-#include <cuda.h> 
-#include <cuda_runtime.h> 
 #include <time.h>
-#include "cublas_v2.h" 
 #include "matrix.h" 
 #include "ops.h" 
 #include "util.h" 
@@ -45,29 +42,31 @@ int main (void){
   array = (float *)malloc (M * N * sizeof (float)); 
   check(!array, "host memory allocation failed"); 
 
-  init_cublas();
-  //alloc_matrix(&m1, 2, 2);
+  alloc_matrix(&m1, 3, 2);
   alloc_matrix(&m2, 3, 2);
-  //alloc_matrix(&result, 3, 3);
+  alloc_matrix(&result, 2, 2);
 
-  //init_matrix(&m1, input_vals, 2, 2);
+  init_matrix(&m1, weights_vals, 3, 2);
   init_matrix(&m2, weights_vals, 3, 2);
 
   //fill_matrix(&m1, 1);
   //fill_matrix(&m2, 2);
 
   //fill_matrix(&result, 0);
+  print_matrix(&m1);
+  printf("\n");
   print_matrix(&m2);
-  //printf("\n");
   //print_matrix(&m2);
-  //print_matrix(&result);
+  printf("\n");
+  //elemwise_mul(&m1, &m2, &result);
+  broadcast_sub_rev(&m1, 3, &result);
+  print_matrix(&result);
   //printf("\n");
   //gemm(&m1, false, &m2, false, &result);
   //print_matrix(&result);
   //fill_matrix(&m2, 3);
   //elemwise_add(&m1, &m2, &matrix);
   //printf("\n");
-  //elemwise_mult(&m1, &m2, &matrix);
   //print_matrix(&matrix);
   //printf("\n");
   //broadcast_add(1, &m2, &matrix);
@@ -90,6 +89,5 @@ int main (void){
   //int msec = diff * 1000 / CLOCKS_PER_SEC; 
   //printf("Time taken %d seconds %d milliseconds\n", msec/1000, msec%1000);
 
-  cublasDestroy(handle);
   return EXIT_SUCCESS;
 }

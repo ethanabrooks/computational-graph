@@ -1,5 +1,6 @@
 SRCS:=main.cpp matrix.cu ops.cu util.cu
-main: $(SRCS)  matrix.h ops.h util.h
+HDRS:=matrix.h ops.h util.h
+main: $(SRCS) $(HDRS)
 	nvcc $(SRCS) -o main -lcublas -std=c++11
 	./main
 
@@ -15,6 +16,11 @@ rust: $(SRCS) matrix.h
 	nvcc -c src/op.cu -o out/op.o
 	cd out
 	ar curs libmatrix.a *.o
+
+CPU_SRCS:=main.cpp matrix.cpp ops.cpp util.cpp
+cpu: $(CPU_SRCS) $(HDRS)
+	c++ $(CPU_SRCS) -o main -std=c++11
+	./main
 
 rust_clean: 
 	rm -rf ../target/debug/build/lstm-53f3b05885762f6a

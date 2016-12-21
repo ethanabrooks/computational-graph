@@ -316,5 +316,7 @@ pub fn dot(c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) -> Constant
             unsafe { gemm(m1, trans1, m2, trans2, &mut result) }
         }
     };
-    Constant::Matrix(result)
+    let x = Constant::Matrix(result);
+    println!("res: {}", x);
+    x 
 }
