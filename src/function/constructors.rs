@@ -1,4 +1,4 @@
-use constant::{Constant, Matrix};
+use constant::Constant;
 use std::collections::HashSet;
 use function::datatypes::{shared, Input, Param, Expr, Function};
 use std::rc::Rc;
@@ -7,7 +7,7 @@ use std::cell::RefCell;
 macro_rules! hashset {
     ($( $val: expr ),*) => {{
          let mut set = HashSet::new();
-         $( set.insert($val); )*
+         $( set.insert(String::from($val)); )*
          set
     }}
 }
@@ -30,8 +30,7 @@ impl Function {
 
     #[allow(dead_code)]
     pub fn input(s: &str, dims: Vec<u32>) -> Function {
-        let params = hashset![String::from(s)];
-        Function::new(None, params, 
+        Function::new(None, hashset![s], 
                     Expr::Input(Input {
                         name: String::from(s),
                         dims: dims,
@@ -40,15 +39,17 @@ impl Function {
 
     #[allow(dead_code)]
     pub fn param(s: &str, value: Constant) -> Function {
-        let params = hashset![String::from(s)];
-        Function::new(Some(value), params, Expr::Param(Param { name: String::from(s) }))
+        Function::new(Some(value), 
+                      hashset![s], 
+                      Expr::Param(Param { name: String::from(s) }))
     }
 
     #[allow(dead_code)]
     pub fn random_param(s: &str, dims: Vec<u32>, lo: f32, hi: f32) -> Function {
-        let params = hashset![String::from(s)];
         let value = Constant::random(dims, lo, hi);
-        Function::new(Some(value), params, Expr::Param(Param { name: String::from(s) }))
+        Function::new(Some(value), 
+                      hashset![s], 
+                      Expr::Param(Param { name: String::from(s) }))
     }
 
     #[allow(dead_code)]
@@ -58,7 +59,7 @@ impl Function {
 
     #[allow(dead_code)]
     pub fn matrix(height: u32, width: u32, values: Vec<f32>) -> Function {
-        Function::constant(Constant::Matrix(Matrix::new(height, width, values)))
+        Function::constant(Constant::matrix(height, width, values))
     }
 
     #[allow(dead_code)]

@@ -1,6 +1,5 @@
 pub use self::ops::{dot_transpose, dot, abs, sigmoid, sq, tanh};
-pub use self::datatypes::Function;
-pub use self::lstm::rnn;
+pub use self::datatypes::{Function, Expr};
 
 mod constructors;
 mod datatypes;
@@ -14,7 +13,7 @@ use std::ops::{Deref, DerefMut};
 use constant;
 use constant::{Constant, mul_assign, add_assign, sub_assign,
                tanh_assign, sigmoid_assign, signum_assign, abs_assign, sq_assign, negate, one_minus};
-use self::datatypes::Expr;
+//use self::datatypes::Expr;
 
 impl Function {
     pub fn eval(&self, args: &HashMap<&str, Constant>) -> Constant {
