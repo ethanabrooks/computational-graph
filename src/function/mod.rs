@@ -93,9 +93,9 @@ impl Function {
         for i in 0..iters {
             self.assign_values(&args);
             self.slow_backprop(args, learn_rate);
-            if i % 100 == 0 {
-                println!("{}", self.unwrap_value().clone());
-            }
+            //if i % 100 == 0 {
+                //println!("{}", self.unwrap_value().clone());
+            //}
         }
     }
 
