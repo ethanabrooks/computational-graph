@@ -1,4 +1,4 @@
-#![feature(advanced_slice_patterns, slice_patterns)]
+#![feature(advanced_slice_patterns, slice_patterns, concat_idents)]
 
 extern crate libc;
 extern crate lifeguard;
@@ -20,7 +20,7 @@ extern { fn init_cublas(); }
 
 fn main() {
     unsafe { init_cublas() };
-    //let args = HashMap::new();
+    let args = HashMap::new();
 
     /////DEMO 1
     //let x = Function::param("x", Constant::Scalar(1.));
@@ -28,9 +28,9 @@ fn main() {
     //f.minimize(&args, 0.1, 1000);
 
     /////DEMO 2
-    //let x = Function::param("x", Constant::Scalar(1.));
-    //let f = sq(&x);
-    //f.minimize(&args, 0.01, 1000);
+    let x = Function::param("x", Constant::Scalar(1.));
+    let f = sq(&x);
+    f.minimize(&args, 0.01, 1000);
 
     /////DEMO 3
     //let x = Function::param("x", Constant::Scalar(1.));

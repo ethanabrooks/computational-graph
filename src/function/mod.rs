@@ -36,9 +36,23 @@ extern {
 
 macro_rules! fn1 {
     ($Op:ident, $op:ident) => {
-
+        fn1!($Op, $op, |x: f32| x.$op());
+    };
+    ($Op:ident, $op:ident, $scalar_fn:expr) => {
         pub fn $op(f: &Function) -> Function {
             Function::new(None, f.params.clone(), Expr::$Op(f.clone()))
+        }
+        impl Constant {
+            pub fn $op(&self) -> Constant {
+                match self {
+                    &Constant::Scalar(x) => Constant::Scalar($scalar_fn(x)),
+                    &Constant::Matrix(ref m) => {
+                        let mut result = Matrix::empty_like(m);
+                        unsafe { concat_idents!(map_, $op)(m, &mut result) };
+                        Constant::Matrix(result)
+                    }
+                }
+            }
         }
     };
 }
@@ -110,10 +124,10 @@ macro_rules! trait2 {
 }
 
 fn1!(Abs, abs);
-fn1!(Sq, sq);
 fn1!(Tanh, tanh);
 fn1!(Signum, signum);
-fn1!(Sigmoid, sigmoid);
+fn1!(Sq, sq, |x: f32| x * x);
+fn1!(Sigmoid, sigmoid, |x: f32| 1. / (1. + (-x).exp()));
 trait1!(Neg, neg, 0.);
 trait2!(Add, add, 0.);
 trait2!(Sub, sub, 0.);
@@ -247,25 +261,13 @@ impl Constant {
         }
     }
 
-    pub fn signum(&self) -> Constant {
-        self.apply(&|x: f32| x.signum(), map_signum)
-    }
+    //pub fn sigmoid(&self) -> Constant {
+        //self.apply(&sigmoid_f32, map_sigmoid)
+    //}
 
-    pub fn abs(&self) -> Constant {
-        self.apply(&|x: f32| x.abs(), map_abs)
-    }
-
-    pub fn sigmoid(&self) -> Constant {
-        self.apply(&sigmoid_f32, map_sigmoid)
-    }
-
-    pub fn tanh(&self) -> Constant {
-        self.apply(&|x: f32| x.tanh(), map_tanh)
-    }
-
-    pub fn sq(&self) -> Constant {
-        self.apply(&|x| x * x, map_sq)
-    }
+    //pub fn sq(&self) -> Constant {
+        //self.apply(&|x| x * x, map_sq)
+    //}
 
     pub fn all_equal(&self, val: f32) -> bool {
         match *self {
