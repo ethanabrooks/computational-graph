@@ -67,11 +67,11 @@ As for arithmetic operations, most can either take a `Function` type or an `&Fun
 
 In the next two graphs we compare performance on an LSTM optimizing a randomly generated dataset that takes a sequence of two matrices as input. The first graph compares a GPU with a CPU as the number of tunable parameters increases:
 
-![](https://github.com/lobachevzky/computational-graph/blob/master/CPU%20vs%20GPU.png)
+![](https://github.com/lobachevzky/computational-graph/blob/master/images/CPU%20vs%20GPU.png)
 
 The second graph compares the backpropagation algorithm with the naive version of gradient calculation (on the CPU).
 
-![](https://github.com/lobachevzky/computational-graph/blob/master/backprop%20vs%20naive.png)
+![](https://github.com/lobachevzky/computational-graph/blob/master/images/backprop%20vs%20naive.png)
 
 For some reason, the naive algorithm is intractably slow on the GPU and comparisons with it have therefore been ommitted.
 
@@ -79,4 +79,4 @@ Besides the backpropation algorithm itself, a second major optimization used by 
 
 The following graph depicts the difference in seconds of optimizing the multiplication of two 2 x 2 matrices with 1000 iterations:
 
-![](https://github.com/lobachevzky/computational-graph/blob/master/optimization%20comparison.png)
+![](https://github.com/lobachevzky/computational-graph/blob/master/images/optimization%20comparison.png)
