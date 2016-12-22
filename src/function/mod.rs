@@ -115,6 +115,7 @@ macro_rules! trait1 {
             }
         }
     }
+}
 
 macro_rules! trait2 {
     ($Op:ident, $op:ident, $identity:expr) => {
