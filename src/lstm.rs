@@ -1,22 +1,6 @@
-// TODO: implement tanh
-// TODO: implement recursion
-// TODO: run it
+use function::{dot, sigmoid, tanh, Function, Constant};
 
-use constant::Constant;
-use function::ops::{dot, sigmoid, tanh};
-use function::datatypes::{Expr, Function};
-
-fn check_params(functions: Vec<&Function>) {
-    for function in functions {
-        match *function.body {
-            Expr::Param(_) => {},
-            _ => {
-                panic!("This function should be a param but is not: {}", &function)
-            }
-        }
-    }
-}
-
+// TODO: add this to datatypes.rs so that this file can be moved out of function
 #[allow(non_snake_case)]
 pub fn lstm_custom_params(input: Vec<Constant>, 
             Wi: Function, 
@@ -35,8 +19,8 @@ pub fn lstm_custom_params(input: Vec<Constant>,
             C: Function,
             h: Function,
             ) -> Function {
-    check_params(vec![&Wi, &Ui, &bi, &Wc, &Uc, &bc,
-                      &Wf, &Uf, &bf, &Wo, &Uo, &Vo, &bo]);
+    Function::check_params(vec![&Wi, &Ui, &bi, &Wc, &Uc, &bc,
+                           &Wf, &Uf, &bf, &Wo, &Uo, &Vo, &bo, &C, &h]);
     match &input[..] {
         &[] => C,
         &[ref head, ref tail..] => {
@@ -91,18 +75,13 @@ pub fn lstm(inputs: Vec<Constant>) -> Function {
 }
 
 #[allow(non_snake_case, dead_code)]
-pub fn rnn(input: Vec<Constant>, hidden_state: Function, bias: Function) -> Function {
-    match *hidden_state.body {
-        Expr::Param(_) => { 
-            match &input[..] {
-                &[] => hidden_state,
-                &[ref head, ref tail..] => {
-                    let x = Function::constant(head.clone());
-                    sigmoid(&(&dot(&x, &hidden_state) + &bias)) 
-                        + rnn(tail.to_vec(), hidden_state, bias)
-                }
-            }
+pub fn rnn(inputs: Vec<&Constant>, hidden_state: Function, bias: Function) -> Function {
+    match &inputs[..] {
+        &[] => hidden_state,
+        &[ref head, ref tail..] => {
+            let x = Function::constant((*head).clone());
+            sigmoid(&(&dot(&x, &hidden_state) + &bias)) 
+                + rnn(tail.to_vec(), hidden_state, bias)
         }
-        _ => panic!("rnn needs to take a param for hidden state"),
     }
 }
