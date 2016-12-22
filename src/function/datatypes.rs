@@ -119,8 +119,16 @@ impl Function {
     pub fn num_placeholders(&self) -> usize {
         self.placeholders.borrow().len()
     }
-}
 
+    pub fn check_params(functions: Vec<&Function>) {
+        for function in functions {
+            match *function.body {
+                Expr::Param(_) => {},
+                _ => panic!("{} must be a param", &function),
+            }
+        }
+    }
+}
 
 impl Matrix {
     pub fn size(&self) -> u32 {
