@@ -24,7 +24,7 @@ In our program, we are not just interested in evaluating expressions, we are int
 
 How do we do this? The technique that this program uses -- and which is fairly ubiquitous in the world of optimization -- is gradient descent. That means that we calculate the gradient of the function with respect to each of its parameters and then add that gradient to the parameter. A gradient is simply a measure of how much the value of the function changes when the value of a parameter changes. For example,
 
-![](https://github.com/lobachevzky/computational-graph/blob/master/dydx.png)
+![](https://github.com/lobachevzky/computational-graph/blob/master/images/dydx.png)
 
 means that `y` depends on `x` and increasing `x` by one roughly increases `y` by two. Most importantly, it means that increasing `x` also increases `y`. If the result of the expression were negative, it would mean that *decreasing* `x` would increase `y`. Adding gradients to parameters maximizes an expression. Subtracting gradients minimizes it.
 
@@ -67,11 +67,11 @@ As for arithmetic operations, most can either take a `Function` type or an `&Fun
 
 In the next two graphs we compare performance on an LSTM optimizing a randomly generated dataset that takes a sequence of two matrices as input. The first graph compares a GPU with a CPU as the number of tunable parameters increases:
 
-![]()
+![](https://github.com/lobachevzky/computational-graph/blob/master/CPU%20vs%20GPU.png)
 
 The second graph compares the backpropagation algorithm with the naive version of gradient calculation (on the CPU).
 
-![]()
+![](https://github.com/lobachevzky/computational-graph/blob/master/backprop%20vs%20naive.png)
 
 For some reason, the naive algorithm is intractably slow on the GPU and comparisons with it have therefore been ommitted.
 
