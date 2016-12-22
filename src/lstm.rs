@@ -20,7 +20,7 @@ pub fn lstm_custom_params(input: Vec<Constant>,
             h: Function,
             ) -> Function {
     Function::check_params(vec![&Wi, &Ui, &bi, &Wc, &Uc, &bc,
-                           &Wf, &Uf, &bf, &Wo, &Uo, &Vo, &bo, &C, &h]);
+                           &Wf, &Uf, &bf, &Wo, &Uo, &Vo, &bo]);
     match &input[..] {
         &[] => C,
         &[ref head, ref tail..] => {
