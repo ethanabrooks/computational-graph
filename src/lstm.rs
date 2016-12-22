@@ -75,18 +75,13 @@ pub fn lstm(inputs: Vec<Constant>) -> Function {
 }
 
 #[allow(non_snake_case, dead_code)]
-pub fn rnn(input: Vec<Constant>, hidden_state: Function, bias: Function) -> Function {
-    match *hidden_state.body {
-        Expr::Param(_) => { 
-            match &input[..] {
-                &[] => hidden_state,
-                &[ref head, ref tail..] => {
-                    let x = Function::constant(head.clone());
-                    sigmoid(&(&dot(&x, &hidden_state) + &bias)) 
-                        + rnn(tail.to_vec(), hidden_state, bias)
-                }
-            }
+pub fn rnn(inputs: Vec<&Constant>, hidden_state: Function, bias: Function) -> Function {
+    match &inputs[..] {
+        &[] => hidden_state,
+        &[ref head, ref tail..] => {
+            let x = Function::constant((*head).clone());
+            sigmoid(&(&dot(&x, &hidden_state) + &bias)) 
+                + rnn(tail.to_vec(), hidden_state, bias)
         }
-        _ => panic!("rnn needs to take a param for hidden state"),
     }
 }

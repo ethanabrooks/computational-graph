@@ -50,6 +50,10 @@ pub enum Constant {
     Matrix(Matrix)
 }
 
+pub struct PMatrix {
+    matrix: Option<Matrix>,
+}
+
 #[repr(C)]
 pub struct Matrix {
     pub height: u32,
