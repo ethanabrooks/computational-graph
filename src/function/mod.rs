@@ -1,5 +1,7 @@
-pub use self::ops::{dot_transpose, dot, abs, sigmoid, sq, tanh};
-pub use self::datatypes::{Function, Expr};
+pub use self::ops::{dot_transpose, dot, abs, sigmoid, sq, tanh, mul_assign, 
+                    add_assign, sub_assign, sigmoid_assign, signum_assign, 
+                    tanh_assign, sq_assign, abs_assign, negate, one_minus};
+pub use self::datatypes::{Function, Expr, Constant};
 
 mod constructors;
 mod datatypes;
@@ -10,11 +12,9 @@ mod lstm;
 use std::collections::HashMap;
 use std::io::{Write, stderr};
 use std::ops::{Deref, DerefMut};
-use constant;
-use constant::{Constant, mul_assign, add_assign, sub_assign,
-               tanh_assign, sigmoid_assign, signum_assign, abs_assign, sq_assign, negate, one_minus};
 //use self::datatypes::Expr;
 
+// TODO: create optimize.rs
 impl Function {
     pub fn eval(&self, args: &HashMap<&str, Constant>) -> Constant {
         match *self.body {
@@ -37,7 +37,7 @@ impl Function {
             Expr::Sub(ref f1, ref f2) => f1.eval(args) - f2.eval(args),
             Expr::Mul(ref f1, ref f2) => f1.eval(args) * f2.eval(args),
             Expr::Dot(ref f1, ref f2, trans1, trans2) =>
-                constant::dot(&f1.eval(args), &f2.eval(args), trans1, trans2)
+                Constant::dot(&f1.eval(args), &f2.eval(args), trans1, trans2)
         }
     }
 

@@ -5,12 +5,10 @@ extern crate lifeguard;
 extern crate rand;
 
 mod function; 
-mod constant; 
+
 
 #[allow(unused_imports)]
-use function::{sq, dot, abs, sigmoid, Function};
-#[allow(unused_imports)]
-use constant::Constant;
+use function::{sq, dot, abs, sigmoid, Function, Constant};
 #[allow(unused_imports)]
 use std::collections::HashMap;
 #[allow(unused_imports)]

@@ -1,30 +1,18 @@
-use constant::Constant;
 use std::cell::{RefCell, Ref, RefMut};
 use std::collections::HashSet;
 use std::rc::Rc;
 
-type Shared<T> = Rc<RefCell<T>>;
-
-//pub fn get_shared<T>(s: &Shared<T>) -> Ref<T> { s.borrow() }
-
-pub mod shared {
-    use function::datatypes::Shared;
-    use std::{cell, rc};
-
-    pub fn new<T>(value: T) -> Shared<T> {
-        rc::Rc::new(cell::RefCell::new(value))
-    }
+extern {
+    fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
+    fn free_matrix(m: *mut Matrix);
 }
 
-#[derive(Debug)]
-pub struct Input {
-    pub dims: Vec<u32>, 
-    pub name: String,
-}
-
-#[derive(Debug)]
-pub struct Param {
-    pub name: String,
+#[derive(Debug, Clone)]
+pub struct Function {
+    pub value: Shared<Option<Constant>>,
+    pub params: HashSet<String>,
+    pub body: Rc<Expr>,
+    pub placeholders: RefCell<Vec<Constant>>,
 }
 
 #[derive(Debug)]
@@ -44,12 +32,40 @@ pub enum Expr {
     Dot(Function, Function, bool, bool),
 }
 
-#[derive(Debug, Clone)]
-pub struct Function {
-    pub value: Shared<Option<Constant>>,
-    pub params: HashSet<String>,
-    pub body: Rc<Expr>,
-    pub placeholders: RefCell<Vec<Constant>>,
+#[derive(Debug)]
+pub struct Input {
+    pub dims: Vec<u32>, 
+    pub name: String,
+}
+
+#[derive(Debug)]
+pub struct Param {
+    pub name: String,
+}
+
+
+#[derive(Clone)]
+pub enum Constant {
+    Scalar(f32),
+    Matrix(Matrix)
+}
+
+#[repr(C)]
+pub struct Matrix {
+    pub height: u32,
+    pub width: u32,
+    pub dev_array: *mut f32,
+}
+
+type Shared<T> = Rc<RefCell<T>>;
+
+pub mod shared {
+    use function::datatypes::Shared;
+    use std::{cell, rc};
+
+    pub fn new<T>(value: T) -> Shared<T> {
+        rc::Rc::new(cell::RefCell::new(value))
+    }
 }
 
 impl Function {
@@ -86,12 +102,6 @@ impl Function {
         *self.placeholders.borrow_mut() = c;
     }
 
-    //pub fn set_placeholder_dims(height: u32, width: u32) {
-        //self.placeholders.set_option(PoolBuilder {
-            //supplier: Matrix::empty(height, width)
-        //})
-    //}
-
     pub fn get_placeholder(&self, i: usize) -> RefMut<Constant> {
         RefMut::map(self.placeholders.borrow_mut(), |x| match x.get_mut(i) {
             Some(x) => x,
@@ -108,5 +118,43 @@ impl Function {
 
     pub fn num_placeholders(&self) -> usize {
         self.placeholders.borrow().len()
+    }
+}
+
+
+impl Matrix {
+    pub fn size(&self) -> u32 {
+        self.height * self.width
+    }
+}
+
+
+impl Clone for Matrix {
+    fn clone(&self) -> Self {
+        let mut m = Matrix::empty_like(self);
+        unsafe { copy_matrix(self as *const Matrix, &mut m) };
+        m
+    }
+}
+
+impl Drop for Matrix {
+    fn drop(&mut self) {
+        unsafe { free_matrix(self as *mut Matrix) };
+    }
+} 
+
+impl Constant {
+    pub fn width(&self) -> u32 {
+        match *self {
+            Constant::Scalar(_) => 1,
+            Constant::Matrix(ref m) => m.width,
+        }
+    }
+
+    pub fn height(&self) -> u32 {
+        match *self {
+            Constant::Scalar(_) => 1,
+            Constant::Matrix(ref m) => m.height,
+        }
     }
 }

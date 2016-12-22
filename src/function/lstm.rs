@@ -1,11 +1,7 @@
-// TODO: implement tanh
-// TODO: implement recursion
-// TODO: run it
-
-use constant::Constant;
 use function::ops::{dot, sigmoid, tanh};
-use function::datatypes::{Expr, Function};
+use function::datatypes::{Expr, Function, Constant};
 
+// TODO: add this to datatypes.rs so that this file can be moved out of function
 fn check_params(functions: Vec<&Function>) {
     for function in functions {
         match *function.body {
