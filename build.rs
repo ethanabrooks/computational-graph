@@ -22,12 +22,13 @@ fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
 
 fn main() {
     let c_names = vec!["matrix", "ops", "util"];
+    let dir = "src/matrix";
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
 
     for i in 0..c_names.len() {
-        let src_name = format!("src/{}.cpp", c_names[i]);
+        let src_name = format!("{}/{}.cu", dir, c_names[i]);
         let out_name = get_out_name(c_names[i]);
          
         if more_recent_than(&vec![src_name.clone()], &out_name).unwrap() {

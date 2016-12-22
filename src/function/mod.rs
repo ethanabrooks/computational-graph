@@ -1,281 +1,339 @@
-pub use self::ops::{dot_transpose, dot, abs, sigmoid, sq, tanh};
-pub use self::datatypes::Function;
-pub use self::lstm::{rnn, lstm};
+pub use self::datatypes::{Function, Expr, Constant};
 
 mod constructors;
 mod datatypes;
-mod ops;
 mod print;
-mod lstm;
+mod optimize;
 
+use function::datatypes::Matrix;
 use std::collections::HashMap;
-use std::io::{Write, stderr};
-use std::ops::{Deref, DerefMut};
-use constant;
-use constant::{Constant, mul_assign, add_assign, sub_assign, tanh_assign, 
-    sigmoid_assign, signum_assign, abs_assign, sq_assign, negate, one_minus};
-use self::datatypes::Expr;
+use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign};
+
+extern {
+    fn map_neg(m: *const Matrix, result: *mut Matrix);
+    fn map_sq(m: *const Matrix, result: *mut Matrix);
+    fn map_abs(m: *const Matrix, result: *mut Matrix);
+    fn map_signum(m: *const Matrix, result: *mut Matrix);
+    fn map_sigmoid(m: *const Matrix, result: *mut Matrix);
+    fn map_tanh(m: *const Matrix, result: *mut Matrix);
+    fn map_one_minus(m: *const Matrix, result: *mut Matrix);
+    fn broadcast_mul(val: f32, m: *const Matrix, result: *mut Matrix);
+    fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
+    fn broadcast_sub(val: f32, m: *const Matrix, result: *mut Matrix);
+    fn broadcast_sub_rev(m: *const Matrix, val: f32, result: *mut Matrix);
+    fn broadcast_mul_rev(m: *const Matrix, val: f32, result: *mut Matrix);
+    fn broadcast_add_rev(m: *const Matrix, val: f32, result: *mut Matrix);
+    fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn elemwise_sub(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn elemwise_mul(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn gemm(m1: *const Matrix, trans1: bool, m2: *const Matrix, trans2: bool,
+            result: *mut Matrix);
+    fn reduce_equal(matrix: *const Matrix, x: f32) -> bool;
+    fn reduce_sum(matrix: *const Matrix) -> f32;
+}
+
+
+macro_rules! fn1 {
+    ($Op:ident, $op:ident) => {
+        fn1!($Op, $op, |x: f32| x.$op());
+    };
+    ($Op:ident, $op:ident, $scalar_fn:expr) => {
+        pub fn $op(f: &Function) -> Function {
+            Function::new(None, f.params.clone(), Expr::$Op(f.clone()))
+        }
+        impl Constant {
+            pub fn $op(&self) -> Constant {
+                match self {
+                    &Constant::Scalar(x) => Constant::Scalar($scalar_fn(x)),
+                    &Constant::Matrix(ref m) => {
+                        let mut result = Matrix::empty_like(m);
+                        let matrix_fn = concat_idents!(map_, $op);
+                        unsafe { matrix_fn(m, &mut result) };
+                        Constant::Matrix(result)
+                    }
+                }
+            }
+        }
+    };
+}
+
+
+macro_rules! apply2 {
+    ($f1: expr, $f2:expr, $expr:expr) => {
+        {
+            let params1 = $f1.params.clone();
+            let params2 = $f2.params.clone();
+            let union = params1.union(&params2).cloned().collect();
+            let function = Function::new(None, union, $expr);
+
+            // optimization to combine constants
+            match (&*$f1.body, &*$f2.body) { 
+                (&Expr::Constant(_), &Expr::Constant(_)) =>
+                    Function::constant(function.eval(&HashMap::new())),
+                _ => function
+            }
+        }
+    }
+}
+
+macro_rules! trait1 {
+    ($Op:ident, $op:ident, $idem:expr, $scalar_fn:expr) => {
+        impl<'a> $Op for &'a Function {
+            type Output = Function;
+            fn $op(self) -> Function {
+
+                // optimization to eliminate identities
+                if self.all_equal($idem) {
+                    self.clone()
+                } else {
+                    Function::new(None, self.params.clone(), Expr::$Op(self.clone()))
+                }
+            }
+        }
+
+        impl $Op for Function {
+            type Output = Function;
+            fn  $op(self) -> Function { (&self).$op() }
+        }
+        impl $Op for Constant {
+            type Output = Constant;
+            fn $op(self) -> Constant { (&self).$op() }
+        }
+
+        impl<'a> $Op for &'a Constant {
+            type Output = Constant;
+            fn $op(self) -> Constant {
+                match self {
+                    &Constant::Scalar(x) => Constant::Scalar($scalar_fn(x)),
+                    &Constant::Matrix(ref m) => {
+                        let mut result = Matrix::empty_like(m);
+                        let matrix_fn = concat_idents!(map_, $op);
+                        unsafe { matrix_fn(m, &mut result) };
+                        Constant::Matrix(result)
+                    }
+                }
+            }
+        }
+    }
+
+macro_rules! trait2 {
+    ($Op:ident, $op:ident, $identity:expr) => {
+        impl<'a> $Op for &'a Function {
+            type Output = Function;
+            fn $op(self, other: &Function) -> Function {
+                let function = apply2!(self, other, Expr::$Op(self.clone(), other.clone()));
+
+                // optimization to eliminate identities
+                if self.all_equal($identity) {
+                    other.clone()
+                } else if other.all_equal($identity) {
+                    self.clone()
+                } else {
+                    function
+                }
+            }
+        }
+
+        impl $Op for Function {
+            type Output = Function;
+            fn  $op(self, other: Function) -> Function { (&self).$op(&other) }
+        }
+
+        impl $Op for Constant {
+            type Output = Constant;
+            fn $op(self, other: Constant) -> Constant { (&self).$op(&other) }
+        }
+
+        impl<'a> $Op for &'a Constant {
+            type Output = Constant;
+            fn $op(self, other: &'a Constant) -> Constant {
+                match (self, other) {
+                    (&Constant::Scalar(x1), &Constant::Scalar(x2)) => {
+                        Constant::Scalar(x1.$op(x2)) }
+                    (&Constant::Scalar(x), &Constant::Matrix(ref m)) => {
+                        let mut result = Matrix::empty_like(m);
+                        let scalar_matrix_fun = concat_idents!(broadcast_, $op);
+                        unsafe { scalar_matrix_fun(x, m, &mut result) };
+                        Constant::Matrix(result)
+                    }
+                    (&Constant::Matrix(ref m), &Constant::Scalar(x)) => {
+                        let mut result = Matrix::empty_like(m);
+                        let matrix_scalar_fun = concat_idents!(broadcast_, $op, _rev);
+                        unsafe { matrix_scalar_fun(m, x, &mut result) };
+                        Constant::Matrix(result)
+                    }
+                    (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
+                        let mut result = Matrix::empty_like(m1);
+                        let matrix_fun = concat_idents!(elemwise_, $op);
+                        unsafe { matrix_fun(m1, m2, &mut result) };
+                        Constant::Matrix(result)
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn1!(Abs, abs);
+fn1!(Tanh, tanh);
+fn1!(Signum, signum);
+fn1!(Sq, sq, |x: f32| x * x);
+fn1!(Sigmoid, sigmoid, |x: f32| 1. / (1. + (-x).exp()));
+trait1!(Neg, neg, 0., |x: f32| -x);
+trait2!(Add, add, 0.);
+trait2!(Sub, sub, 0.);
+trait2!(Mul, mul, 0.);
 
 impl Function {
-    pub fn eval(&self, args: &HashMap<&str, Constant>) -> Constant {
+    fn all_equal(&self, val:f32) -> bool {
         match *self.body {
-            Expr::Constant(ref x) => x.clone(),
-            Expr::Input(ref i) => {
-                match args.get::<str>(&i.name) {
-                    Some(val) => val.clone(),
-                    None => panic!("`args` is missing {}. Content of `args`: \n{:#?}",
-                                   &i.name, args),
-                }
-            }
-            Expr::Param(_)            => self.unwrap_value().clone(),
-            Expr::Neg(ref f)          => -f.eval(args),
-            Expr::Sq(ref f)           => f.eval(args) * f.eval(args),
-            Expr::Abs(ref f)          => f.eval(args).abs(),
-            Expr::Sigmoid(ref f)      => f.eval(args).sigmoid(),
-            Expr::Tanh(ref f)         => f.eval(args).tanh(),
-            Expr::Signum(ref f)       => f.eval(args).signum(),
-            Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
-            Expr::Sub(ref f1, ref f2) => f1.eval(args) - f2.eval(args),
-            Expr::Mul(ref f1, ref f2) => f1.eval(args) * f2.eval(args),
-            Expr::Dot(ref f1, ref f2, trans1, trans2) =>
-                constant::dot(&f1.eval(args), &f2.eval(args), trans1, trans2)
+            Expr::Constant(ref c) => c.all_equal(val),
+            _                     => false
         }
     }
+}
 
-    pub fn grad(&self, param: &str) -> Function {
-        if self.params.contains::<str>(&param) {
-            match *self.body {
-                Expr::Neg(ref f)          => -f.grad(param),
-                Expr::Sq(ref f)           => &f.grad(param) * f,
-                Expr::Abs(ref f)          => f.signum() * f.grad(param),
-                Expr::Signum(_)           => panic!("signum is nondifferentiable"),
-                Expr::Sigmoid(ref f)      =>
-                    f.grad(param) * (self.clone() * (&Function::scalar(1.) - self)),
-                Expr::Tanh(ref f)         => 
-                    f.grad(param) * (Function::scalar(1.) - sq(&self)),
-                Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
-                Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
-                Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2+
-                                             &f2.grad(param) * f1,
-                Expr::Dot(ref f1, ref f2, trans1, trans2) => {
-                    let ones = Function::constant(self.unwrap_value().copy_and_fill(1.));
-                    dot_transpose(&ones, f2, false, !trans2) * f1.grad(param) +
-                    dot_transpose(f1, &ones, !trans1, false) * f2.grad(param)
-                }
-                Expr::Param(_) => Function::constant(self.unwrap_value()
-                                                       .copy_and_fill(1.)),
-                Expr::Constant(_) | Expr::Input(_) => panic!("should never reach here"),
-            }
-        } else {
-            Function::scalar(0.)
-        }
+pub fn dot_transpose(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
+    let function = apply2!(f1, f2, Expr::Dot(f1.clone(), f2.clone(), trans1, trans2));
+
+    // optimization to combine constants
+    match (&*f1.body, &*f2.body) { 
+        (&Expr::Constant(_), &Expr::Constant(_)) =>
+            Function::constant(function.eval(&HashMap::new())),
+        _ => function
     }
+}
 
-    #[allow(dead_code)]
-    pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
-        for _ in 0..iters {
-            self.assign_values(&args);
-            let mut error = self.unwrap_value().copy_and_fill(1.);
-            self.backprop(&mut error, learn_rate);
-            //if i % 1 == 0 {
-                //println!("{}", self.unwrap_value().clone().avg());
-            //}
-        }
-    }
+pub fn dot(f1: &Function, f2: &Function) -> Function {
+    dot_transpose(f1, f2, false, false)
+}
 
-    #[allow(dead_code)]
-    pub fn maximize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
-        (-self).minimize(args, learn_rate, iters);
-    }
-
-    #[allow(dead_code)]
-    pub fn slow_minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
-        for i in 0..iters {
-            self.assign_values(&args);
-            self.slow_backprop(args, learn_rate);
-            //if i % 100 == 0 {
-                //println!("{}", self.unwrap_value().clone());
-            //}
-        }
-    }
-
-    fn slow_backprop(&self, args: &HashMap<&str, Constant>, learn_rate: f32) {
-        for param in &self.params {
-            let error = self.grad(&param).eval(args) * Constant::Scalar(learn_rate);
-            self.mutate_value(&|x| sub_assign(x, &error));
-        }
-    }
-
-    fn assign1(&self, child: &Function, args: &HashMap<&str, Constant>,
-               mutation: &Fn(&mut Constant)) {
-        child.assign_values(args);
-        if self.get_value().is_none() {
-            self.set_value(Constant::empty_like(child.unwrap_value().deref()))
-        }
-        self.mutate_value(&|x| {
-            x.copy(child.unwrap_value().deref());
-            mutation(x)
-        })
-    }
-
-    fn assign2(&self, child1: &Function, child2: &Function,
-               args: &HashMap<&str, Constant>, mutation: &Fn(&mut Constant, &Constant)) {
-        child1.assign_values(args);
-        child2.assign_values(args);
-        if self.get_value().is_none() {
-            self.set_value(Constant::empty_like(child1.unwrap_value().deref()))
-        }
-        self.mutate_value(&|x| {
-            x.copy(child1.unwrap_value().deref());
-            mutation(x, child2.unwrap_value().deref())
-        });
-    }
-
-    pub fn assign_values(&self, args: &HashMap<&str, Constant>) {
-        // assign final value to outputs
-        match *self.body {
-            Expr::Constant(_) | Expr::Param(_) => assert!(self.get_value().is_some(),
-                "Constants and Params must always have a value"),
-            Expr::Input(ref i) =>
-                self.set_value(args.get::<str>(&i.name).expect("missing arg").clone()),
-                // TODO: avoid clone?
-            Expr::Neg(ref f) => self.assign1(f, args, &negate),
-            Expr::Sq(ref f) => self.assign1(f, args, &sq_assign),
-            Expr::Abs(ref f) => self.assign1(f, args, &abs_assign),
-            Expr::Signum(ref f) => {
-                writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
-                Running `backprop` on this function will cause an error").unwrap();
-                self.assign1(f, args, &signum_assign);
-            }
-            Expr::Sigmoid(ref f) => self.assign1(f, args, &sigmoid_assign),
-            Expr::Tanh(ref f) => self.assign1(f, args, &tanh_assign),
-            Expr::Add(ref f1, ref f2) => self.assign2(f1, f2, args, &add_assign),
-            Expr::Sub(ref f1, ref f2) => self.assign2(f1, f2, args, &sub_assign),
-            Expr::Mul(ref f1, ref f2) => self.assign2(f1, f2, args, &mul_assign),
-            Expr::Dot(ref f1, ref f2, trans1, trans2) => {
-                f1.assign_values(args);
-                f2.assign_values(args);
-                let val1 = f1.unwrap_value();
-                let val2 = f2.unwrap_value();
-                if self.get_value().is_none() {
-                    self.set_value(Constant::empty_for_dot(val1.deref(), val2.deref(),
-                                                          trans1, trans2));
-                }
-                self.mutate_value(&|x| x.assign_dot(val1.deref(), val2.deref(),
-                                                    trans1, trans2));
+impl Constant {
+    pub fn avg(&self) -> f32 {
+        match self {
+            &Constant::Scalar(x) => x,
+            &Constant::Matrix(ref m) => {
+                (unsafe { reduce_sum(m) }) / m.size() as f32
             }
         }
     }
 
-    fn backprop(&self, error: &mut Constant, learn_rate: f32) {
-        self.maybe_alloc_placeholders(error);
-        if self.params.is_empty() { return; }
-        match *self.body {
-            Expr::Param(_) => {
-                *error *= Constant::Scalar(learn_rate);
-                self.mutate_value(&|x| sub_assign(x, &error));
-            }
-            Expr::Neg(ref f) => {
-                negate(error);
-                f.backprop(error, learn_rate)
-            }
-            Expr::Sq(ref f) => {
-                mul_assign(error, f.unwrap_value().deref());
-                f.backprop(error, learn_rate)
-            }
-            Expr::Abs(ref f) => {
-                self.mutate_placeholder(0, &|x| {
-                    x.copy(f.unwrap_value().deref()); // out
-                    signum_assign(x);                 // signum(out)
-                    mul_assign(x, error);             // error * signum(out)
-                });
-                f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-            }
-            Expr::Signum(_) => panic!("sign is not differentiable"),
-            Expr::Sigmoid(ref f) => {
-                let val = self.unwrap_value();
-                self.mutate_placeholder(0, &|x| {
-                    x.copy(val.deref());        // out
-                    one_minus(x);               // 1 - out
-                    mul_assign(x, val.deref()); // out * (1 - out)
-                    mul_assign(x, error);       // error * out * (1 - out)
-                });
-
-                f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-            }
-            Expr::Tanh(ref f) => {
-                let val = self.unwrap_value();
-                self.mutate_placeholder(0, &|x| {
-                    x.copy(val.deref());        // out
-                    sq_assign(x);               // out^2
-                    one_minus(x);               // 1 - out^2
-                    mul_assign(x, error);       // error * (1 - out^2)
-                });
-
-                f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-            }
-            Expr::Add(ref f1, ref f2) => {
-                self.mutate_placeholder(0, &|x| x.copy(error));
-                f1.backprop(error, learn_rate);
-                f2.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-            }
-            Expr::Sub(ref f1, ref f2) => {
-                self.mutate_placeholder(0, &|x| {
-                    x.copy(error); // error
-                    negate(x);     // -error
-                });
-
-                f1.backprop(error, learn_rate);
-                f2.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-            }
-            Expr::Mul(ref f1, ref f2) => {
-                self.mutate_placeholder(0, &|x| {
-                    x.copy(error);
-                    mul_assign(x, &f1.unwrap_value().deref()); // error * f1
-                });
-                mul_assign(error, &f2.unwrap_value().deref()); // error * f2
-
-                f1.backprop(error, learn_rate);
-                f2.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-            }
-            Expr::Dot(ref f1, ref f2, trans1, trans2) => {
-                // placeholder[0]: dot(error, f2.T)
-                self.mutate_placeholder(0, &|x| x.assign_dot(&error, &f2.unwrap_value(),
-                                                             false, !trans2));
-                // placeholder[1]: dot(f1.T, error)
-                self.mutate_placeholder(1, &|x| x.assign_dot(&f1.unwrap_value(),
-                                                             &error, !trans1, false));
-
-                f1.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-                f2.backprop(self.get_placeholder(1).deref_mut(), learn_rate);
-            }
-            Expr::Constant(_)| Expr::Input(_) => return,
+    pub fn all_equal(&self, val: f32) -> bool {
+        match *self {
+            Constant::Scalar(x) => x == val,
+            Constant::Matrix(ref m) => unsafe { reduce_equal(m, val) },
         }
     }
 
-    fn maybe_alloc_placeholders(&self, error: &Constant) {
-        match *self.body {
-            Expr::Constant(_) | Expr::Input(_) | Expr::Param(_) |
-            Expr::Neg(_)      | Expr::Sq(_)    | Expr::Signum(_) => return,
-            Expr::Sigmoid(ref f) | Expr::Tanh(ref f)   | Expr::Add(ref f, _) |
-            Expr::Sub(ref f, _)  | Expr::Mul(ref f, _) | Expr::Abs(ref f) => {
-                if self.num_placeholders() < 1 {
-                    self.alloc_placeholders(
-                        vec![Constant::empty_like(f.unwrap_value().deref())]);
+    fn assign1(&mut self, scalar_fun: &Fn(f32) -> f32, 
+                 matrix_fun: unsafe extern "C" fn(*const Matrix, *mut Matrix)) {
+        match self {
+            &mut Constant::Scalar(x) => *self = Constant::Scalar(scalar_fun(x)),
+            &mut Constant::Matrix(ref mut m) => unsafe { matrix_fun(m, m) },
+        }
+    }
 
+    fn assign2(&mut self, other: &Constant, 
+                  scalar_fun: &Fn(&mut f32, f32), 
+                  matrix_scalar_fun: unsafe extern "C" fn(*const Matrix, f32, *mut Matrix),
+                  matrix_fun: unsafe extern "C" fn(*const Matrix, *const Matrix, *mut Matrix)) {
+        match (self, other) {
+            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) => scalar_fun(x1, x2),
+            (&mut Constant::Matrix(ref mut m), &Constant::Scalar(x)) =>
+                unsafe { matrix_scalar_fun(m, x, m) },
+            (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) =>
+                unsafe { matrix_fun(m1, m2, m1) },
+            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) =>
+                scalar_fun(x, other.avg())
+        }
+    }
 
-                }
+    pub fn assign_dot(&mut self, c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) {
+        match (self, c1, c2) {
+            (&mut Constant::Matrix(ref mut m), 
+             &Constant::Scalar(x), &Constant::Matrix(ref m2)) => {
+                unsafe { broadcast_mul(x, m2, m) };
             }
-            Expr::Dot(ref f1, ref f2, trans1, trans2) =>
-                if self.num_placeholders() < 2 {
-                    self.alloc_placeholders(
-                        vec![Constant::empty_for_dot(
-                                &error, &f2.unwrap_value().deref(), false, !trans2),
-                            Constant::empty_for_dot(
-                                &f1.unwrap_value().deref(), &error, !trans1, false)])
-                }
+            (&mut Constant::Matrix(ref mut m),
+            &Constant::Matrix(ref m1), &Constant::Scalar(x)) => {
+                unsafe { broadcast_mul_rev(m1, x, m) };
+            }
+            (&mut Constant::Matrix(ref mut m),
+            &Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
+                unsafe { gemm(m1, trans1, m2, trans2, m) };
+            }
+            _ => panic!("Bad argument types for assign_dot")
+        }
+    }
+
+    // allocates on device
+    pub fn dot(c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) -> Constant {
+        let mut result;
+        match (c1, c2) {
+            (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
+                result = Matrix::empty_for_dot(m1, m2, trans1, trans2);
+                unsafe { gemm(m1, trans1, m2, trans2, &mut result) }
+            }
+            _ => panic!("dot should not be used with scalars"),
         };
+        Constant::Matrix(result)
     }
+}
 
+impl SubAssign for Constant {
+    fn sub_assign(&mut self, other: Constant) {
+        self.assign2(&other, &|x1: &mut f32, x2| *x1 -= x2, 
+                      broadcast_sub_rev, elemwise_sub);
+    }
+}
+
+impl MulAssign for Constant {
+    fn mul_assign(&mut self, other: Constant) {
+        self.assign2(&other, &|x1: &mut f32, x2| *x1 *= x2, 
+                      broadcast_mul_rev, elemwise_mul);
+    }
+}
+
+pub fn mul_assign(c: &mut Constant, other: &Constant) {
+    c.assign2(other, &|x1: &mut f32, x2| *x1 *= x2,
+                    broadcast_mul_rev, elemwise_mul);
+}
+
+pub fn add_assign(c: &mut Constant, other: &Constant) {
+    c.assign2(other, &|x1: &mut f32, x2| *x1 += x2,
+                    broadcast_add_rev, elemwise_add);
+}
+
+pub fn sub_assign(c: &mut Constant, other: &Constant) {
+    c.assign2(other, &|x1: &mut f32, x2| *x1 -= x2,
+                    broadcast_sub_rev, elemwise_sub);
+}
+
+pub fn sigmoid_assign(c: &mut Constant) {
+    c.assign1(&|x| 1. / (1. + (-x).exp()), map_sigmoid);
+}
+
+pub fn tanh_assign(c: &mut Constant) {
+    c.assign1(&|x| x.tanh(), map_tanh);
+}
+
+pub fn sq_assign(c: &mut Constant) {
+    c.assign1(&|x| x * x, map_sq);
+}
+
+pub fn signum_assign(c: &mut Constant) {
+    c.assign1(&|x| x.signum(), map_signum);
+}
+
+pub fn abs_assign(c: &mut Constant) {
+    c.assign1(&|x| x.abs(), map_abs);
+}
+
+pub fn negate(c: &mut Constant) {
+    *c *= Constant::Scalar(-1.)
+}
+
+pub fn one_minus(c: &mut Constant) {
+    c.assign1(&|x| 1. - x, map_one_minus);
 }
 

@@ -1,21 +1,19 @@
-#![feature(advanced_slice_patterns, slice_patterns)]
+#![feature(advanced_slice_patterns, slice_patterns, concat_idents)]
 
 extern crate libc;
 extern crate rand;
 
-mod function;
-mod constant;
+mod function; 
+mod lstm; 
+
 
 #[allow(unused_imports)]
-use function::{sq, dot, abs, sigmoid, rnn, Function, lstm};
-#[allow(unused_imports)]
-use constant::{Matrix, Constant};
-#[allow(unused_imports)]
-use constant::Constant::Scalar;
+use function::{sq, dot, abs, sigmoid, Function, Constant};
 #[allow(unused_imports)]
 use std::collections::HashMap;
 #[allow(unused_imports)]
 use std::ops::Deref;
+use lstm::lstm;
 
 //extern { fn init_cublas(); }
 
@@ -24,18 +22,6 @@ use std::ops::Deref;
 fn main() {
     //unsafe { init_cublas() };
     let args = HashMap::new();
-    let dim = 30;
-    let dims = vec![dim, dim];
-    let inputs = vec![
-        Constant::random(dims.clone(), -0.1, 0.1),
-        Constant::random(dims.clone(), -0.1, 0.1),
-        ////Constant::random(dims.clone(), -0.1, 0.1),
-        ////Constant::random(dims.clone(), -0.1, 0.1),
-    ];
-    let f = lstm(inputs);
-	//println!("f: {}", f.eval(&args));
-
-    f.slow_minimize(&args, 0.01, 1000);
 
     /////DEMO 1
     //let x = Function::param("x", Constant::Scalar(1.));
@@ -104,5 +90,17 @@ fn main() {
     //let f = sq(&(dot(&a, &x) - b));
     //f.minimize(&args, 0.01, 10000);
 
-    //println!("f: {}", &f);
+    let dim = 2;
+    let dims = vec![dim, dim];
+    let inputs = vec![
+        Constant::random(dims.clone(), -0.1, 0.1),
+        Constant::random(dims.clone(), -0.1, 0.1),
+        ////Constant::random(dims.clone(), -0.1, 0.1),
+        ////Constant::random(dims.clone(), -0.1, 0.1),
+    ];
+    //let target = Function::constant(Constant::random(dims.clone(), -10., 10.));
+    //println!("target: {}", &target);
+    //let x = Function::constant(Constant::random(vec![dim, dim], -1.1, 1.1));
+    let f = lstm(inputs);
+    f.minimize(&args, 0.01, 10000);
 }
