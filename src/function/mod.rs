@@ -38,6 +38,7 @@ macro_rules! fn1 {
         fn1!($Op, $op, |x: f32| x.$op());
     };
     ($Op:ident, $op:ident, $scalar_fn:expr) => {
+        #[allow(dead_code)]
         pub fn $op(f: &Function) -> Function {
             Function::new(None, f.params.clone(), Expr::$Op(f.clone()))
         }

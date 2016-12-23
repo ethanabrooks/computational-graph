@@ -112,7 +112,6 @@ impl Constant {
     }
 
     pub fn matrix(height: u32, width: u32, vals: Vec<f32>) -> Constant {
-        //assert!(height > 0 && width > 0);
         Constant::Matrix(PMatrix::new(height as u32, width as u32, vals))
     }
 

@@ -5,6 +5,7 @@ use std::sync::Mutex;
 
 extern {
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
+    fn download_matrix(m1: *const Matrix, m2: *mut f32);
     fn free_matrix(m: *mut Matrix);
 }
 
@@ -177,7 +178,14 @@ impl PMatrix {
     }
 
     pub fn array(&self) -> Vec<f32> {
-        unsafe { Vec::from_raw_parts(self.borrow().dev_array, self.size(), self.size()) }
+        println!("1");
+        let ptr = Vec::with_capacity(self.size()).as_mut_ptr();
+        println!("2");
+        unsafe { 
+            download_matrix(self.borrow(), ptr);
+        println!("3");
+            Vec::from_raw_parts(ptr, self.size(), self.size())
+        }
     }
 }
 

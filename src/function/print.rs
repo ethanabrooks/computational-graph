@@ -1,12 +1,8 @@
 use std::fmt;
-use function::datatypes::{Function, Expr, Matrix, Constant};
+use function::datatypes::{Function, Expr, Constant};
 use std::ops::Deref;
 
-extern {
-    fn download_matrix(src: *const Matrix, dst: *mut f32);
-}
 
-// helper function for fmt
 fn write_with_parens(a: &Function, 
                      operator: &str,
                      b: &Function,  
@@ -85,8 +81,6 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
         Constant::Scalar(x) => write!(f, "{}", x),
         Constant::Matrix(ref src) => {
             let dst = src.array();
-            //let mut dst = Vec::with_capacity(src.size() as usize);
-            //unsafe { download_matrix(src, dst.as_mut_ptr()) };
             let mut result;
 
             let h = src.height() - 1;
