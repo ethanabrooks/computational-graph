@@ -1,7 +1,10 @@
 use std::fmt;
-use function::datatypes::{Function, Expr, Constant};
+use function::datatypes::{Function, Expr, Constant, Matrix};
 use std::ops::Deref;
 
+extern {
+    fn download_matrix(m1: *const Matrix, m2: *mut f32);
+}
 
 fn write_with_parens(a: &Function, 
                      operator: &str,
@@ -80,7 +83,8 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
     match *c {
         Constant::Scalar(x) => write!(f, "{}", x),
         Constant::Matrix(ref src) => {
-            let dst = src.array();
+            let dst: *mut f32;
+            unsafe { download_matrix(src.borrow(), dst) };
             let mut result;
 
             let h = src.height() - 1;
@@ -92,7 +96,8 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
             for i in 0..src.height() {
 
                 for j in 0..src.width() {
-                    result = write!(f, "{:^10.3}", dst[(j * src.height() + i) as usize]);
+                    result = write!(f, "{:^10.3}", unsafe { 
+                        *dst.offset((j * src.height() + i) as isize) });
                     if result.is_err() { return result }
                 }
 
@@ -110,6 +115,7 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
 
                 if result.is_err() { return result }
             }
+            unsafe { drop(Box::from_raw(dst)); }
             result
         }
     }

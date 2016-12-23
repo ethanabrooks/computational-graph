@@ -53,42 +53,42 @@ fn main() {
     //let f = sq(&((&x - &a) * (&x + &b) - c));
     //f.minimize(&args, 0.01, 1000);
 
-    ///DEMO 5
-    let x = Function::param("x", Constant::matrix(2, 2, vec![
-
-                                                  5., -6.,
-                                                  2.,  8.
-
-                                                  ]));
-    let a = Function::constant(Constant::Scalar(2.));
-    let b = Function::constant(Constant::Scalar(1.));
-    let c = Function::constant(Constant::Scalar(10.));
-    let f = sq(&((&x - &a) * (&x + &b) - c));
-    f.minimize(&args, 0.0001, 1000);
-
     /////DEMO 5
     //let x = Function::param("x", Constant::matrix(2, 2, vec![
 
-                                                  //0.01, 0.01,
-                                                  //0.01, 0.01
+                                                  //5., -6.,
+                                                  //2.,  8.
 
                                                   //]));
+    //let a = Function::constant(Constant::Scalar(2.));
+    //let b = Function::constant(Constant::Scalar(1.));
+    //let c = Function::constant(Constant::Scalar(10.));
+    //let f = sq(&((&x - &a) * (&x + &b) - c));
+    //f.minimize(&args, 0.0001, 1000);
 
-    //let a = Function::constant(Constant::matrix(2, 2, vec![
+    ///DEMO 5
+    let x = Function::param("x", Constant::matrix(2, 2, vec![
 
-                                                  //4., 3.,
-                                                  //3., 2.
+                                                  0.01, 0.01,
+                                                  0.01, 0.01
 
-                                                  //]));
-    //let b = Function::constant(Constant::matrix(2, 2, vec![
+                                                  ]));
 
-                                                //1., 0.,
-                                                //0., 1.
+    let a = Function::constant(Constant::matrix(2, 2, vec![
+
+                                                  4., 3.,
+                                                  3., 2.
+
+                                                  ]));
+    let b = Function::constant(Constant::matrix(2, 2, vec![
+
+                                                1., 0.,
+                                                0., 1.
                                                  
-                                                //]));
+                                                ]));
 
-    //let f = sq(&(dot(&a, &x) - b));
-    //f.minimize(&args, 0.01, 10000);
+    let f = sq(&(dot(&a, &x) - b));
+    f.minimize(&args, 0.01, 10000);
 
     //let dim = 2;
     //let dims = vec![dim, dim];
@@ -102,6 +102,7 @@ fn main() {
     //println!("target: {}", &target);
     //let x = Function::constant(Constant::random(vec![dim, dim], -1.1, 1.1));
     //let f = lstm(inputs);
-    //f.minimize(&args, 0.01, 1000);
+    //f.minimize(&args, 0.01, 10000);
+
     println!("f: {}", f);
 }
