@@ -1,11 +1,20 @@
 use std::cell::{RefCell, Ref, RefMut};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::rc::Rc;
+use std::sync::Mutex;
 
 extern {
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
     fn free_matrix(m: *mut Matrix);
 }
+
+unsafe impl Send for Matrix {}
+
+lazy_static! {
+    static ref POOL: Mutex<HashMap<(u32, u32), Vec<PMatrix>>> = 
+        Mutex::new(HashMap::new());
+}
+
 
 #[derive(Debug, Clone)]
 pub struct Function {
@@ -47,7 +56,7 @@ pub struct Param {
 #[derive(Clone)]
 pub enum Constant {
     Scalar(f32),
-    Matrix(Matrix)
+    Matrix(PMatrix)
 }
 
 pub struct PMatrix {
@@ -134,6 +143,62 @@ impl Function {
     }
 }
 
+impl PMatrix {
+    pub fn from(m: Matrix) -> PMatrix {
+        PMatrix { matrix: Some(m) }
+    }
+
+    pub fn borrow_mut(&mut self) -> &mut Matrix {
+        match self.matrix {
+            Some(ref mut matrix) => matrix,
+            None                 => panic!("For some reason, a PMatrix
+                                            doesn't contain a matrix")
+        }
+    }
+
+    pub fn borrow(&self) -> &Matrix {
+        match self.matrix {
+            Some(ref matrix) => matrix,
+            None             => panic!("For some reason, a PMatrix
+                                        doesn't contain a matrix")
+        }
+    }
+
+    pub fn height(&self) -> u32 {
+        self.borrow().height
+    }
+
+    pub fn width(&self) -> u32 {
+        self.borrow().width
+    }
+
+    pub fn size(&self) -> usize {
+        self.borrow().size() as usize
+    }
+
+    pub fn array(&self) -> Vec<f32> {
+        unsafe { Vec::from_raw_parts(self.borrow().dev_array, self.size(), self.size()) }
+    }
+}
+
+impl Drop for PMatrix {
+    fn drop(&mut self) {
+        if let Some(matrix) = self.matrix.take() {
+            let mut pool = POOL.lock().unwrap();
+            let mut matrices = pool.entry((matrix.height, matrix.width)).or_insert(vec![]);
+            matrices.push(PMatrix::from(matrix));
+        }
+    }
+}
+
+impl Clone for PMatrix {
+    fn clone(&self) -> Self {
+        let mut m: PMatrix = PMatrix::empty_like(self);
+        unsafe { copy_matrix(self.borrow(), m.borrow_mut()) };
+        m
+    }
+}
+
 impl Matrix {
     pub fn size(&self) -> u32 {
         self.height * self.width
@@ -143,8 +208,8 @@ impl Matrix {
 
 impl Clone for Matrix {
     fn clone(&self) -> Self {
-        let mut m = Matrix::empty_like(self);
-        unsafe { copy_matrix(self as *const Matrix, &mut m) };
+        let mut m: Matrix = Matrix::empty(self.height, self.width);
+        unsafe { copy_matrix(self, &mut m) };
         m
     }
 }
@@ -159,14 +224,14 @@ impl Constant {
     pub fn width(&self) -> u32 {
         match *self {
             Constant::Scalar(_) => 1,
-            Constant::Matrix(ref m) => m.width,
+            Constant::Matrix(ref m) => m.width(),
         }
     }
 
     pub fn height(&self) -> u32 {
         match *self {
             Constant::Scalar(_) => 1,
-            Constant::Matrix(ref m) => m.height,
+            Constant::Matrix(ref m) => m.height(),
         }
     }
 }

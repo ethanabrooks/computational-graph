@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use function::datatypes::{shared, Input, Param, Expr, Function, Constant, Matrix};
+use function::datatypes::{shared, Input, Param, Expr, Function, Constant, PMatrix, Matrix};
 use std::rc::Rc;
 use std::ptr;
 use std::cell::RefCell;
@@ -86,8 +86,8 @@ impl Constant {
         match dims.len() {
             0 => Constant::Scalar(val),
             2 => {
-                let mut matrix = Matrix::empty(dims[0], dims[1]);
-                unsafe { fill_matrix(&mut matrix, val) };
+                let mut matrix: PMatrix = PMatrix::empty(dims[0], dims[1]);
+                unsafe { fill_matrix(matrix.borrow_mut(), val) };
                 Constant::Matrix(matrix)
             },
             _ => panic!("not supported"),
@@ -113,7 +113,7 @@ impl Constant {
 
     pub fn matrix(height: u32, width: u32, vals: Vec<f32>) -> Constant {
         //assert!(height > 0 && width > 0);
-        Constant::Matrix(Matrix::new(height as u32, width as u32, vals))
+        Constant::Matrix(PMatrix::new(height as u32, width as u32, vals))
     }
 
     // allocates on device
@@ -121,7 +121,7 @@ impl Constant {
         match *self {
             Constant::Scalar(_) => Constant::Scalar(val),
             Constant::Matrix(ref m) => 
-                Constant::single_val(vec![m.height, m.width], val),
+                Constant::single_val(vec![m.height(), m.width()], val),
         }
     }
 
@@ -131,7 +131,7 @@ impl Constant {
                 *x1 = *x2;
             }
             (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) => 
-                unsafe { copy_matrix(m2, m1) },
+                unsafe { copy_matrix(m2.borrow(), m1.borrow_mut()) },
             _ => panic!("Can't copy from mismatched constant type.")
         }
     }
@@ -139,7 +139,7 @@ impl Constant {
     pub fn empty_like(c: &Constant) -> Constant {
         match *c {
             Constant::Scalar(_) => Constant::Scalar(0.),
-            Constant::Matrix(ref m) => Constant::Matrix(Matrix::empty_like(m))
+            Constant::Matrix(ref m) => Constant::Matrix(PMatrix::empty_like(m))
         }
     }
 
@@ -150,7 +150,7 @@ impl Constant {
             (&Constant::Matrix(_), &Constant::Scalar(_)) |
             (&Constant::Scalar(_), &Constant::Matrix(_)) => Constant::empty_like(c1),
             (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => 
-                Constant::Matrix(Matrix::empty_for_dot(m1, m2, trans1, trans2))
+                Constant::Matrix(PMatrix::empty_for_dot(m1, m2, trans1, trans2))
         }
     }
 }
@@ -167,32 +167,38 @@ impl Matrix {
         unsafe { alloc_matrix(&mut matrix, height, width) };
         matrix
     }
+}
+
+impl PMatrix {
+    // allocates on device
+    pub fn empty(height: u32, width: u32) -> PMatrix {
+        PMatrix::from(Matrix::empty(height, width))
+    }
 
     // allocates on device
-    pub fn empty_like(m: &Matrix) -> Matrix { Matrix::empty(m.height, m.width) }
+    pub fn empty_like(m: &PMatrix) -> PMatrix { PMatrix::empty(m.height(), m.width()) }
 
     // allocates on device
-    pub fn new(height: u32, width: u32, values: Vec<f32>) -> Matrix {
+    pub fn new(height: u32, width: u32, values: Vec<f32>) -> PMatrix {
         assert!(values.len() as u32 == height * width, "wrong number of values");
-        let mut matrix = Matrix::empty(height, width);
-
-        unsafe { init_matrix(&mut matrix, values.as_ptr(), height, width) };
+        let mut matrix: PMatrix = PMatrix::empty(height, width);
+        unsafe { init_matrix(matrix.borrow_mut(), values.as_ptr(), height, width) };
         matrix
     }
 
-    pub fn empty_for_dot(m1: &Matrix, m2: &Matrix, 
-                        trans1: bool, trans2: bool) -> Matrix {
+    pub fn empty_for_dot(m1: &PMatrix, m2: &PMatrix, 
+                         trans1: bool, trans2: bool) -> PMatrix {
         if trans1 {
             if trans2 {
-                Matrix::empty(m1.width.clone(), m2.height.clone())
+                PMatrix::empty(m1.width().clone(), m2.height().clone())
             } else {
-                Matrix::empty(m1.width.clone(), m2.width.clone())
+                PMatrix::empty(m1.width().clone(), m2.width().clone())
             }
         } else {
             if trans2 {
-                Matrix::empty(m1.height.clone(), m2.height.clone())
+                PMatrix::empty(m1.height().clone(), m2.height().clone())
             } else {
-                Matrix::empty(m1.height.clone(), m2.width.clone())
+                PMatrix::empty(m1.height().clone(), m2.width().clone())
             }
         }
     }

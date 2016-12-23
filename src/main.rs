@@ -1,11 +1,12 @@
 #![feature(advanced_slice_patterns, slice_patterns, concat_idents)]
 
+#[macro_use]
+extern crate lazy_static;
 extern crate libc;
 extern crate rand;
 
 mod function; 
 mod lstm; 
-
 
 #[allow(unused_imports)]
 use function::{sq, dot, abs, sigmoid, Function, Constant};
@@ -16,8 +17,6 @@ use std::ops::Deref;
 use lstm::lstm;
 
 extern { fn init_cublas(); }
-
-//static POOL: Vec<Matrix> = vec![];
 
 fn main() {
     unsafe { init_cublas() };
@@ -102,5 +101,5 @@ fn main() {
     //println!("target: {}", &target);
     //let x = Function::constant(Constant::random(vec![dim, dim], -1.1, 1.1));
     let f = lstm(inputs);
-    f.minimize(&args, 0.01, 10000);
+    f.minimize(&args, 0.01, 1000);
 }

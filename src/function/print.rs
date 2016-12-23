@@ -84,22 +84,21 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
     match *c {
         Constant::Scalar(x) => write!(f, "{}", x),
         Constant::Matrix(ref src) => {
-            let mut dst = Vec::with_capacity(src.size() as usize);
-            unsafe { download_matrix(src, dst.as_mut_ptr()) };
+            let dst = src.array();
+            //let mut dst = Vec::with_capacity(src.size() as usize);
+            //unsafe { download_matrix(src, dst.as_mut_ptr()) };
             let mut result;
 
-            let h = src.height - 1;
+            let h = src.height() - 1;
             result = if h == 0 { write!(f, "\n{:^2}", "[") }
             else               { write!(f, "\n{:^2}", "⎡")
             };
             if result.is_err() { return result }
 
-            for i in 0..src.height {
+            for i in 0..src.height() {
 
-                for j in 0..src.width {
-                    result = write!(f, "{:^10.3}", unsafe {
-                        *dst.as_ptr().offset((j * src.height + i) as isize) 
-                    });
+                for j in 0..src.width() {
+                    result = write!(f, "{:^10.3}", dst[(j * src.height() + i) as usize]);
                     if result.is_err() { return result }
                 }
 
