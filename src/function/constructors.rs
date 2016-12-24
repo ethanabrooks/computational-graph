@@ -73,7 +73,7 @@ impl Function {
     }
 
     #[allow(dead_code)]
-    pub fn fill_matrix(height: u32, width: u32, value: f32) -> Function {
+    pub fn single_val_matrix(height: u32, width: u32, value: f32) -> Function {
         Function::constant(Constant::single_val(vec![height, width], value))
     }
 }
