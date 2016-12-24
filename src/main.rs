@@ -10,7 +10,7 @@ mod function;
 mod lstm; 
 
 #[allow(unused_imports)]
-use function::{sq, dot, abs, sigmoid, Function, Constant};
+use function::{sq, dot, abs, sigmoid, tanh, Function, Constant};
 #[allow(unused_imports)]
 use std::collections::HashMap;
 #[allow(unused_imports)]
@@ -32,7 +32,7 @@ fn main() {
     ///DEMO 1
     let x = Function::param("x", Constant::Scalar(1.));
     let f = &x;
-    f.minimize(&args, 1., 10);
+    f.minimize(&args, 1., 10, 1);
 
     /////DEMO 2
     //let x = Function::param("x", Constant::Scalar(1.));
@@ -113,53 +113,58 @@ fn main() {
     println!("f: {}", f);
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    const START: f32 = 0.5;
 
-describe! tests {
-    before_each {
-        macro_rules! make_test {
-        }
-    }
-
-    make_test!();
-
-    after_each {
-    }
-}
-
-/*
-describe! tests {
-    before_each {
-        init();
-        let args = HashMap::new();
-        let fx;
-        let fX;
-        macro_rules! make_test {
-            ($f:expr) => {
-                it std::fmt("minimizes {}") {
-                    fx = $f(Function::param("x", Constant::Scalar(1.)));
-                    fX = $f(Function::param("X", Constant::single_val(vec![2, 2], 1.)));
+    macro_rules! test {
+        ($test_name:ident, $f:expr, $learn_rate:expr, $goal:expr) => {
+            #[test]
+            fn $test_name () {
+                init();
+                let x = Function::param("x", Constant::Scalar(START));
+                let m = Function::param("m", Constant::single_val(vec![2, 2], START));
+                for f in &[$f(x), $f(m)] {
+                    f.minimize(&HashMap::new(), $learn_rate, 10, 1);
+                    assert!(f.all_less_than($goal), "F: {}", f);
+                }
+            }
+        };
+        ($test_name:ident, $f:expr, $const_val:expr, $learn_rate:expr, $goal:expr) => {
+            #[test]
+            fn $test_name () {
+                init();
+                let x = Function::param("x", Constant::Scalar(START));
+                let m = Function::param("m", Constant::single_val(vec![2, 2], START));
+                for f in &[$f(x.clone(), x.clone()),
+                           $f(x.clone(), m.clone()),
+                           $f(m.clone(), x.clone()),
+                           $f(m.clone(), m.clone())] {
+                    f.minimize(&HashMap::new(), $learn_rate, 10, 1);
+                    assert!(f.all_less_than($goal), "F: {}", f);
                 }
             }
         }
     }
 
-    it "minimizes single parameters" {
-        make_functions!(|x| x);
-    }
-
-    //it "minimizes negatives" {
-        //make_functions!(|x: Function| -x);
-    //}
-
-    //it "minimizes squares" {
-        //make_functions!(|x: Function| sq(x));
-    //}
-
-    after_each {
-        for f in &[fx, fX] {
-            f.minimize(&args, 1., 10);
-            assert!(f.all_less_than(0.01));
-        }
-    }
+    test!(single_param_test, |x| x, 1., -9.4);
+    test!(neg_test, |x: Function| -x, 1., -9.4);
+    test!(sq_test, |x: Function| sq(x), 0.1, 0.1);
+    test!(abs_test, |x: Function| abs(x), 0.1, 0.1);
+    test!(sigmoid_test, |x: Function| sigmoid(x), 1., 0.2);
+    test!(tanh_test, |x: Function| tanh(x), 1., -0.9);
+    test!(add_test, |x: Function, y: Function| x + y, 1., 1., -34.);
+    test!(mul_test, |x: Function, y: Function| x * y, 2., 0.1, 0.1);
+    test!(complex_test, |x: Function| {
+        let a = Function::scalar(100.);
+        let b = Function::matrix(2, 2, vec![
+                                8., -5.,
+                                0., 10.
+                                ]);
+        let c = Function::scalar(10.);
+        sq(((&x - &a) * (&x + &b) - c))
+    }, 0.0001, 0.00001);
+    test!(sub_test, |x: Function, y: Function| x - y, 2., 0.01, -34.);
+    //test!(dot_test, |x: Function, y: Function| dot(&x, &y), 1., 1., -34.);
 }
-*/

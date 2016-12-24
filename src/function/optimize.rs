@@ -58,26 +58,28 @@ impl Function {
     }
 
     #[allow(dead_code)]
-    pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
-            println!("0");
+    pub fn minimize(&self, 
+                    args: &HashMap<&str, Constant>,
+                    learn_rate: f32,
+                    iters: i32,
+                    print_freq: i32) {
         for i in 0..iters {
-            println!("1");
             self.assign_values(&args);
-            println!("2");
             let mut error = self.unwrap_value().copy_and_fill(1.);
-            println!("4");
             self.backprop(&mut error, learn_rate);
-            println!("5");
-            if i % 100 == 0 {
+            if i % print_freq  == 0 {
                 println!("{}", self.unwrap_value().clone());
             }
-            println!("6");
         }
     }
 
     #[allow(dead_code)]
-    pub fn maximize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
-        (-self).minimize(args, learn_rate, iters);
+    pub fn maximize(&self,
+                    args: &HashMap<&str, Constant>,
+                    learn_rate: f32,
+                    iters: i32,
+                    print_freq: i32) {
+        (-self).minimize(args, learn_rate, iters, print_freq);
     }
 }
 
