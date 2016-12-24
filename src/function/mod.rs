@@ -33,7 +33,6 @@ extern {
     fn reduce_sum(matrix: *const Matrix) -> f32;
 }
 
-
 macro_rules! fn1 {
     ($Op:ident, $op:ident, $op_ref:ident) => {
         fn1!($Op, $op, $op_ref, |x: f32| x.$op());

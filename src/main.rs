@@ -18,6 +18,7 @@ use std::ops::Deref;
 #[allow(unused_imports)]
 use lstm::lstm;
 
+// TODO: design wrapper for matrix ops that checks for this.
 extern { fn init_cublas(); }
 
 pub fn init() {
@@ -115,29 +116,50 @@ fn main() {
 
 describe! tests {
     before_each {
+        macro_rules! make_test {
+        }
+    }
+
+    make_test!();
+
+    after_each {
+    }
+}
+
+/*
+describe! tests {
+    before_each {
+        init();
         let args = HashMap::new();
-        let fs;
-        let fm;
-        macro_rules! make_functions {
+        let fx;
+        let fX;
+        macro_rules! make_test {
             ($f:expr) => {
-                fs = $f(Function::param("s", Constant::Scalar(1.)));
-                fm = $f(Function::param("m", Constant::single_val(vec![2, 2], 1.)));
+                it std::fmt("minimizes {}") {
+                    fx = $f(Function::param("x", Constant::Scalar(1.)));
+                    fX = $f(Function::param("X", Constant::single_val(vec![2, 2], 1.)));
+                }
             }
         }
     }
 
-    //it "minimizes single parameters" {
-        //make_functions!(|x| x);
-    //}
-
-    it "minimizes negatives" {
-        make_functions!(|x: Function| -x);
+    it "minimizes single parameters" {
+        make_functions!(|x| x);
     }
 
+    //it "minimizes negatives" {
+        //make_functions!(|x: Function| -x);
+    //}
+
+    //it "minimizes squares" {
+        //make_functions!(|x: Function| sq(x));
+    //}
+
     after_each {
-        for f in &[fs, fm] {
+        for f in &[fx, fX] {
             f.minimize(&args, 1., 10);
             assert!(f.all_less_than(0.01));
         }
     }
 }
+*/

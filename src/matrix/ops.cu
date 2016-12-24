@@ -159,7 +159,8 @@ REDUCE_KERNEL(sum, atomicAdd, a[IDx], float *address)
     cudaError_t cudaStat = host2device<unsigned int>(1, &t, dev_bool);
     check(cudaStat != cudaSuccess, "host2device failed in reduce_eq");
 
-    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>>
+    /*_reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>>*/
+    _reduce_equal<<<4, 16>>>
       (size(m), m->dev_array, dev_bool, x);
 
     cudaStat = device2host<unsigned int>(1, dev_bool, &t);
@@ -170,7 +171,6 @@ REDUCE_KERNEL(sum, atomicAdd, a[IDx], float *address)
   }
 
   bool all_less_than(const Matrix *m, float x) {
-    printf("HERE HERE HERE\n");
     unsigned int *dev_bool = safe_cuda_malloc<unsigned int>(1);
     unsigned int t = 1;
 
@@ -184,7 +184,6 @@ REDUCE_KERNEL(sum, atomicAdd, a[IDx], float *address)
     check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
 
     cudaFree(dev_bool);
-    printf("HERE HERE HERE\n");
     return t == 1;
   }
 

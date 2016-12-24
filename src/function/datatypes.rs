@@ -14,6 +14,7 @@ unsafe impl Send for Matrix {}
 lazy_static! {
     static ref POOL: Mutex<HashMap<(u32, u32), Vec<PMatrix>>> = 
         Mutex::new(HashMap::new());
+    //static ref CUDA_INIT: bool = false;
 }
 
 

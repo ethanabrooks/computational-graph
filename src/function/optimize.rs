@@ -59,13 +59,19 @@ impl Function {
 
     #[allow(dead_code)]
     pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
+            println!("0");
         for i in 0..iters {
+            println!("1");
             self.assign_values(&args);
+            println!("2");
             let mut error = self.unwrap_value().copy_and_fill(1.);
+            println!("4");
             self.backprop(&mut error, learn_rate);
+            println!("5");
             if i % 100 == 0 {
                 println!("{}", self.unwrap_value().clone());
             }
+            println!("6");
         }
     }
 
@@ -139,9 +145,7 @@ impl Function {
 
     fn backprop(&self, error: &mut Constant, learn_rate: f32) {
         self.maybe_alloc_placeholders(error);
-        if self.params.is_empty() { 
-            //println!("self: {}", self);
-            return; }
+        if self.params.is_empty() { return; }
         match *self.body {
             Expr::Param(_) => {
                 *error *= Constant::Scalar(learn_rate);
