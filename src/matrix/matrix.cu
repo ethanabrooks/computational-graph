@@ -35,9 +35,6 @@ extern "C" {
   void upload_matrix(const float *src, Matrix *dst) {
     float *temp = safe_cuda_malloc<float>(size(dst));
     host2device<float>(size(dst), src, temp);
-    /*cublasStatus_t blas_stat = cublasSetMatrix(dst->width, dst->height, */
-        /*sizeof(*src), src, dst->width, dst->dev_array, dst->width); */
-    /*check(blas_stat != CUBLAS_STATUS_SUCCESS, "upload_matrix failed"); */
     DEFAULT_LAUNCH(_transpose, dst, temp, dst->height, dst->width);
     cudaFree(temp);
   }

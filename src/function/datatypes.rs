@@ -177,12 +177,12 @@ impl PMatrix {
         self.borrow().size() as usize
     }
 
-    pub fn array(&self) -> Vec<f32> {
+    pub fn array_ptr(&self) -> *const f32 {
         let ptr = Vec::with_capacity(self.size()).as_mut_ptr();
         unsafe { 
             download_matrix(self.borrow(), ptr);
-            Vec::from_raw_parts(ptr, self.size(), self.size())
         }
+        ptr
     }
 }
 

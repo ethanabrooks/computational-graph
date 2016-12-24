@@ -1,5 +1,5 @@
 use function::datatypes::{Function, Expr, Constant};
-use function::{mul_assign, sq, signum, 
+use function::{mul_assign, sq_ref, signum_ref,
                     add_assign, sub_assign, sigmoid_assign, signum_assign, 
                     tanh_assign, sq_assign, abs_assign, negate, one_minus};
 use std::collections::HashMap;
@@ -37,12 +37,12 @@ impl Function {
             match *self.body {
                 Expr::Neg(ref f)          => -f.grad(param),
                 Expr::Sq(ref f)           => &f.grad(param) * f,
-                Expr::Abs(ref f)          => signum(f) * f.grad(param),
+                Expr::Abs(ref f)          => signum_ref(f) * f.grad(param),
                 Expr::Signum(_)           => panic!("signum is nondifferentiable"),
                 Expr::Sigmoid(ref f)      =>
                     f.grad(param) * (self.clone() * (&Function::scalar(1.) - self)),
                 Expr::Tanh(ref f)         => 
-                    f.grad(param) * (Function::scalar(1.) - sq(&self)),
+                    f.grad(param) * (Function::scalar(1.) - sq_ref(self)),
                 Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
                 Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
                 Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
@@ -60,17 +60,11 @@ impl Function {
     #[allow(dead_code)]
     pub fn minimize(&self, args: &HashMap<&str, Constant>, learn_rate: f32, iters: i32) {
         for i in 0..iters {
-                //println!("0");
             self.assign_values(&args);
-                //println!(".5");
             let mut error = self.unwrap_value().copy_and_fill(1.);
-                //println!("1");
             self.backprop(&mut error, learn_rate);
-                //println!("2");
             if i % 100 == 0 {
                 println!("{}", self.unwrap_value().clone());
-                //println!("3");
-                //println!("{}", i);
             }
         }
     }

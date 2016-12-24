@@ -28,18 +28,23 @@ extern {
     fn elemwise_mul(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn gemm(m1: *const Matrix, trans1: bool, m2: *const Matrix, trans2: bool,
             result: *mut Matrix);
-    fn reduce_equal(matrix: *const Matrix, x: f32) -> bool;
+    fn all_equal(matrix: *const Matrix, x: f32) -> bool;
+    fn all_less_than(matrix: *const Matrix, x: f32) -> bool;
     fn reduce_sum(matrix: *const Matrix) -> f32;
 }
 
 
 macro_rules! fn1 {
-    ($Op:ident, $op:ident) => {
-        fn1!($Op, $op, |x: f32| x.$op());
+    ($Op:ident, $op:ident, $op_ref:ident) => {
+        fn1!($Op, $op, $op_ref, |x: f32| x.$op());
     };
-    ($Op:ident, $op:ident, $scalar_fn:expr) => {
+    ($Op:ident, $op:ident, $op_ref:ident, $scalar_fn:expr) => {
         #[allow(dead_code)]
-        pub fn $op(f: &Function) -> Function {
+        pub fn $op(f: Function) -> Function {
+            Function::new(None, f.params.clone(), Expr::$Op(f.clone()))
+        }
+        #[allow(dead_code)]
+        pub fn $op_ref(f: &Function) -> Function {
             Function::new(None, f.params.clone(), Expr::$Op(f.clone()))
         }
         impl Constant {
@@ -178,24 +183,39 @@ macro_rules! trait2 {
     }
 }
 
-fn1!(Abs, abs);
-fn1!(Tanh, tanh);
-fn1!(Signum, signum);
-fn1!(Sq, sq, |x: f32| x * x);
-fn1!(Sigmoid, sigmoid, |x: f32| 1. / (1. + (-x).exp()));
+macro_rules! compare {
+    ($cmp:ident, $scalar_cmp:ident) => {
+        impl Function {
+            pub fn $cmp(&self, val:f32) -> bool {
+                match *self.get_value() {
+                    Some(ref c) => c.$cmp(val),
+                    _       => false
+                }
+            }
+        }
+        impl Constant {
+            pub fn $cmp(&self, val: f32) -> bool {
+                match *self {
+                    Constant::Scalar(x) => x.$scalar_cmp(&val),
+                    Constant::Matrix(ref m) => unsafe { $cmp(m.borrow(), val) },
+                }
+            }
+        }
+    }
+}
+
+compare!(all_equal, eq);
+compare!(all_less_than, lt);
+//compare!(all_greater_than, gt);
+fn1!(Abs, abs, abs_ref);
+fn1!(Tanh, tanh, tanh_ref);
+fn1!(Signum, signum, signum_ref);
+fn1!(Sq, sq, sq_ref, |x: f32| x * x);
+fn1!(Sigmoid, sigmoid, sigmoid_ref, |x: f32| 1. / (1. + (-x).exp()));
 trait1!(Neg, neg, 0., |x: f32| -x);
 trait2!(Add, add, 0.);
 trait2!(Sub, sub, 0.);
 trait2!(Mul, mul, 0.);
-
-impl Function {
-    fn all_equal(&self, val:f32) -> bool {
-        match *self.body {
-            Expr::Constant(ref c) => c.all_equal(val),
-            _                     => false
-        }
-    }
-}
 
 pub fn dot_transpose(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
     let function = apply2!(f1, f2, Expr::Dot(f1.clone(), f2.clone(), trans1, trans2));
@@ -219,13 +239,6 @@ impl Constant {
             &Constant::Matrix(ref m) => {
                 (unsafe { reduce_sum(m.borrow()) }) / m.size() as f32
             }
-        }
-    }
-
-    pub fn all_equal(&self, val: f32) -> bool {
-        match *self {
-            Constant::Scalar(x) => x == val,
-            Constant::Matrix(ref m) => unsafe { reduce_equal(m.borrow(), val) },
         }
     }
 

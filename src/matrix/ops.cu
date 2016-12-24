@@ -140,32 +140,51 @@ extern "C" {
     check(stat != CUBLAS_STATUS_SUCCESS, "gemm failed :(");
   }
 
-  __global__
-  void _reduce_equal(int len, const float *a, unsigned int *boolean, float x) {
-    if (IDx >= len) return;
-    atomicAnd(boolean, a[IDx] == x);
+#define REDUCE_KERNEL(name, atomic_op, val, ...) \
+  __global__ \
+  void _reduce_ ## name(int len, const float *a, __VA_ARGS__) { \
+    if (IDx >= len) return; \
+    atomic_op(address, val); \
   }
 
-  __global__
-  void _reduce_sum(int len, const float *a, float *sum) {
-    if (IDx >= len) return;
-    atomicAdd(sum, a[IDx]);
-  }
 
-  bool reduce_equal(const Matrix *m, float x) {
+REDUCE_KERNEL(equal, atomicAnd, a[IDx] == x, unsigned int *address, float x)
+REDUCE_KERNEL(lt, atomicAnd, a[IDx] < x, unsigned int *address, float x)
+REDUCE_KERNEL(sum, atomicAdd, a[IDx], float *address)
+
+  bool all_equal(const Matrix *m, float x) {
     unsigned int *dev_bool = safe_cuda_malloc<unsigned int>(1);
     unsigned int t = 1;
 
-    cudaError_t cudaStat = host2device(1, &t, dev_bool);
+    cudaError_t cudaStat = host2device<unsigned int>(1, &t, dev_bool);
     check(cudaStat != cudaSuccess, "host2device failed in reduce_eq");
 
     _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>>
       (size(m), m->dev_array, dev_bool, x);
 
-    cudaStat = device2host(1, dev_bool, &t);
+    cudaStat = device2host<unsigned int>(1, dev_bool, &t);
     check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
 
     cudaFree(dev_bool);
+    return t == 1;
+  }
+
+  bool all_less_than(const Matrix *m, float x) {
+    printf("HERE HERE HERE\n");
+    unsigned int *dev_bool = safe_cuda_malloc<unsigned int>(1);
+    unsigned int t = 1;
+
+    cudaError_t cudaStat = host2device<unsigned int>(1, &t, dev_bool);
+    check(cudaStat != cudaSuccess, "host2device failed in reduce_eq");
+
+    _reduce_lt<<<blockcount(size(m)), BLOCKSIZE>>>
+      (size(m), m->dev_array, dev_bool, x);
+
+    cudaStat = device2host<unsigned int>(1, dev_bool, &t);
+    check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
+
+    cudaFree(dev_bool);
+    printf("HERE HERE HERE\n");
     return t == 1;
   }
 
@@ -173,13 +192,13 @@ extern "C" {
     float *dev_sum = safe_cuda_malloc<float>(1);
     float sum = 0;
 
-    cudaError_t cudaStat = host2device(1, &sum, dev_sum);
+    cudaError_t cudaStat = host2device<float>(1, &sum, dev_sum);
     check(cudaStat != cudaSuccess, "host2device failed in reduce_sum");
 
     _reduce_sum<<<blockcount(size(m)), BLOCKSIZE>>>
       (size(m), m->dev_array, dev_sum);
 
-    cudaStat = device2host(1, dev_sum, &sum);
+    cudaStat = device2host<float>(1, dev_sum, &sum);
     check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
 
     cudaFree(dev_sum);
@@ -187,3 +206,20 @@ extern "C" {
   }
 }
 
+/*
+#define REDUCE(name, init_address, ...) \
+  bool reduce_ ## name(const Matrix *m, __VA_ARGS__) { \
+    init_address; \
+    cudaError_t cudaStat = host2device(1, &address, dev_address); \
+    check(cudaStat != cudaSuccess, "host2device failed in reduce_eq"); \
+ \
+    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> \
+      (size(m), m->dev_array, dev_address, __VA_ARGS__); \
+ \
+    cudaStat = device2host(1, dev_bool, &t); \
+    check(cudaStat != cudaSuccess, "device2host failed in reduce_sum"); \
+ \
+    cudaFree(dev_bool); \
+    return t == 1; \
+  } \
+*/

@@ -1,5 +1,5 @@
 [package]
-name = "lstm"
+name = "pipes"
 version = "0.1.0"
 authors = ["ethan"]
 build = "build.rs"
@@ -7,9 +7,9 @@ build = "build.rs"
 [dependencies]
 libc = "0.2"
 rand = "0.3.15"
-lifeguard = "0.5"
 num = "0.1"
 lazy_static = "0.2.2"
+stainless = "*"
 
 [build-dependencies]
 gcc = "0.3"

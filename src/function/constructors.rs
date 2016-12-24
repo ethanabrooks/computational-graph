@@ -5,7 +5,6 @@ use std::ptr;
 use std::cell::RefCell;
 use rand::distributions::{IndependentSample, Range};
 use rand;
-use libc;
 
 macro_rules! hashset {
     ($( $val: expr ),*) => {{
@@ -18,8 +17,7 @@ macro_rules! hashset {
 extern {
     fn alloc_matrix(m: *mut Matrix, width: u32, height: u32); // allocates on device
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
-    fn init_matrix(m: *mut Matrix, array: *const f32, 
-                   width: libc::c_uint, height: libc::c_uint);
+    fn upload_matrix(array: *const f32, m: *mut Matrix);
     fn fill_matrix(m: *mut Matrix, value: f32);
 }
 
@@ -81,7 +79,6 @@ impl Function {
 }
 
 impl Constant {
-    // allocates on device
     pub fn single_val(dims: Vec<u32>, val: f32) -> Constant {
         match dims.len() {
             0 => Constant::Scalar(val),
@@ -174,14 +171,12 @@ impl PMatrix {
         PMatrix::from(Matrix::empty(height, width))
     }
 
-    // allocates on device
     pub fn empty_like(m: &PMatrix) -> PMatrix { PMatrix::empty(m.height(), m.width()) }
 
-    // allocates on device
     pub fn new(height: u32, width: u32, values: Vec<f32>) -> PMatrix {
         assert!(values.len() as u32 == height * width, "wrong number of values");
         let mut matrix: PMatrix = PMatrix::empty(height, width);
-        unsafe { init_matrix(matrix.borrow_mut(), values.as_ptr(), height, width) };
+        unsafe { upload_matrix(values.as_ptr(), matrix.borrow_mut()) };
         matrix
     }
 

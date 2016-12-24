@@ -1,4 +1,5 @@
-#![feature(advanced_slice_patterns, slice_patterns, concat_idents)]
+#![feature(advanced_slice_patterns, slice_patterns, concat_idents, plugin)]
+#![cfg_attr(test, plugin(stainless))]
 
 #[macro_use]
 extern crate lazy_static;
@@ -19,14 +20,18 @@ use lstm::lstm;
 
 extern { fn init_cublas(); }
 
+pub fn init() {
+    unsafe { init_cublas() };
+}
+
 fn main() {
     unsafe { init_cublas() };
     let args = HashMap::new();
 
-    /////DEMO 1
-    //let x = Function::param("x", Constant::Scalar(1.));
-    //let f = &x;
-    //f.minimize(&args, 0.1, 1000);
+    ///DEMO 1
+    let x = Function::param("x", Constant::Scalar(1.));
+    let f = &x;
+    f.minimize(&args, 1., 10);
 
     /////DEMO 2
     //let x = Function::param("x", Constant::Scalar(1.));
@@ -66,31 +71,31 @@ fn main() {
     //let f = sq(&((&x - &a) * (&x + &b) - c));
     //f.minimize(&args, 0.0001, 1000);
 
-    ///DEMO 5
-    let x = Function::param("x", Constant::matrix(2, 2, vec![
+    /////DEMO 5
+    //let x = Function::param("x", Constant::matrix(2, 2, vec![
 
-                                                  0.01, 0.01,
-                                                  0.01, 0.01
+                                                  //0.01, 0.01,
+                                                  //0.01, 0.01
 
-                                                  ]));
+                                                  //]));
 
-    let a = Function::constant(Constant::matrix(2, 2, vec![
+    //let a = Function::constant(Constant::matrix(2, 2, vec![
 
-                                                  4., 3.,
-                                                  3., 2.
+                                                  //4., 3.,
+                                                  //3., 2.
 
-                                                  ]));
-    let b = Function::constant(Constant::matrix(2, 2, vec![
+                                                  //]));
+    //let b = Function::constant(Constant::matrix(2, 2, vec![
 
-                                                1., 0.,
-                                                0., 1.
+                                                //1., 0.,
+                                                //0., 1.
                                                  
-                                                ]));
+                                                //]));
 
-    let f = sq(&(dot(&a, &x) - b));
-    f.minimize(&args, 0.01, 10000);
+    //let f = sq(&(dot(&a, &x) - b));
+    //f.minimize(&args, 0.01, 10000);
 
-    //let dim = 2;
+    //let dim = 5;
     //let dims = vec![dim, dim];
     //let inputs = vec![
         //Constant::random(dims.clone(), -0.1, 0.1),
@@ -100,9 +105,39 @@ fn main() {
     //];
     //let target = Function::constant(Constant::random(dims.clone(), -10., 10.));
     //println!("target: {}", &target);
-    //let x = Function::constant(Constant::random(vec![dim, dim], -1.1, 1.1));
-    //let f = lstm(inputs);
-    //f.minimize(&args, 0.01, 10000);
+    ////let x = Function::constant(Constant::random(vec![dim, dim], -1.1, 1.1));
+    //let f = sq(&(lstm(inputs) - target));
+    //f.minimize(&args, 0.01, 100000);
 
     println!("f: {}", f);
+}
+
+
+describe! tests {
+    before_each {
+        let args = HashMap::new();
+        let fs;
+        let fm;
+        macro_rules! make_functions {
+            ($f:expr) => {
+                fs = $f(Function::param("s", Constant::Scalar(1.)));
+                fm = $f(Function::param("m", Constant::single_val(vec![2, 2], 1.)));
+            }
+        }
+    }
+
+    //it "minimizes single parameters" {
+        //make_functions!(|x| x);
+    //}
+
+    it "minimizes negatives" {
+        make_functions!(|x: Function| -x);
+    }
+
+    after_each {
+        for f in &[fs, fm] {
+            f.minimize(&args, 1., 10);
+            assert!(f.all_less_than(0.01));
+        }
+    }
 }

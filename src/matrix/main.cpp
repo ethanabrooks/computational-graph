@@ -47,17 +47,18 @@ int main (void){
 
   init_cublas();
   //alloc_matrix(&m1, 2, 2);
-  alloc_matrix(&m2, 3, 2);
+  //alloc_matrix(&m2, 3, 2);
   //alloc_matrix(&result, 3, 3);
 
   //init_matrix(&m1, input_vals, 2, 2);
   init_matrix(&m2, weights_vals, 3, 2);
-
-  //fill_matrix(&m1, 1);
+  //print_matrix(&m2);
+  //printf("reduce_sum = %f\n", reduce_sum(&m2));
+  //fill_matrix(&m2, 1);
   //fill_matrix(&m2, 2);
 
   //fill_matrix(&result, 0);
-  print_matrix(&m2);
+  //print_matrix(&m2);
   //printf("\n");
   //print_matrix(&m2);
   //print_matrix(&result);
@@ -77,11 +78,10 @@ int main (void){
   //init_matrix(&m1, weights_vals, M, N);
   //print_matrix(m1);
   //copy_matrix(m1, m2);
-  //print_matrix(m2);
+  print_matrix(&m2);
   //printf("\n");
 
-  //printf("reduce_equal = %d\n", reduce_equal(&m1, 2.0));
-  //printf("reduce_sum = %f\n", reduce_sum(&m1));
+  printf("reduce_lt = %d\n", reduce_lt(&m2, 6.1));
   //clock_t start = clock(), diff;
   ///////
   ////reduce_sum(&m1);
