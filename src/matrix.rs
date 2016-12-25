@@ -20,11 +20,6 @@ type PoolType = HashMap<(u32, u32), Vec<PMatrix>>;
 static mut POOL: Option<Mutex<PoolType>> = None;
 static INIT: Once = ONCE_INIT;
 
-//lazy_static! {
-    //static ref POOL: pooltype = Mutex::new(HashMap::new());
-    ////static ref CUDA_INIT: bool = false;
-//}
-
 pub struct PMatrix {
     matrix: Option<Matrix>,
 }
@@ -53,17 +48,17 @@ fn get_pool<'a>() -> MutexGuard<'a, PoolType> {
 impl Drop for PMatrix {
     fn drop(&mut self) {
         if let Some(matrix) = self.matrix.take() {
-            //let mut pool = POOL.lock().unwrap();
-            get_pool()
-                                         .entry((matrix.height, matrix.width))
-                                         .or_insert(vec![])
-                                         .push(PMatrix::from(matrix));
+        println!("dropping");
+            get_pool().entry((matrix.height, matrix.width))
+                      .or_insert(vec![])
+                      .push(PMatrix::from(matrix));
         }
     }
 }
 
 impl PMatrix {
     pub fn empty(height: u32, width: u32) -> PMatrix {
+        println!("initializing");
         get_pool()
                   .entry((height, width))
                   .or_insert(vec![PMatrix::from(Matrix::empty(height, width))])

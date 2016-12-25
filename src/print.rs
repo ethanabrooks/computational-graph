@@ -78,7 +78,6 @@ impl fmt::Display for Function {
 
 // TODO: make this a macro
 fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
-            println!("HERE YAY");
     match *c {
         Constant::Scalar(x) => write!(f, "{}", x),
         Constant::Matrix(ref src) => {

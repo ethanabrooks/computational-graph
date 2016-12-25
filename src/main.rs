@@ -27,6 +27,7 @@ use std::collections::HashMap;
 #[allow(unused_imports)]
 use std::ops::Deref;
 #[allow(unused_imports)]
+use matrix::PMatrix;
 
 // TODO: design wrapper for matrix ops that checks for this.
 fn main() {
@@ -39,10 +40,12 @@ fn main() {
         //]; 
     //let target = Function::random_matrix(dims.clone(), -0.1, 0.1);
     //let f = sq(lstm(inputs) - target);
-    let x = Function::param("x", Constant::single_val(vec![2, 2], 0.1));
     //let m = Function::single_val_matrix(2, 2, 0.1);
-    let f = x; // * m;
-    f.minimize(&HashMap::new(), 0.01, 100, 1);
+    //f.minimize(&HashMap::new(), 0.01, 100, 1);
+    PMatrix::empty(2, 2);
+    println!("HERE");
+    PMatrix::empty(2, 2);
+    println!("HERE");
 }
 
 #[cfg(test)]
