@@ -1,4 +1,6 @@
-use function::{dot, sigmoid, tanh, Function, Constant};
+use ops::{dot, sigmoid, tanh};
+use function::Function;
+use constant::Constant;
 
 // TODO: add this to datatypes.rs so that this file can be moved out of function
 #[allow(non_snake_case)]
