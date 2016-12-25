@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::sync::{Mutex, MutexGuard};
 use std::ptr;
+use std::ops::DerefMut;
 
 extern {
-    fn alloc_matrix(m: *mut Matrix, width: u32, height: u32); // allocates on device
+    fn alloc_matrix(m: *mut Matrix, width: u32, height: u32);
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
     fn download_matrix(m1: *const Matrix, m2: *mut f32);
     fn free_matrix(m: *mut Matrix);
@@ -13,12 +14,11 @@ extern {
 
 unsafe impl Send for Matrix {}
 
-use std::sync::{Once, ONCE_INIT};
-
 type PoolType = HashMap<(u32, u32), Vec<PMatrix>>;
 
-static mut POOL: Option<Mutex<PoolType>> = None;
-static INIT: Once = ONCE_INIT;
+lazy_static! {
+      static ref POOL: Mutex<PoolType> = Mutex::new(HashMap::new());
+}
 
 pub struct PMatrix {
     matrix: Option<Matrix>,
@@ -32,17 +32,7 @@ pub struct Matrix {
 }
 
 fn get_pool<'a>() -> MutexGuard<'a, PoolType> {
-    unsafe {
-        match POOL {
-            Some(ref mutex) => mutex.lock().unwrap(),
-            None            => {
-                INIT.call_once(|| {
-                    POOL = Some(Mutex::new(HashMap::new()));
-                });
-                get_pool()
-            }
-        }
-    }
+    POOL.lock().unwrap()
 }
 
 impl Drop for PMatrix {
@@ -57,13 +47,12 @@ impl Drop for PMatrix {
 
 impl PMatrix {
     pub fn empty(height: u32, width: u32) -> PMatrix {
-        match get_pool()
-            .entry((height, width))
-            .or_insert(vec![])
-            .pop() {
-                Some(pmatrix) => pmatrix,
-                None => PMatrix::from(Matrix::empty(height, width))
-            } 
+        match get_pool().entry((height, width))
+                        .or_insert(vec![])
+                        .pop() {
+                            Some(pmatrix) => pmatrix,
+                            None => PMatrix::from(Matrix::empty(height, width))
+                        } 
     }
 }
 
@@ -178,13 +167,13 @@ impl Matrix {
         self.height * self.width
     }
 
-    // allocates on device
     pub fn empty(height: u32, width: u32) -> Matrix {
         let mut matrix = Matrix { 
             height: height,
             width: width,
             dev_array: ptr::null_mut(),
         };
+        println!("allocating");
         unsafe { alloc_matrix(&mut matrix, height, width) };
         matrix
     }

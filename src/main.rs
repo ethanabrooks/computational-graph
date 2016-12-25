@@ -42,7 +42,7 @@ fn main() {
     //let f = sq(lstm(inputs) - target);
     //let m = Function::single_val_matrix(2, 2, 0.1);
     let f = Function::random_param("x", dims.clone(), -0.1, 0.1);
-    f.minimize(&HashMap::new(), 0.01, 100, 1);
+    f.minimize(&HashMap::new(), 0.01, 1000, 1000);
     //PMatrix::empty(2, 2);
     //println!("HERE");
     //PMatrix::empty(2, 2);
@@ -129,6 +129,12 @@ mod tests {
     }
 
     #[bench]
+    fn simple_opt(b: &mut Bencher) {
+        let f = Function::random_param("x", vec![10, 10], -0.1, 0.1);
+        f.minimize(&HashMap::new(), 0.01, 1000, 1000);
+    }
+
+    #[ignore]
     fn run_lstm(b: &mut Bencher) {
         init();
         let dim = 10;
