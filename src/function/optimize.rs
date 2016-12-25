@@ -67,7 +67,7 @@ impl Function {
             self.assign_values(&args);
             let mut error = self.unwrap_value().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
-            if i % print_freq  == 0 {
+            if (i + 1) % print_freq  == 0 {
                 println!("{}", self.unwrap_value().clone());
             }
         }

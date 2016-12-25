@@ -63,6 +63,11 @@ impl Function {
     }
 
     #[allow(dead_code)]
+    pub fn random_matrix(dims: Vec<u32>, lo: f32, hi: f32) -> Function {
+        Function::constant(Constant::random(dims, lo, hi))
+    }
+
+    #[allow(dead_code)]
     pub fn scalar(x: f32) -> Function {
         Function::constant(Constant::Scalar(x)) 
     }
