@@ -8,13 +8,14 @@ extern crate test;
 
 mod function; 
 mod constant; 
+mod matrix; 
 mod ops; 
 mod optimize; 
 mod print; 
 mod lstm; 
 
 #[allow(unused_imports)]
-use ops::{sq, dot, abs, sigmoid, tanh};
+use ops::{init, sq, dot, abs, sigmoid, tanh};
 #[allow(unused_imports)]
 use function::Function;
 #[allow(unused_imports)]
@@ -28,12 +29,6 @@ use std::ops::Deref;
 #[allow(unused_imports)]
 
 // TODO: design wrapper for matrix ops that checks for this.
-extern { fn init_cublas(); }
-
-pub fn init() {
-    unsafe { init_cublas() };
-}
-
 fn main() {
     init();
     //let dim = 10;
@@ -45,8 +40,8 @@ fn main() {
     //let target = Function::random_matrix(dims.clone(), -0.1, 0.1);
     //let f = sq(lstm(inputs) - target);
     let x = Function::param("x", Constant::single_val(vec![2, 2], 0.1));
-    let m = Function::single_val_matrix(2, 2, 0.1);
-    let f = x * m;
+    //let m = Function::single_val_matrix(2, 2, 0.1);
+    let f = x; // * m;
     f.minimize(&HashMap::new(), 0.01, 100, 1);
 }
 

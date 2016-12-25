@@ -1,6 +1,7 @@
 use std::fmt;
 use function::{Function, Expr};
-use constant::{Constant, PMatrix};
+use constant::Constant;
+use matrix::PMatrix;
 use std::ops::Deref;
 
 fn write_with_parens(a: &Function, 

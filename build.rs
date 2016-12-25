@@ -22,7 +22,7 @@ fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
 
 fn main() {
     let c_names = vec!["matrix", "ops", "util"];
-    let dir = "src/matrix";
+    let dir = "src/c";
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
