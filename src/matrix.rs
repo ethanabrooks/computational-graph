@@ -48,7 +48,6 @@ fn get_pool<'a>() -> MutexGuard<'a, PoolType> {
 impl Drop for PMatrix {
     fn drop(&mut self) {
         if let Some(matrix) = self.matrix.take() {
-        println!("dropping");
             get_pool().entry((matrix.height, matrix.width))
                       .or_insert(vec![])
                       .push(PMatrix::from(matrix));
@@ -58,11 +57,13 @@ impl Drop for PMatrix {
 
 impl PMatrix {
     pub fn empty(height: u32, width: u32) -> PMatrix {
-        println!("initializing");
-        get_pool()
-                  .entry((height, width))
-                  .or_insert(vec![PMatrix::from(Matrix::empty(height, width))])
-                  .pop().unwrap()
+        match get_pool()
+            .entry((height, width))
+            .or_insert(vec![])
+            .pop() {
+                Some(pmatrix) => pmatrix,
+                None => PMatrix::from(Matrix::empty(height, width))
+            } 
     }
 }
 

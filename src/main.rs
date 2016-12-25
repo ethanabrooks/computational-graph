@@ -32,8 +32,8 @@ use matrix::PMatrix;
 // TODO: design wrapper for matrix ops that checks for this.
 fn main() {
     init();
-    //let dim = 10;
-    //let dims = vec![dim, dim];
+    let dim = 10;
+    let dims = vec![dim, dim];
     //let inputs = vec![
         //Constant::random(dims.clone(), -0.1, 0.1),
         //Constant::random(dims.clone(), -0.1, 0.1)
@@ -41,11 +41,12 @@ fn main() {
     //let target = Function::random_matrix(dims.clone(), -0.1, 0.1);
     //let f = sq(lstm(inputs) - target);
     //let m = Function::single_val_matrix(2, 2, 0.1);
-    //f.minimize(&HashMap::new(), 0.01, 100, 1);
-    PMatrix::empty(2, 2);
-    println!("HERE");
-    PMatrix::empty(2, 2);
-    println!("HERE");
+    let f = Function::random_param("x", dims.clone(), -0.1, 0.1);
+    f.minimize(&HashMap::new(), 0.01, 100, 1);
+    //PMatrix::empty(2, 2);
+    //println!("HERE");
+    //PMatrix::empty(2, 2);
+    //println!("HERE");
 }
 
 #[cfg(test)]

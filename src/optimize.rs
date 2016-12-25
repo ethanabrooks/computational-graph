@@ -66,8 +66,7 @@ impl Function {
                     print_freq: i32) {
         for i in 0..iters {
             self.assign_values(&args);
-            let val = self.unwrap_value();
-            let mut error = val.copy_and_fill(1.);
+            let mut error = self.unwrap_value().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
             if (i + 1) % print_freq  == 0 {
                 println!("{}", self.unwrap_value().deref());
