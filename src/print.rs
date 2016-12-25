@@ -1,6 +1,6 @@
 use std::fmt;
 use function::{Function, Expr};
-use constant::Constant;
+use constant::{Constant, PMatrix};
 use std::ops::Deref;
 
 fn write_with_parens(a: &Function, 
@@ -77,6 +77,7 @@ impl fmt::Display for Function {
 
 // TODO: make this a macro
 fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
+            println!("HERE YAY");
     match *c {
         Constant::Scalar(x) => write!(f, "{}", x),
         Constant::Matrix(ref src) => {
@@ -113,6 +114,43 @@ fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
             }
             result
         }
+    }
+}
+
+impl fmt::Debug for PMatrix {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let dst = self.array_ptr();
+        let mut result;
+
+        let h = self.height() - 1;
+        result = if h == 0 { write!(f, "\n{:^2}", "[") }
+                    else      { write!(f, "\n{:^2}", "⎡") };
+        if result.is_err() { return result }
+
+        for i in 0..self.height() {
+
+            for j in 0..self.width() {
+                result = write!(f, "{:^10.3}", unsafe { 
+                    *dst.offset((j * self.height() + i) as isize)
+                });
+                if result.is_err() { return result }
+            }
+
+            result = if h == 0           { write!(f, "{:^2}\n", "]") }
+
+            else     if i == 0 && h == 1 { write!(f, "{:^2}\n{:^2}", "⎤", "⎣" ) }
+
+            else     if i == h - 1       { write!(f, "{:^2}\n{:^2}", "⎥", "⎣") }
+
+            else     if i == 0           { write!(f, "{:^2}\n{:^2}", "⎤", "⎢") }
+
+            else     if i == h           { write!(f, "{:^2}\n", "⎦") } 
+
+            else                         { write!(f, "{:^2}\n{:^2}", "⎥", "⎢") };
+
+            if result.is_err() { return result }
+        }
+        result
     }
 }
 

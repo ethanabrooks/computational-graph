@@ -38,46 +38,6 @@ pub struct Matrix {
     dev_array: *mut f32,
 }
 
-
-impl Drop for PMatrix {
-    fn drop(&mut self) {
-        if let Some(matrix) = self.matrix.take() {
-            let mut pool = POOL.lock().unwrap();
-            let mut matrices = pool.entry((matrix.height, matrix.width)).or_insert(vec![]);
-            matrices.push(PMatrix::from(matrix));
-        }
-    }
-}
-
-impl Clone for PMatrix {
-    fn clone(&self) -> Self {
-        let mut m: PMatrix = PMatrix::empty_like(self);
-        unsafe { copy_matrix(self.borrow(), m.borrow_mut()) };
-        m
-    }
-}
-
-impl Matrix {
-    pub fn size(&self) -> u32 {
-        self.height * self.width
-    }
-}
-
-
-impl Clone for Matrix {
-    fn clone(&self) -> Self {
-        let mut m: Matrix = Matrix::empty(self.height, self.width);
-        unsafe { copy_matrix(self, &mut m) };
-        m
-    }
-}
-
-impl Drop for Matrix {
-    fn drop(&mut self) {
-        unsafe { free_matrix(self as *mut Matrix) };
-    }
-} 
-
 impl Constant {
     pub fn width(&self) -> u32 {
         match *self {
@@ -165,23 +125,31 @@ impl Constant {
     }
 }
 
-impl Matrix {
-    // allocates on device
-    pub fn empty(height: u32, width: u32) -> Matrix {
-        let mut matrix = Matrix { 
-            height: height,
-            width: width,
-            dev_array: ptr::null_mut(),
-        };
-        //println!("allocating");
-        unsafe { alloc_matrix(&mut matrix, height, width) };
-        matrix
+
+impl Drop for PMatrix {
+    fn drop(&mut self) {
+        if let Some(matrix) = self.matrix.take() {
+            let mut pool = POOL.lock().unwrap();
+            let mut matrices = pool.entry((matrix.height, matrix.width))
+                                   .or_insert(vec![]);
+            matrices.push(PMatrix::from(matrix));
+        }
+    }
+}
+
+impl Clone for PMatrix {
+    fn clone(&self) -> Self {
+        let mut m: PMatrix = PMatrix::empty_like(self);
+        unsafe { copy_matrix(self.borrow(), m.borrow_mut()) };
+        m
     }
 }
 
 impl PMatrix {
     pub fn from(m: Matrix) -> PMatrix {
-        PMatrix { matrix: Some(m) }
+        let x = Some(m);
+        let res = PMatrix { matrix: x };
+        res
     }
 
     pub fn borrow_mut(&mut self) -> &mut Matrix {
@@ -221,7 +189,10 @@ impl PMatrix {
     }
 
     pub fn empty(height: u32, width: u32) -> PMatrix {
-        PMatrix::from(Matrix::empty(height, width))
+        POOL.lock().unwrap()
+            .entry((height, width))
+            .or_insert(vec![PMatrix::from(Matrix::empty(height, width))])
+            .pop().unwrap()
     }
 
     pub fn empty_like(m: &PMatrix) -> PMatrix { PMatrix::empty(m.height(), m.width()) }
@@ -250,3 +221,39 @@ impl PMatrix {
         }
     }
 }
+
+impl Clone for Matrix {
+    fn clone(&self) -> Self {
+        let mut m: Matrix = Matrix::empty(self.height, self.width);
+        unsafe { copy_matrix(self, &mut m) };
+        m
+    }
+}
+
+impl Drop for Matrix {
+    fn drop(&mut self) {
+        unsafe { free_matrix(self as *mut Matrix) };
+    }
+} 
+
+
+
+impl Matrix {
+    pub fn size(&self) -> u32 {
+        self.height * self.width
+    }
+
+    // allocates on device
+    pub fn empty(height: u32, width: u32) -> Matrix {
+        println!("Matrix::empty");
+        let mut matrix = Matrix { 
+            height: height,
+            width: width,
+            dev_array: ptr::null_mut(),
+        };
+        println!("allocating in empty");
+        unsafe { alloc_matrix(&mut matrix, height, width) };
+        matrix
+    }
+}
+

@@ -3,6 +3,53 @@ use std::cell::{RefCell, Ref, RefMut};
 use std::collections::HashSet;
 use std::rc::Rc;
 
+#[derive(Debug, Clone)]
+pub struct Function {
+    value: Shared<Option<Constant>>,
+    params: HashSet<String>,
+    body: Rc<Expr>,
+    placeholders: RefCell<Vec<Constant>>,
+}
+
+#[derive(Debug)]
+pub enum Expr {
+    Constant(Constant),
+    Input(Input),
+    Param(Param),
+    Neg(Function),
+    Sq(Function),
+    Abs(Function),
+    Signum(Function),
+    Sigmoid(Function),
+    Tanh(Function),
+    Add(Function, Function),
+    Sub(Function, Function),
+    Mul(Function, Function),
+    Dot(Function, Function, bool, bool),
+}
+
+#[derive(Debug)]
+pub struct Input {
+    dims: Vec<u32>, 
+    pub name: String,
+}
+
+#[derive(Debug)]
+pub struct Param {
+    pub name: String,
+}
+
+type Shared<T> = Rc<RefCell<T>>;
+
+pub mod shared {
+    use super::Shared;
+    use std::{cell, rc};
+
+    pub fn new<T>(value: T) -> Shared<T> {
+        rc::Rc::new(cell::RefCell::new(value))
+    }
+}
+
 macro_rules! hashset {
     ($( $val: expr ),*) => {{
          let mut set = HashSet::new();
@@ -12,6 +59,9 @@ macro_rules! hashset {
 }
 
 impl Function {
+
+    // Constructors
+
     pub fn new(value: Option<Constant>, 
                params: HashSet<String>,
                body: Expr) -> Function {
@@ -70,56 +120,9 @@ impl Function {
     pub fn single_val_matrix(height: u32, width: u32, value: f32) -> Function {
         Function::constant(Constant::single_val(vec![height, width], value))
     }
-}
 
-#[derive(Debug, Clone)]
-pub struct Function {
-    value: Shared<Option<Constant>>,
-    params: HashSet<String>,
-    body: Rc<Expr>,
-    placeholders: RefCell<Vec<Constant>>,
-}
+    // accessors
 
-#[derive(Debug)]
-pub enum Expr {
-    Constant(Constant),
-    Input(Input),
-    Param(Param),
-    Neg(Function),
-    Sq(Function),
-    Abs(Function),
-    Signum(Function),
-    Sigmoid(Function),
-    Tanh(Function),
-    Add(Function, Function),
-    Sub(Function, Function),
-    Mul(Function, Function),
-    Dot(Function, Function, bool, bool),
-}
-
-#[derive(Debug)]
-pub struct Input {
-    dims: Vec<u32>, 
-    pub name: String,
-}
-
-#[derive(Debug)]
-pub struct Param {
-    pub name: String,
-}
-
-type Shared<T> = Rc<RefCell<T>>;
-
-pub mod shared {
-    use super::Shared;
-    use std::{cell, rc};
-
-    pub fn new<T>(value: T) -> Shared<T> {
-        rc::Rc::new(cell::RefCell::new(value))
-    }
-}
-
-impl Function {
     pub fn body(&self) -> &Expr {
         &*self.body
     }

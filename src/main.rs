@@ -35,6 +35,22 @@ pub fn init() {
 }
 
 fn main() {
+    init();
+    //let dim = 10;
+    //let dims = vec![dim, dim];
+    //let inputs = vec![
+        //Constant::random(dims.clone(), -0.1, 0.1),
+        //Constant::random(dims.clone(), -0.1, 0.1)
+        //]; 
+    //let target = Function::random_matrix(dims.clone(), -0.1, 0.1);
+    //let f = sq(lstm(inputs) - target);
+    let x = Function::param("x", Constant::single_val(vec![2, 2], 0.1));
+            println!("1");
+    let m = Function::single_val_matrix(2, 2, 0.1);
+            println!("2");
+    let f = x * m;
+            println!("3");
+    f.minimize(&HashMap::new(), 0.01, 100, 1);
 }
 
 #[cfg(test)]
