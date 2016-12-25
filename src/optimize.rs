@@ -65,20 +65,12 @@ impl Function {
                     iters: i32,
                     print_freq: i32) {
         for i in 0..iters {
-            println!("min 1");
             self.assign_values(&args);
-            println!("min 2");
             let val = self.unwrap_value();
-            println!("min 2.5");
             let mut error = val.copy_and_fill(1.);
-            println!("min 3");
             self.backprop(&mut error, learn_rate);
-            println!("mmin 4");
             if (i + 1) % print_freq  == 0 {
-            println!("min 5");
-            //let thing = self.unwrap_value().deref();
                 println!("{}", self.unwrap_value().deref());
-            println!("end of loop");
             }
         }
     }
@@ -156,18 +148,11 @@ impl Function {
     }
 
     fn backprop(&self, error: &mut Constant, learn_rate: f32) {
-        println!("top of backprop");
         self.maybe_alloc_placeholders(error);
-        println!("after alloc");
-        if self.params().is_empty() { 
-            println!("returned the constant");
-            return; }
-        println!("after check if parmas is empty");
+        if self.params().is_empty() { return; }
         match *self.body() {
             Expr::Param(_) => {
-                println!("param");
                 *self.unwrap_value_mut() -= error.clone() * Constant::Scalar(learn_rate);
-                println!("post param");
             }
             Expr::Neg(ref f) => {
                 negate(error);
