@@ -9,6 +9,7 @@ use function::datatypes::Matrix;
 use std::collections::HashMap;
 use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign};
 
+// TODO: wrappers
 extern {
     fn map_neg(m: *const Matrix, result: *mut Matrix);
     fn map_sq(m: *const Matrix, result: *mut Matrix);
@@ -100,10 +101,6 @@ macro_rules! trait1 {
             type Output = Function;
             fn  $op(self) -> Function { (&self).$op() }
         }
-        impl $Op for Constant {
-            type Output = Constant;
-            fn $op(self) -> Constant { (&self).$op() }
-        }
 
         impl<'a> $Op for &'a Constant {
             type Output = Constant;
@@ -118,6 +115,11 @@ macro_rules! trait1 {
                     }
                 }
             }
+        }
+
+        impl $Op for Constant {
+            type Output = Constant;
+            fn $op(self) -> Constant { (&self).$op() }
         }
     }
 }
@@ -143,11 +145,6 @@ macro_rules! trait2 {
         impl $Op for Function {
             type Output = Function;
             fn  $op(self, other: Function) -> Function { (&self).$op(&other) }
-        }
-
-        impl $Op for Constant {
-            type Output = Constant;
-            fn $op(self, other: Constant) -> Constant { (&self).$op(&other) }
         }
 
         impl<'a> $Op for &'a Constant {
@@ -178,6 +175,11 @@ macro_rules! trait2 {
                     }
                 }
             }
+        }
+
+        impl $Op for Constant {
+            type Output = Constant;
+            fn $op(self, other: Constant) -> Constant { (&self).$op(&other) }
         }
     }
 }
