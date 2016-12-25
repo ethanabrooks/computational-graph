@@ -245,13 +245,11 @@ impl Matrix {
 
     // allocates on device
     pub fn empty(height: u32, width: u32) -> Matrix {
-        println!("Matrix::empty");
         let mut matrix = Matrix { 
             height: height,
             width: width,
             dev_array: ptr::null_mut(),
         };
-        println!("allocating in empty");
         unsafe { alloc_matrix(&mut matrix, height, width) };
         matrix
     }
