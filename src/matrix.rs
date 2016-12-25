@@ -13,9 +13,15 @@ extern {
 
 unsafe impl Send for Matrix {}
 
+use std::sync::{Once, ONCE_INIT};
+
+type pooltype = Mutex<HashMap<(u32, u32), Vec<PMatrix>>>;
+
+static mut VAL: Option<pooltype> = None;
+static INIT: Once = ONCE_INIT;
+
 lazy_static! {
-    static ref POOL: Mutex<HashMap<(u32, u32), Vec<PMatrix>>> = 
-        Mutex::new(HashMap::new());
+    static ref POOL: pooltype = Mutex::new(HashMap::new());
     //static ref CUDA_INIT: bool = false;
 }
 
