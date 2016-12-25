@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 use std::ptr;
 
 extern {
@@ -15,15 +15,15 @@ unsafe impl Send for Matrix {}
 
 use std::sync::{Once, ONCE_INIT};
 
-type pooltype = Mutex<HashMap<(u32, u32), Vec<PMatrix>>>;
+type PoolType = HashMap<(u32, u32), Vec<PMatrix>>;
 
-static mut VAL: Option<pooltype> = None;
+static mut POOL: Option<Mutex<PoolType>> = None;
 static INIT: Once = ONCE_INIT;
 
-lazy_static! {
-    static ref POOL: pooltype = Mutex::new(HashMap::new());
-    //static ref CUDA_INIT: bool = false;
-}
+//lazy_static! {
+    //static ref POOL: pooltype = Mutex::new(HashMap::new());
+    ////static ref CUDA_INIT: bool = false;
+//}
 
 pub struct PMatrix {
     matrix: Option<Matrix>,
@@ -36,16 +36,41 @@ pub struct Matrix {
     dev_array: *mut f32,
 }
 
-impl Drop for PMatrix {
-    fn drop(&mut self) {
-        if let Some(matrix) = self.matrix.take() {
-            let mut pool = POOL.lock().unwrap();
-            let mut matrices = pool.entry((matrix.height, matrix.width))
-                                   .or_insert(vec![]);
-            matrices.push(PMatrix::from(matrix));
+fn get_pool<'a>() -> MutexGuard<'a, PoolType> {
+    unsafe {
+        match POOL {
+            Some(ref mutex) => mutex.lock().unwrap(),
+            None            => {
+                INIT.call_once(|| {
+                    POOL = Some(Mutex::new(HashMap::new()));
+                });
+                get_pool()
+            }
         }
     }
 }
+
+impl Drop for PMatrix {
+    fn drop(&mut self) {
+        if let Some(matrix) = self.matrix.take() {
+            //let mut pool = POOL.lock().unwrap();
+            get_pool()
+                                         .entry((matrix.height, matrix.width))
+                                         .or_insert(vec![])
+                                         .push(PMatrix::from(matrix));
+        }
+    }
+}
+
+impl PMatrix {
+    pub fn empty(height: u32, width: u32) -> PMatrix {
+        get_pool()
+                  .entry((height, width))
+                  .or_insert(vec![PMatrix::from(Matrix::empty(height, width))])
+                  .pop().unwrap()
+    }
+}
+
 
 impl Clone for PMatrix {
     fn clone(&self) -> Self {
@@ -97,13 +122,6 @@ impl PMatrix {
             download_matrix(self.borrow(), ptr);
         }
         ptr
-    }
-
-    pub fn empty(height: u32, width: u32) -> PMatrix {
-        POOL.lock().unwrap()
-            .entry((height, width))
-            .or_insert(vec![PMatrix::from(Matrix::empty(height, width))])
-            .pop().unwrap()
     }
 
     pub fn empty_like(m: &PMatrix) -> PMatrix { PMatrix::empty(m.height(), m.width()) }
