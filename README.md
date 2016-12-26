@@ -1,3 +1,5 @@
+![](https://travis-ci.org/lobachevzky/pipes.svg?branch=gpu)
+
 # Optimizing functions with computational graphs
 
 A computational graph is simply a representation of an arithmetic expression
