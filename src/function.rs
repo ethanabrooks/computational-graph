@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    value: Shared<Option<Constant>>,
+    value: RefCell<Option<Constant>>,
     params: HashSet<String>,
     body: Rc<Expr>,
     placeholders: RefCell<Vec<Constant>>,
@@ -39,17 +39,6 @@ pub struct Param {
     pub name: String,
 }
 
-type Shared<T> = Rc<RefCell<T>>;
-
-pub mod shared {
-    use super::Shared;
-    use std::{cell, rc};
-
-    pub fn new<T>(value: T) -> Shared<T> {
-        rc::Rc::new(cell::RefCell::new(value))
-    }
-}
-
 macro_rules! hashset {
     ($( $val: expr ),*) => {{
          let mut set = HashSet::new();
@@ -66,7 +55,7 @@ impl Function {
                params: HashSet<String>,
                body: Expr) -> Function {
         Function {
-            value: shared::new(value),
+            value: RefCell::new(value),
             params: params,
             body: Rc::new(body),
             placeholders: RefCell::new(vec![]),

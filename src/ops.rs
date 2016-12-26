@@ -2,7 +2,7 @@ use function::{Function, Expr};
 use constant::Constant;
 use matrix::Matrix;
 use std::collections::HashMap;
-use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign};
+use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign, AddAssign};
 
 // TODO: wrappers
 extern {
@@ -205,6 +205,59 @@ macro_rules! compare {
     }
 }
 
+macro_rules! assign2 {
+    ($other:expr, $op:ident, $scalar_fun:expr) => {
+        {
+            match (self, $other) {
+                (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) => $scalar_fun(x1, x2),
+                (&mut Constant::Matrix(ref mut m), &Constant::Scalar(x)) =>
+                    unsafe { matrix_scalar_fun(m, x, m) },
+                (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) =>
+                    unsafe { matrix_fun(m1, m2, m1) },
+                (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) =>
+                    $scalar_fun(x, $other.avg())
+            }
+        }
+    }
+}
+
+macro_rules! assign_trait {
+    ($trait_:ident, $fun:ident, $op:ident, $scalar_fun:expr) => {
+        impl $trait_ for Constant {
+            fn $fun(&mut self, other: Constant) {
+                let matrix_scalar_fun = concat_idents!(broadcast_, $op, _rev);
+                let matrix_fun = concat_idents!(elemwise_, $op);
+                self.assign2(&other, $scalar_fun, matrix_scalar_fun, matrix_fun);
+            }
+        }
+    }
+}
+
+macro_rules! assign2 {
+    ($name:ident, $scalar_fun:expr, $op:ident) => {
+        pub fn $name(c: &mut Constant, other: &Constant) {
+            let matrix_scalar_fun = concat_idents!(broadcast_, $op, _rev);
+            let matrix_fun = concat_idents!(elemwise_, $op);
+            c.assign2(other, $scalar_fun, matrix_scalar_fun, matrix_fun);
+        }
+    }
+}
+
+macro_rules! assign1 {
+    ($name:ident, $op:ident) => {
+        assign1!($name, $op, &|x: f32| x.$op());
+    };
+    ($name:ident, $op:ident, $scalar_fun:expr) => {
+        pub fn $name(c: &mut Constant) {
+            let matrix_fun = concat_idents!(map_, $op);
+            match c {
+                &mut Constant::Scalar(x) => *c = Constant::Scalar($scalar_fun(x)),
+                &mut Constant::Matrix(ref mut m) => unsafe { matrix_fun(m, m) },
+            }
+        }
+    }
+}
+
 compare!(all_equal, eq);
 compare!(all_less_than, lt);
 //compare!(all_greater_than, gt);
@@ -217,6 +270,18 @@ trait1!(Neg, neg, 0., |x: f32| -x);
 trait2!(Add, add, 0.);
 trait2!(Sub, sub, 0.);
 trait2!(Mul, mul, 0.);
+assign_trait!(SubAssign, sub_assign, sub, &|x1: &mut f32, x2| *x1 -= x2);
+assign_trait!(AddAssign, add_assign, add, &|x1: &mut f32, x2| *x1 += x2);
+assign_trait!(MulAssign, mul_assign, mul, &|x1: &mut f32, x2| *x1 *= x2);
+assign2!(mul_assign, &|x1: &mut f32, x2| *x1 *= x2, mul);
+assign2!(sub_assign, &|x1: &mut f32, x2| *x1 -= x2, sub);
+assign2!(add_assign, &|x1: &mut f32, x2| *x1 += x2, add);
+assign1!(sigmoid_assign, sigmoid, &|x: f32| 1. / (1. + (-x).exp()));
+assign1!(sq_assign, sq, &|x: f32| x * x);
+assign1!(one_minus, one_minus, &|x| 1. - x);
+assign1!(signum_assign, signum);
+assign1!(tanh_assign, tanh);
+assign1!(abs_assign, abs);
 
 pub fn dot_transpose(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
     let function = apply2!(f1, f2, Expr::Dot(f1.clone(), f2.clone(), trans1, trans2));
@@ -233,6 +298,10 @@ pub fn dot(f1: &Function, f2: &Function) -> Function {
     dot_transpose(f1, f2, false, false)
 }
 
+pub fn negate(c: &mut Constant) {
+    *c *= Constant::Scalar(-1.)
+}
+
 impl Constant {
     pub fn avg(&self) -> f32 {
         match self {
@@ -240,14 +309,6 @@ impl Constant {
             &Constant::Matrix(ref m) => {
                 (unsafe { reduce_sum(m) }) / m.size() as f32
             }
-        }
-    }
-
-    fn assign1(&mut self, scalar_fun: &Fn(f32) -> f32, 
-                 matrix_fun: unsafe extern "C" fn(*const Matrix, *mut Matrix)) {
-        match self {
-            &mut Constant::Scalar(x) => *self = Constant::Scalar(scalar_fun(x)),
-            &mut Constant::Matrix(ref mut m) => unsafe { matrix_fun(m, m) },
         }
     }
 
@@ -284,7 +345,6 @@ impl Constant {
         }
     }
 
-    // allocates on device
     pub fn dot(c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) -> Constant {
         let mut result: Matrix;
         match (c1, c2) {
@@ -298,62 +358,5 @@ impl Constant {
         };
         Constant::Matrix(result)
     }
-}
-
-impl SubAssign for Constant {
-    fn sub_assign(&mut self, other: Constant) {
-        self.assign2(&other, &|x1: &mut f32, x2| *x1 -= x2, 
-                      broadcast_sub_rev, elemwise_sub);
-    }
-}
-
-impl MulAssign for Constant {
-    fn mul_assign(&mut self, other: Constant) {
-        self.assign2(&other, &|x1: &mut f32, x2| *x1 *= x2, 
-                      broadcast_mul_rev, elemwise_mul);
-    }
-}
-
-pub fn mul_assign(c: &mut Constant, other: &Constant) {
-    c.assign2(other, &|x1: &mut f32, x2| *x1 *= x2,
-                    broadcast_mul_rev, elemwise_mul);
-}
-
-pub fn add_assign(c: &mut Constant, other: &Constant) {
-    c.assign2(other, &|x1: &mut f32, x2| *x1 += x2,
-                    broadcast_add_rev, elemwise_add);
-}
-
-pub fn sub_assign(c: &mut Constant, other: &Constant) {
-    c.assign2(other, &|x1: &mut f32, x2| *x1 -= x2,
-                    broadcast_sub_rev, elemwise_sub);
-}
-
-pub fn sigmoid_assign(c: &mut Constant) {
-    c.assign1(&|x| 1. / (1. + (-x).exp()), map_sigmoid);
-}
-
-pub fn tanh_assign(c: &mut Constant) {
-    c.assign1(&|x| x.tanh(), map_tanh);
-}
-
-pub fn sq_assign(c: &mut Constant) {
-    c.assign1(&|x| x * x, map_sq);
-}
-
-pub fn signum_assign(c: &mut Constant) {
-    c.assign1(&|x| x.signum(), map_signum);
-}
-
-pub fn abs_assign(c: &mut Constant) {
-    c.assign1(&|x| x.abs(), map_abs);
-}
-
-pub fn negate(c: &mut Constant) {
-    *c *= Constant::Scalar(-1.)
-}
-
-pub fn one_minus(c: &mut Constant) {
-    c.assign1(&|x| 1. - x, map_one_minus);
 }
 

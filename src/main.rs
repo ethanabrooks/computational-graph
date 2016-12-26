@@ -136,7 +136,7 @@ mod tests {
         })
     }
 
-    #[ignore]
+    #[allow(dead_code)]
     fn run_lstm(b: &mut Bencher) {
         init();
         let dim = 10;
