@@ -3,10 +3,7 @@
 #include <math.h> 
 #include <string.h> 
 #include <iostream> 
-#include <cuda.h> 
-#include <cuda_runtime.h> 
 #include <time.h>
-#include "cublas_v2.h" 
 #include "matrix.h" 
 #include "ops.h" 
 #include "util.h" 
@@ -45,7 +42,6 @@ int main (void){
   array = (float *)malloc (M * N * sizeof (float)); 
   check(!array, "host memory allocation failed"); 
 
-  init_cublas();
   //alloc_matrix(&m1, 2, 2);
   //alloc_matrix(&m2, 3, 2);
   //alloc_matrix(&result, 3, 3);
@@ -81,7 +77,6 @@ int main (void){
   print_matrix(&m2);
   //printf("\n");
 
-  printf("reduce_lt = %d\n", reduce_lt(&m2, 6.1));
   //clock_t start = clock(), diff;
   ///////
   ////reduce_sum(&m1);
