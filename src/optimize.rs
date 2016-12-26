@@ -151,7 +151,8 @@ impl Function {
         if self.params().is_empty() { return; }
         match *self.body() {
             Expr::Param(_) => {
-                *self.unwrap_value_mut() -= error.clone() * Constant::Scalar(learn_rate);
+                *error *= Constant::Scalar(learn_rate);
+                self.mutate_value(&|x| sub_assign(x, &error));
             }
             Expr::Neg(ref f) => {
                 negate(error);
