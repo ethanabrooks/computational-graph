@@ -13,8 +13,9 @@ mod optimize;
 mod print; 
 mod lstm; 
 
+use std::process::Command;
 #[allow(unused_imports)]
-use ops::{init, sq, dot, abs, sigmoid, tanh};
+use ops::{sq, dot, abs, sigmoid, tanh};
 #[allow(unused_imports)]
 use function::Function;
 #[allow(unused_imports)]
@@ -28,9 +29,24 @@ use std::ops::Deref;
 #[allow(unused_imports)]
 use matrix::Matrix;
 
+extern {
+    fn init_cublas();
+}
+
+lazy_static! {
+    static ref GPU: bool = {
+        if Command::new("nvcc").status().is_ok() {
+            unsafe { init_cublas() };
+            true
+        } else {
+            false
+        }
+    };
+}
+
+
 // TODO: design wrapper for matrix ops that checks for this.
 fn main() {
-    init();
     let dim = 10;
     let dims = vec![dim, dim];
     //let inputs = vec![

@@ -2,7 +2,6 @@ use std::process::Command;
 use std::{env, fs, str};
 use std::path::Path;
 
-
 fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
     match fs::metadata(dst) {
         Ok(metadata_dst) => {
