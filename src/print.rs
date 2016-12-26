@@ -1,7 +1,7 @@
 use std::fmt;
 use function::{Function, Expr};
 use constant::Constant;
-use matrix::PMatrix;
+use matrix::Matrix;
 use std::ops::Deref;
 
 fn write_with_parens(a: &Function, 
@@ -76,90 +76,62 @@ impl fmt::Display for Function {
 }
 
 
-// TODO: make this a macro
-fn fmt_(c: &Constant, f: &mut fmt::Formatter) -> fmt::Result {
-    match *c {
-        Constant::Scalar(x) => write!(f, "{}", x),
-        Constant::Matrix(ref src) => {
-            let dst = src.array_ptr();
-            let mut result;
+macro_rules! matrix_print {
+    ($trait_:ident) => {
+        impl fmt::$trait_ for Matrix {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                let dst = self.array_ptr();
+                let mut result;
 
-            let h = src.height() - 1;
-            result = if h == 0 { write!(f, "\n{:^2}", "[") }
-                     else      { write!(f, "\n{:^2}", "⎡") };
-            if result.is_err() { return result }
+                let h = self.height() - 1;
+                result = if h == 0 { write!(f, "\n{:^2}", "[") }
+                            else      { write!(f, "\n{:^2}", "⎡") };
+                if result.is_err() { return result }
 
-            for i in 0..src.height() {
+                for i in 0..self.height() {
 
-                for j in 0..src.width() {
-                    result = write!(f, "{:^10.3}", unsafe { 
-                        *dst.offset((j * src.height() + i) as isize)
-                    });
+                    for j in 0..self.width() {
+                        result = write!(f, "{:^10.3}", unsafe { 
+                            *dst.offset((j * self.height() + i) as isize)
+                        });
+                        if result.is_err() { return result }
+                    }
+
+                    result = if h == 0           { write!(f, "{:^2}\n", "]") }
+
+                    else     if i == 0 && h == 1 { write!(f, "{:^2}\n{:^2}", "⎤", "⎣" ) }
+
+                    else     if i == h - 1       { write!(f, "{:^2}\n{:^2}", "⎥", "⎣") }
+
+                    else     if i == 0           { write!(f, "{:^2}\n{:^2}", "⎤", "⎢") }
+
+                    else     if i == h           { write!(f, "{:^2}\n", "⎦") } 
+
+                    else                         { write!(f, "{:^2}\n{:^2}", "⎥", "⎢") };
+
                     if result.is_err() { return result }
                 }
-
-                result = if h == 0           { write!(f, "{:^2}\n", "]") }
-
-                else     if i == 0 && h == 1 { write!(f, "{:^2}\n{:^2}", "⎤", "⎣" ) }
-
-                else     if i == h - 1       { write!(f, "{:^2}\n{:^2}", "⎥", "⎣") }
-
-                else     if i == 0           { write!(f, "{:^2}\n{:^2}", "⎤", "⎢") }
-
-                else     if i == h           { write!(f, "{:^2}\n", "⎦") } 
-
-                else                         { write!(f, "{:^2}\n{:^2}", "⎥", "⎢") };
-
-                if result.is_err() { return result }
+                result
             }
-            result
         }
     }
 }
 
-impl fmt::Debug for PMatrix {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let dst = self.array_ptr();
-        let mut result;
+matrix_print!(Debug);
+matrix_print!(Display);
 
-        let h = self.height() - 1;
-        result = if h == 0 { write!(f, "\n{:^2}", "[") }
-                    else      { write!(f, "\n{:^2}", "⎡") };
-        if result.is_err() { return result }
-
-        for i in 0..self.height() {
-
-            for j in 0..self.width() {
-                result = write!(f, "{:^10.3}", unsafe { 
-                    *dst.offset((j * self.height() + i) as isize)
-                });
-                if result.is_err() { return result }
+macro_rules! constant_print {
+    ($trait_:ident) => {
+        impl fmt::$trait_ for Constant {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                match *self {
+                    Constant::Scalar(x) => write!(f, "{}", x),
+                    Constant::Matrix(ref src) => write!(f, "{}", src)
+                }
             }
-
-            result = if h == 0           { write!(f, "{:^2}\n", "]") }
-
-            else     if i == 0 && h == 1 { write!(f, "{:^2}\n{:^2}", "⎤", "⎣" ) }
-
-            else     if i == h - 1       { write!(f, "{:^2}\n{:^2}", "⎥", "⎣") }
-
-            else     if i == 0           { write!(f, "{:^2}\n{:^2}", "⎤", "⎢") }
-
-            else     if i == h           { write!(f, "{:^2}\n", "⎦") } 
-
-            else                         { write!(f, "{:^2}\n{:^2}", "⎥", "⎢") };
-
-            if result.is_err() { return result }
         }
-        result
     }
 }
 
-impl fmt::Debug for Constant {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt_(self, f) }
-}
-
-impl fmt::Display for Constant {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt_(self, f) }
-}
-
-
+constant_print!(Debug);
+constant_print!(Display);

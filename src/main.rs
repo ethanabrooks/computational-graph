@@ -26,7 +26,7 @@ use std::collections::HashMap;
 #[allow(unused_imports)]
 use std::ops::Deref;
 #[allow(unused_imports)]
-use matrix::PMatrix;
+use matrix::Matrix;
 
 // TODO: design wrapper for matrix ops that checks for this.
 fn main() {

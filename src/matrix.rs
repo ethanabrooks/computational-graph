@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-use std::sync::{Mutex, MutexGuard};
 use std::ptr;
-use std::ops::DerefMut;
 
 extern {
     fn alloc_matrix(m: *mut Matrix, width: u32, height: u32);
@@ -12,18 +9,6 @@ extern {
     fn fill_matrix(m: *mut Matrix, value: f32);
 }
 
-unsafe impl Send for Matrix {}
-
-type PoolType = HashMap<(u32, u32), Vec<PMatrix>>;
-
-lazy_static! {
-      static ref POOL: Mutex<PoolType> = Mutex::new(HashMap::new());
-}
-
-pub struct PMatrix {
-    matrix: Option<Matrix>,
-}
-
 #[repr(C)]
 pub struct Matrix {
     height: u32,
@@ -31,118 +16,71 @@ pub struct Matrix {
     dev_array: *mut f32,
 }
 
-fn get_pool<'a>() -> MutexGuard<'a, PoolType> {
-    POOL.lock().unwrap()
-}
-
-impl Drop for PMatrix {
-    fn drop(&mut self) {
-        if let Some(matrix) = self.matrix.take() {
-            get_pool().entry((matrix.height, matrix.width))
-                      .or_insert(vec![])
-                      .push(PMatrix::from(matrix));
-        }
-    }
-}
-
-impl PMatrix {
-    pub fn empty(height: u32, width: u32) -> PMatrix {
-        match get_pool().entry((height, width))
-                        .or_insert(vec![])
-                        .pop() {
-                            Some(pmatrix) => pmatrix,
-                            None => PMatrix::from(Matrix::empty(height, width))
-                        } 
-    }
-}
-
-
-impl Clone for PMatrix {
-    fn clone(&self) -> Self {
-        let mut m: PMatrix = PMatrix::empty_like(self);
-        unsafe { copy_matrix(self.borrow(), m.borrow_mut()) };
-        m
-    }
-}
-
-impl PMatrix {
-
-    pub fn from(m: Matrix) -> PMatrix {
-        let x = Some(m);
-        let res = PMatrix { matrix: x };
-        res
-    }
-
-    pub fn borrow_mut(&mut self) -> &mut Matrix {
-        match self.matrix {
-            Some(ref mut matrix) => matrix,
-            None                 => panic!("For some reason, a PMatrix
-                                            doesn't contain a matrix")
-        }
-    }
-
-    pub fn borrow(&self) -> &Matrix {
-        match self.matrix {
-            Some(ref matrix) => matrix,
-            None             => panic!("For some reason, a PMatrix
-                                        doesn't contain a matrix")
-        }
-    }
-
+impl Matrix {
     pub fn height(&self) -> u32 {
-        self.borrow().height
+        self.height
     }
 
     pub fn width(&self) -> u32 {
-        self.borrow().width
-    }
-
-    pub fn size(&self) -> usize {
-        self.borrow().size() as usize
+        self.width
     }
 
     pub fn array_ptr(&self) -> *const f32 {
-        let ptr = Vec::with_capacity(self.size()).as_mut_ptr();
+        let ptr = Vec::with_capacity(self.size() as usize).as_mut_ptr();
         unsafe { 
-            download_matrix(self.borrow(), ptr);
+            download_matrix(self, ptr);
         }
         ptr
     }
 
-    pub fn empty_like(m: &PMatrix) -> PMatrix { PMatrix::empty(m.height(), m.width()) }
+    pub fn empty_like(m: &Matrix) -> Matrix { Matrix::empty(m.height(), m.width()) }
 
-    pub fn new(height: u32, width: u32, values: Vec<f32>) -> PMatrix {
+    pub fn new(height: u32, width: u32, values: Vec<f32>) -> Matrix {
         assert!(values.len() as u32 == height * width, "wrong number of values");
-        let mut matrix: PMatrix = PMatrix::empty(height, width);
-        unsafe { upload_matrix(values.as_ptr(), matrix.borrow_mut()) };
+        let mut matrix: Matrix = Matrix::empty(height, width);
+        unsafe { upload_matrix(values.as_ptr(), &mut matrix) };
         matrix
     }
 
-    pub fn empty_for_dot(m1: &PMatrix, m2: &PMatrix, 
-                         trans1: bool, trans2: bool) -> PMatrix {
+    pub fn empty_for_dot(m1: &Matrix, m2: &Matrix, 
+                         trans1: bool, trans2: bool) -> Matrix {
         if trans1 {
             if trans2 {
-                PMatrix::empty(m1.width().clone(), m2.height().clone())
+                Matrix::empty(m1.width().clone(), m2.height().clone())
             } else {
-                PMatrix::empty(m1.width().clone(), m2.width().clone())
+                Matrix::empty(m1.width().clone(), m2.width().clone())
             }
         } else {
             if trans2 {
-                PMatrix::empty(m1.height().clone(), m2.height().clone())
+                Matrix::empty(m1.height().clone(), m2.height().clone())
             } else {
-                PMatrix::empty(m1.height().clone(), m2.width().clone())
+                Matrix::empty(m1.height().clone(), m2.width().clone())
             }
         }
     }
 
-    pub fn single_val(height: u32, width: u32, val: f32) -> PMatrix {
-        let mut matrix: PMatrix = PMatrix::empty(height, width);
-        unsafe { fill_matrix(matrix.borrow_mut(), val) };
+    pub fn single_val(height: u32, width: u32, val: f32) -> Matrix {
+        let mut matrix: Matrix = Matrix::empty(height, width);
+        unsafe { fill_matrix(&mut matrix, val) };
         matrix
     }
 
-    pub fn copy(&mut self, other: &PMatrix) {
-        unsafe { copy_matrix(other.borrow(), self.borrow_mut()) }
+    pub fn copy(&mut self, other: &Matrix) {
+        unsafe { copy_matrix(other, self) }
+    }
+
+    pub fn size(&self) -> u32 {
+        self.height * self.width
+    }
+
+    pub fn empty(height: u32, width: u32) -> Matrix {
+        let mut matrix = Matrix { 
+            height: height,
+            width: width,
+            dev_array: ptr::null_mut(),
+        };
+        unsafe { alloc_matrix(&mut matrix, height, width) };
+        matrix
     }
 }
 
@@ -159,21 +97,3 @@ impl Drop for Matrix {
         unsafe { free_matrix(self as *mut Matrix) };
     }
 } 
-
-
-
-impl Matrix {
-    pub fn size(&self) -> u32 {
-        self.height * self.width
-    }
-
-    pub fn empty(height: u32, width: u32) -> Matrix {
-        let mut matrix = Matrix { 
-            height: height,
-            width: width,
-            dev_array: ptr::null_mut(),
-        };
-        unsafe { alloc_matrix(&mut matrix, height, width) };
-        matrix
-    }
-}

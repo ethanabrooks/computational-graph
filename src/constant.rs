@@ -1,11 +1,11 @@
-use matrix::PMatrix;
+use matrix::Matrix;
 use rand::distributions::{IndependentSample, Range};
 use rand;
 
 #[derive(Clone)]
 pub enum Constant {
     Scalar(f32),
-    Matrix(PMatrix)
+    Matrix(Matrix)
 }
 
 impl Constant {
@@ -26,7 +26,7 @@ impl Constant {
     pub fn single_val(dims: Vec<u32>, val: f32) -> Constant {
         match dims.len() {
             0 => Constant::Scalar(val),
-            2 => Constant::Matrix(PMatrix::single_val(dims[0], dims[1], val)),
+            2 => Constant::Matrix(Matrix::single_val(dims[0], dims[1], val)),
             _ => panic!("not supported"),
         }
     }
@@ -49,7 +49,7 @@ impl Constant {
     }
 
     pub fn matrix(height: u32, width: u32, vals: Vec<f32>) -> Constant {
-        Constant::Matrix(PMatrix::new(height as u32, width as u32, vals))
+        Constant::Matrix(Matrix::new(height as u32, width as u32, vals))
     }
 
     // allocates on device
@@ -74,7 +74,7 @@ impl Constant {
     pub fn empty_like(c: &Constant) -> Constant {
         match *c {
             Constant::Scalar(_) => Constant::Scalar(0.),
-            Constant::Matrix(ref m) => Constant::Matrix(PMatrix::empty_like(m))
+            Constant::Matrix(ref m) => Constant::Matrix(Matrix::empty_like(m))
         }
     }
 
@@ -85,7 +85,7 @@ impl Constant {
             (&Constant::Matrix(_), &Constant::Scalar(_)) |
             (&Constant::Scalar(_), &Constant::Matrix(_)) => Constant::empty_like(c1),
             (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => 
-                Constant::Matrix(PMatrix::empty_for_dot(m1, m2, trans1, trans2))
+                Constant::Matrix(Matrix::empty_for_dot(m1, m2, trans1, trans2))
         }
     }
 }

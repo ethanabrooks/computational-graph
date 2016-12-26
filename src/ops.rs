@@ -1,6 +1,6 @@
 use function::{Function, Expr};
 use constant::Constant;
-use matrix::{PMatrix, Matrix};
+use matrix::Matrix;
 use std::collections::HashMap;
 use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign};
 
@@ -52,9 +52,9 @@ macro_rules! fn1 {
                 match self {
                     &Constant::Scalar(x) => Constant::Scalar($scalar_fn(x)),
                     &Constant::Matrix(ref m) => {
-                        let mut result: PMatrix = PMatrix::empty_like(m);
+                        let mut result: Matrix = Matrix::empty_like(m);
                         let matrix_fn = concat_idents!(map_, $op);
-                        unsafe { matrix_fn(m.borrow(), result.borrow_mut()) };
+                        unsafe { matrix_fn(m, &mut result) };
                         Constant::Matrix(result)
                     }
                 }
@@ -108,9 +108,9 @@ macro_rules! trait1 {
                 match self {
                     &Constant::Scalar(x) => Constant::Scalar($scalar_fn(x)),
                     &Constant::Matrix(ref m) => {
-                        let mut result: PMatrix = PMatrix::empty_like(m);
+                        let mut result: Matrix = Matrix::empty_like(m);
                         let matrix_fn = concat_idents!(map_, $op);
-                        unsafe { matrix_fn(m.borrow(), result.borrow_mut()) };
+                        unsafe { matrix_fn(m, &mut result) };
                         Constant::Matrix(result)
                     }
                 }
@@ -154,23 +154,23 @@ macro_rules! trait2 {
                     (&Constant::Scalar(x1), &Constant::Scalar(x2)) => {
                         Constant::Scalar(x1.$op(x2)) }
                     (&Constant::Scalar(x), &Constant::Matrix(ref m)) => {
-                        let mut result: PMatrix = PMatrix::empty_like(m);
+                        let mut result: Matrix = Matrix::empty_like(m);
                         let scalar_matrix_fun = concat_idents!(broadcast_, $op);
-                        unsafe { scalar_matrix_fun(x, m.borrow(), result.borrow_mut()) };
+                        unsafe { scalar_matrix_fun(x, m, &mut result) };
                         Constant::Matrix(result)
                     }
                     (&Constant::Matrix(ref m), &Constant::Scalar(x)) => {
-                        let mut result = PMatrix::empty_like(m);
+                        let mut result = Matrix::empty_like(m);
                         let matrix_scalar_fun = concat_idents!(broadcast_, $op, _rev);
-                        unsafe { matrix_scalar_fun(m.borrow(), x, result.borrow_mut()) };
+                        unsafe { matrix_scalar_fun(m, x, &mut result) };
                         Constant::Matrix(result)
                     }
                     (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-                        let mut result = PMatrix::empty_like(m1);
+                        let mut result = Matrix::empty_like(m1);
                         let matrix_fun = concat_idents!(elemwise_, $op);
-                        unsafe { matrix_fun(m1.borrow(), 
-                                            m2.borrow(), 
-                                            result.borrow_mut()) };
+                        unsafe { matrix_fun(m1, 
+                                            m2, 
+                                            &mut result) };
                         Constant::Matrix(result)
                     }
                 }
@@ -198,7 +198,7 @@ macro_rules! compare {
             pub fn $cmp(&self, val: f32) -> bool {
                 match *self {
                     Constant::Scalar(x) => x.$scalar_cmp(&val),
-                    Constant::Matrix(ref m) => unsafe { $cmp(m.borrow(), val) },
+                    Constant::Matrix(ref m) => unsafe { $cmp(m, val) },
                 }
             }
         }
@@ -238,7 +238,7 @@ impl Constant {
         match self {
             &Constant::Scalar(x) => x,
             &Constant::Matrix(ref m) => {
-                (unsafe { reduce_sum(m.borrow()) }) / m.size() as f32
+                (unsafe { reduce_sum(m) }) / m.size() as f32
             }
         }
     }
@@ -247,8 +247,7 @@ impl Constant {
                  matrix_fun: unsafe extern "C" fn(*const Matrix, *mut Matrix)) {
         match self {
             &mut Constant::Scalar(x) => *self = Constant::Scalar(scalar_fun(x)),
-            &mut Constant::Matrix(ref mut m) => unsafe { matrix_fun(m.borrow(), 
-                                                                    m.borrow_mut()) },
+            &mut Constant::Matrix(ref mut m) => unsafe { matrix_fun(m, m) },
         }
     }
 
@@ -259,9 +258,9 @@ impl Constant {
         match (self, other) {
             (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) => scalar_fun(x1, x2),
             (&mut Constant::Matrix(ref mut m), &Constant::Scalar(x)) =>
-                unsafe { matrix_scalar_fun(m.borrow(), x, m.borrow_mut()) },
+                unsafe { matrix_scalar_fun(m, x, m) },
             (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) =>
-                unsafe { matrix_fun(m1.borrow(), m2.borrow(), m1.borrow_mut()) },
+                unsafe { matrix_fun(m1, m2, m1) },
             (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) =>
                 scalar_fun(x, other.avg())
         }
@@ -271,15 +270,15 @@ impl Constant {
         match (self, c1, c2) {
             (&mut Constant::Matrix(ref mut m), 
              &Constant::Scalar(x), &Constant::Matrix(ref m2)) => {
-                unsafe { broadcast_mul(x, m2.borrow(), m.borrow_mut()) };
+                unsafe { broadcast_mul(x, m2, m) };
             }
             (&mut Constant::Matrix(ref mut m),
             &Constant::Matrix(ref m1), &Constant::Scalar(x)) => {
-                unsafe { broadcast_mul_rev(m1.borrow(), x, m.borrow_mut()) };
+                unsafe { broadcast_mul_rev(m1, x, m) };
             }
             (&mut Constant::Matrix(ref mut m),
             &Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-                unsafe { gemm(m1.borrow(), trans1, m2.borrow(), trans2, m.borrow_mut()) };
+                unsafe { gemm(m1, trans1, m2, trans2, m) };
             }
             _ => panic!("Bad argument types for assign_dot")
         }
@@ -287,13 +286,13 @@ impl Constant {
 
     // allocates on device
     pub fn dot(c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) -> Constant {
-        let mut result: PMatrix;
+        let mut result: Matrix;
         match (c1, c2) {
             (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-                result = PMatrix::empty_for_dot(m1, m2, trans1, trans2);
-                unsafe { gemm(m1.borrow(), trans1, 
-                              m2.borrow(), trans2, 
-                              result.borrow_mut()) }
+                result = Matrix::empty_for_dot(m1, m2, trans1, trans2);
+                unsafe { gemm(m1, trans1, 
+                              m2, trans2, 
+                              &mut result) }
             }
             _ => panic!("dot should not be used with scalars"),
         };
