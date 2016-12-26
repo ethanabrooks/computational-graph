@@ -13,7 +13,6 @@ mod optimize;
 mod print; 
 mod lstm; 
 
-
 #[allow(unused_imports)]
 use ops::{init, sq, dot, abs, sigmoid, tanh};
 #[allow(unused_imports)]
