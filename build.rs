@@ -21,26 +21,38 @@ fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
 }
 
 fn main() {
-    let c_ext = match Command::new("nvcc").status() {
-        Ok(_) => "cu",
-        Err(_) => "cpp",
+    let ext;
+    let compiler;
+    let flags;
+    let dir;
+    if Command::new("nvcc").status().is_ok() {
+        ext = "cu";
+        compiler = "nvcc";
+        flags = "-lcublas";
+        dir = "src/gpu";
+        println!("cargo:rustc-link-lib=dylib=cublas");
+        println!("cargo:rustc-link-lib=dylib=cudart");
+    } else {
+        ext = "cpp";
+        compiler = "cc";
+        flags = "";
+        dir = "src/cpu";
     };
     let c_names = vec!["matrix", "ops", "util"];
-    let dir = "src/c";
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
 
     for i in 0..c_names.len() {
-        let src_name = format!("{}/{}.{}", dir, c_names[i], c_ext);
+        let src_name = format!("{}/{}.{}", dir, c_names[i], ext);
         let out_name = get_out_name(c_names[i]);
 
         if more_recent_than(&vec![src_name.clone()], &out_name).unwrap() {
-            assert!(Command::new("nvcc")
+            assert!(Command::new(compiler)
                 .arg(&src_name)
-                .args(&["-c", "-Xcompiler", "-fPIC", "-lcublas", "-o"]) 
+                .args(&["-c", "-Xcompiler", "-fPIC", flags, "-o"]) 
                 .arg(&out_name)
-                .status().unwrap().success(), "nvcc {} failed", src_name);
+                .status().unwrap().success(), "{} {} failed", compiler, src_name);
         }
     }
 
@@ -68,6 +80,4 @@ fn main() {
         }
     }
     println!("cargo:rustc-link-lib=static=matrix");
-    println!("cargo:rustc-link-lib=dylib=cublas");
-    println!("cargo:rustc-link-lib=dylib=cudart");
 }
