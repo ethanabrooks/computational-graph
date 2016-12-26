@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <strings.h>
 #include <algorithm>
 #include "matrix.h"
 #include "util.h"
@@ -136,4 +137,4 @@ extern "C" {
     return sum;
   }
 }
-
+}

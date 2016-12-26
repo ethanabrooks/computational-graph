@@ -1,3 +1,6 @@
+#ifndef OP_H
+#define OP_H
+
 #include "matrix.h" 
 
 extern "C" {
@@ -29,3 +32,4 @@ extern "C" {
   float reduce_sum(const Matrix *m);
 }
 
+#endif

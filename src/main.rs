@@ -33,17 +33,9 @@ extern {
     fn init_cublas();
 }
 
-lazy_static! {
-    static ref GPU: bool = {
-        if Command::new("nvcc").status().is_ok() {
-            unsafe { init_cublas() };
-            true
-        } else {
-            false
-        }
-    };
+fn init() {
+    unsafe { init_cublas() };
 }
-
 
 // TODO: design wrapper for matrix ops that checks for this.
 fn main() {
@@ -66,6 +58,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use super::GPU;
     use super::*;
     use test::Bencher;
 
@@ -132,7 +125,6 @@ mod tests {
 
     #[test]
     fn dot_test() {
-        init();
         let x = Function::param("m", Constant::single_val(vec![2, 2], START));
         let c = Function::single_val_matrix(2, 2, 3.); 
         let f1 = dot(&c, &x);
@@ -154,7 +146,6 @@ mod tests {
 
     #[allow(dead_code)]
     fn run_lstm(b: &mut Bencher) {
-        init();
         let dim = 10;
         let dims = vec![dim, dim];
         let inputs = vec![

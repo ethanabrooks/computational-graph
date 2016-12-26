@@ -17,7 +17,7 @@ extern "C" {
   void alloc_matrix(Matrix *matrix, int height, int width) { 
     matrix->width = width;
     matrix->height = height;
-    matrix->array = safe_malloc<float>(size(matrix));
+    matrix->array = float_malloc(size(matrix));
   }
 
   void init_matrix(Matrix *matrix, const float *array, int height, int width) {
@@ -53,4 +53,5 @@ extern "C" {
       printf("\n");
     }
   }
+}
 }

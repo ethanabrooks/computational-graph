@@ -1,5 +1,4 @@
 use std::ptr;
-use GPU;
 
 extern {
     fn alloc_matrix(m: *mut Matrix, width: u32, height: u32);
@@ -27,13 +26,9 @@ impl Matrix {
     }
 
     pub fn array_ptr(&self) -> *const f32 {
-        if *GPU {
-            let ptr = Vec::with_capacity(self.size() as usize).as_mut_ptr();
-            unsafe { download_matrix(self, ptr); }
-            ptr
-        } else {
-            self.dev_array
-        }
+        let ptr = Vec::with_capacity(self.size() as usize).as_mut_ptr();
+        unsafe { download_matrix(self, ptr); }
+        ptr
     }
 
     pub fn empty_like(m: &Matrix) -> Matrix { Matrix::empty(m.height(), m.width()) }
@@ -41,11 +36,7 @@ impl Matrix {
     pub fn new(height: u32, width: u32, mut values: Vec<f32>) -> Matrix {
         assert!(values.len() as u32 == height * width, "wrong number of values");
         let mut matrix: Matrix = Matrix::empty(height, width);
-        if *GPU {
-            unsafe { upload_matrix(values.as_ptr(), &mut matrix) };
-        } else {
-            matrix.dev_array = values.as_mut_ptr();
-        }
+        unsafe { upload_matrix(values.as_ptr(), &mut matrix) };
         matrix
     }
 
