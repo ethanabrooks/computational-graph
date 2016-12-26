@@ -1,5 +1,4 @@
 #![feature(advanced_slice_patterns, slice_patterns, concat_idents, test, drop_types_in_const)]
-#![cfg_attr(test, plugin(stainless))]
 
 #[macro_use]
 extern crate lazy_static;
@@ -131,7 +130,10 @@ mod tests {
     #[bench]
     fn simple_opt(b: &mut Bencher) {
         let f = Function::random_param("x", vec![10, 10], -0.1, 0.1);
-        f.minimize(&HashMap::new(), 0.01, 1000, 1000);
+        b.iter(|| {
+            f.minimize(&HashMap::new(), 0.01, 1000, 10000);
+            println!("iterating...");
+        });
     }
 
     #[ignore]
