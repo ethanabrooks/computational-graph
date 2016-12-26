@@ -1,7 +1,7 @@
 use std::process::Command;
-use std::env;
+use std::{env, fs, str};
 use std::path::Path;
-use std::fs;
+
 
 fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
     match fs::metadata(dst) {
@@ -21,6 +21,10 @@ fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
 }
 
 fn main() {
+    let c_ext = match Command::new("nvcc").status() {
+        Ok(_) => "cu",
+        Err(_) => "cpp",
+    };
     let c_names = vec!["matrix", "ops", "util"];
     let dir = "src/c";
 
@@ -28,9 +32,9 @@ fn main() {
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
 
     for i in 0..c_names.len() {
-        let src_name = format!("{}/{}.cu", dir, c_names[i]);
+        let src_name = format!("{}/{}.{}", dir, c_names[i], c_ext);
         let out_name = get_out_name(c_names[i]);
-         
+
         if more_recent_than(&vec![src_name.clone()], &out_name).unwrap() {
             assert!(Command::new("nvcc")
                 .arg(&src_name)
@@ -58,7 +62,11 @@ fn main() {
     }
 
     println!("cargo:rustc-link-search=native={}", out_dir);
-    println!("cargo:rustc-link-search=native={}", "/usr/local/cuda-7.5/lib64");
+    if let Some(paths) = env::var_os("LD_LIBRARY_PATH") {
+        for path in env::split_paths(&paths) {
+            println!("cargo:rustc-link-search=native={}", path.display());
+        }
+    }
     println!("cargo:rustc-link-lib=static=matrix");
     println!("cargo:rustc-link-lib=dylib=cublas");
     println!("cargo:rustc-link-lib=dylib=cudart");
