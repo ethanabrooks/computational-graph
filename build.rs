@@ -22,19 +22,22 @@ fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
 fn main() {
     let ext;
     let compiler;
-    let flags;
+    let cublas_flag;
+    let xcompiler_flag;
     let dir;
     if Command::new("nvcc").status().is_ok() {
         ext = "cu";
         compiler = "nvcc";
-        flags = "-lcublas";
+        cublas_flag = "-lcublas";
+        xcompiler_flag = "-Xcompiler";
         dir = "src/gpu";
         println!("cargo:rustc-link-lib=dylib=cublas");
         println!("cargo:rustc-link-lib=dylib=cudart");
     } else {
         ext = "cpp";
         compiler = "cc";
-        flags = "";
+        cublas_flag = "";
+        xcompiler_flag = "";
         dir = "src/cpu";
     };
     let c_names = vec!["matrix", "ops", "util"];
@@ -49,7 +52,7 @@ fn main() {
         if more_recent_than(&vec![src_name.clone()], &out_name).expect("WTF 2") {
             assert!(Command::new(compiler)
                 .arg(&src_name)
-                .args(&["-c", "-Xcompiler", "-fPIC", flags, "-o"]) 
+                .args(&["-c", xcompiler_flag, "-fPIC", cublas_flag, "-o"]) 
                 .arg(&out_name)
                 .status().expect("WTF 3").success(), "{} {} failed", compiler, src_name);
         }
