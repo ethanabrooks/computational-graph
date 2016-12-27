@@ -54,7 +54,7 @@ fn main() {
 
     Command::new("g++").args(&["src/matrix.cpp", "-c", "-fPIC", "-o"])
                        .arg(&format!("{}/matrix.o", out_dir))
-                       .status().unwrap();
+                       .status().expect("matrix.cpp test failed.");
     Command::new("ar").args(&["crus", "libhello.a", "matrix.o"])
                       .current_dir(&Path::new(&out_dir))
                       .status().unwrap();
