@@ -52,8 +52,12 @@ fn main() {
         let src_name = Path::new(&src_str).to_str().unwrap();
         let out_name = get_out_name(c_names[i]);
 
+        let output = Command::new("find")
+                        .arg(".")
+                        .arg("-name")
+                        .arg("matrix.cpp").output().expect("WTF 2.5");
+        println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
         if more_recent_than(&vec![String::from(src_name)], &out_name).expect("WTF 2") {
-            println!("{}", src_name);
             assert!(Command::new(compiler)
                 .arg(&src_name)
                 .args(&["-c", xcompiler_flag, "-fPIC", cublas_flag, "-o"]) 
