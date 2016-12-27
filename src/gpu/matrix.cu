@@ -11,11 +11,10 @@
 cublasHandle_t handle;
 
 extern "C" {
-
-  void init_cublas() {
+  void maybe_init_cublas() {
     cublasStatus_t stat = cublasCreate(&handle);
     check(stat != CUBLAS_STATUS_SUCCESS, "CUBLAS initialization failed"); 
-  }
+  };
 
   int size(const Matrix *m) { return m->width * m->height; }
 

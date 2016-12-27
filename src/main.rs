@@ -121,6 +121,7 @@ mod tests {
 
     #[test]
     fn dot_test() {
+        init();
         let x = Function::param("m", Constant::single_val(vec![2, 2], START));
         let c = Function::single_val_matrix(2, 2, 3.); 
         let f1 = dot(&c, &x);
@@ -133,6 +134,7 @@ mod tests {
 
     #[bench]
     fn simple_op(b: &mut Bencher) {
+        init();
         let f = Function::random_param("x", vec![10, 10], -0.1, 0.1);
         b.iter(|| {
             f.minimize(&HashMap::new(), 0.01, 1000, 10000);
@@ -142,6 +144,7 @@ mod tests {
 
     #[allow(dead_code)]
     fn run_lstm(b: &mut Bencher) {
+        init();
         let dim = 10;
         let dims = vec![dim, dim];
         let inputs = vec![
