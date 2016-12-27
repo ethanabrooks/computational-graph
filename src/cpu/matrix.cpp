@@ -13,11 +13,19 @@ extern "C" {
 
   int size(const Matrix *m) { return m->width * m->height; }
 
+  void download_matrix(const Matrix *src, float *dst) {
+      dst = src->array;
+  }
+
+  void upload_matrix(const float *src, Matrix *dst) {
+      memcpy(dst->array, src, size(dst) * sizeof(*src));
+  }
+
   // allocates on device
   void alloc_matrix(Matrix *matrix, int height, int width) { 
     matrix->width = width;
     matrix->height = height;
-    matrix->array = float_malloc(size(matrix));
+    matrix->array = safe_malloc<float>(size(matrix));
   }
 
   void init_matrix(Matrix *matrix, const float *array, int height, int width) {
@@ -53,5 +61,8 @@ extern "C" {
       printf("\n");
     }
   }
-}
+
+  void free_matrix(Matrix *matrix) {
+      free(matrix->array);
+  }
 }

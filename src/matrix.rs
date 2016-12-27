@@ -33,7 +33,7 @@ impl Matrix {
 
     pub fn empty_like(m: &Matrix) -> Matrix { Matrix::empty(m.height(), m.width()) }
 
-    pub fn new(height: u32, width: u32, mut values: Vec<f32>) -> Matrix {
+    pub fn new(height: u32, width: u32, values: Vec<f32>) -> Matrix {
         assert!(values.len() as u32 == height * width, "wrong number of values");
         let mut matrix: Matrix = Matrix::empty(height, width);
         unsafe { upload_matrix(values.as_ptr(), &mut matrix) };

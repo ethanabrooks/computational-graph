@@ -41,8 +41,7 @@ int main (void) {
 
   array = (float *)malloc (M * N * sizeof (float)); 
   check(!array, "host memory allocation failed"); 
-  init_matrix(&m2, weights_vals, 3, 2);
-  print_matrix(&m2);
+  //init_matrix(&m2, weights_vals, 3, 2);
+  //print_matrix(&m2);
   return EXIT_SUCCESS;
-}
 }

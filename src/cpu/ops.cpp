@@ -118,10 +118,20 @@ extern "C" {
 
   }
 
-  bool reduce_equal(const Matrix *m, float x) {
+  bool all_equal(const Matrix *m, float x) {
     int i;
     rng(i, 0, size(m)) {
       if (m->array[i] != x) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool all_less_than(const Matrix *m, float x) {
+    int i;
+    rng(i, 0, size(m)) {
+      if (m->array[i] >= x) {
         return false;
       }
     }
@@ -136,5 +146,4 @@ extern "C" {
     }
     return sum;
   }
-}
 }

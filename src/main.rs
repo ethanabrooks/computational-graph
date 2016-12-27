@@ -13,7 +13,6 @@ mod optimize;
 mod print; 
 mod lstm; 
 
-use std::process::Command;
 #[allow(unused_imports)]
 use ops::{sq, dot, abs, sigmoid, tanh};
 #[allow(unused_imports)]
@@ -25,16 +24,14 @@ use lstm::lstm;
 #[allow(unused_imports)]
 use std::collections::HashMap;
 #[allow(unused_imports)]
-use std::ops::Deref;
-#[allow(unused_imports)]
 use matrix::Matrix;
 
 extern {
-    fn init_cublas();
+    fn maybe_init_cublas();
 }
 
 fn init() {
-    unsafe { init_cublas() };
+    unsafe { maybe_init_cublas() };
 }
 
 // TODO: design wrapper for matrix ops that checks for this.
@@ -58,7 +55,6 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::GPU;
     use super::*;
     use test::Bencher;
 

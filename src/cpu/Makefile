@@ -1,6 +1,6 @@
 SRCS:=main.cpp matrix.cpp ops.cpp util.cpp
 main: $(SRCS)  matrix.h ops.h util.h
-	c++ $(SRCS) -o main -std=c++11
+	cc $(SRCS) -o main -std=c++11
 	./main
 
 clean:
