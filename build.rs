@@ -112,7 +112,7 @@ fn main() {
             //.status().expect("WTF 6").success(), "ar failed");
     //}
 
-    //println!("cargo:rustc-link-search=native={}", out_dir);
+    println!("cargo:rustc-link-search=native={}", out_dir);
     //if let Some(paths) = env::var_os("LD_LIBRARY_PATH") {
         //for path in env::split_paths(&paths) {
             //println!("cargo:rustc-link-search=native={}", path.display());
