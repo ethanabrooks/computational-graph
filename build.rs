@@ -45,7 +45,7 @@ fn main() {
     let out_dir = env::var("OUT_DIR").expect("WTF 1");
 
     /////////////////
-    Command::new("gcc").args(&["src/hello.c", "-c", "-fPIC", "-o"])
+    Command::new("gcc").args(&["src/cpu/hello.c", "-c", "-fPIC", "-o"])
                        .arg(&format!("{}/hello.o", out_dir))
                        .status().unwrap();
     Command::new("ar").args(&["crus", "libhello.a", "hello.o"])
