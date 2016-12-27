@@ -18,7 +18,7 @@ extern "C" {
   void download_matrix(const Matrix *src, float *dst);
   void upload_matrix(const float *src, Matrix *dst);
   void free_matrix(Matrix *matrix);
-  void maybe_init_cublas() {};
+  void maybe_init_cublas() {}
 }
 
 #endif
