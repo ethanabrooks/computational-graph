@@ -46,10 +46,11 @@ fn main() {
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
 
     for i in 0..c_names.len() {
-        let src_name = Path::new(format!("{}/{}.{}", dir, c_names[i], ext)).to_str().unwrap();
+        let src_str = format!("{}/{}.{}", dir, c_names[i], ext);
+        let src_name = Path::new(&src_str).to_str().unwrap();
         let out_name = get_out_name(c_names[i]);
 
-        if more_recent_than(&vec![src_name.clone()], &out_name).expect("WTF 2") {
+        if more_recent_than(&vec![String::from(src_name)], &out_name).expect("WTF 2") {
             assert!(Command::new(compiler)
                 .arg(&src_name)
                 .args(&["-c", xcompiler_flag, "-fPIC", cublas_flag, "-o"]) 
