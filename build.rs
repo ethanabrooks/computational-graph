@@ -20,7 +20,7 @@ fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
 }
 
 fn main() {
-    panic!("{:?}", Command::new("ls").output().unwrap());
+    panic!("{:?}", Command::new("ls").arg("src/cpu/").output().unwrap());
     let ext;
     let compiler;
     let cublas_flag;
