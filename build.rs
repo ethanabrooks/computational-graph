@@ -43,6 +43,16 @@ fn main() {
     let c_names = vec!["matrix", "ops", "util"];
 
     let out_dir = env::var("OUT_DIR").expect("WTF 1");
+
+    /////////////////
+    Command::new("gcc").args(&["src/hello.c", "-c", "-fPIC", "-o"])
+                       .arg(&format!("{}/hello.o", out_dir))
+                       .status().unwrap();
+    Command::new("ar").args(&["crus", "libhello.a", "hello.o"])
+                      .current_dir(&Path::new(&out_dir))
+                      .status().unwrap();
+    //////////////
+
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
 
 
