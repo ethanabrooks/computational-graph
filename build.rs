@@ -20,7 +20,6 @@ fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
 }
 
 fn main() {
-    panic!("{:?}", Command::new("ls").arg("src/cpu/").output().unwrap());
     let ext;
     let compiler;
     let cublas_flag;
@@ -39,7 +38,7 @@ fn main() {
         compiler = "cc";
         cublas_flag = "";
         xcompiler_flag = "";
-        dir = "src/cpu";
+        dir = Path::new("src/cpu").to_str().unwrap();
     };
     let c_names = vec!["matrix", "ops", "util"];
 
@@ -47,7 +46,7 @@ fn main() {
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
 
     for i in 0..c_names.len() {
-        let src_name = format!("{}/{}.{}", dir, c_names[i], ext);
+        let src_name = Path::new(format!("{}/{}.{}", dir, c_names[i], ext)).to_str().unwrap();
         let out_name = get_out_name(c_names[i]);
 
         if more_recent_than(&vec![src_name.clone()], &out_name).expect("WTF 2") {
