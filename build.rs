@@ -53,6 +53,7 @@ fn main() {
         let out_name = get_out_name(c_names[i]);
 
         if more_recent_than(&vec![String::from(src_name)], &out_name).expect("WTF 2") {
+            println!("{}", src_name);
             assert!(Command::new(compiler)
                 .arg(&src_name)
                 .args(&["-c", xcompiler_flag, "-fPIC", cublas_flag, "-o"]) 
