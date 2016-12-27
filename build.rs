@@ -51,14 +51,14 @@ fn main() {
         let src_name = Path::new(&src_str).to_str().unwrap();
         let out_name = get_out_name(c_names[i]);
 
-        let output = Command::new("find")
-                        .arg(".")
-                        .arg("-name")
-                        .arg("matrix.cpp").output().expect("WTF 2.5");
-        println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
         if more_recent_than(&vec![String::from(src_name)], &out_name).expect("WTF 2") {
+            let output = Command::new("find")
+                            .arg(".")
+                            .arg("-name")
+                            .arg(format!("{}.{}", c_names[i], ext)).output().expect("WTF 2.5");
+            println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
             assert!(Command::new(compiler)
-                .arg(&src_name)
+                .arg(str::from_utf8(&output.stdout).unwrap())
                 .args(&["-c", xcompiler_flag, "-fPIC", cublas_flag, "-o"]) 
                 .arg(&out_name)
                 .status().expect("WTF 3").success(), "{} {} failed", compiler, src_name);
