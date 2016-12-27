@@ -38,14 +38,14 @@ fn main() {
         compiler = "cc";
         cublas_flag = "";
         xcompiler_flag = "";
-        dir = Path::new("src/cpu").to_str().unwrap();
+        dir = Path::new("src").to_str().unwrap();
     };
     let c_names = vec!["matrix", "ops", "util"];
 
     let out_dir = env::var("OUT_DIR").expect("WTF 1");
 
     /////////////////
-    Command::new("gcc").args(&["src/cpu/hello.c", "-c", "-fPIC", "-o"])
+    Command::new("gcc").args(&["src/hello.c", "-c", "-fPIC", "-o"])
                        .arg(&format!("{}/hello.o", out_dir))
                        .status().unwrap();
     Command::new("ar").args(&["crus", "libhello.a", "hello.o"])
