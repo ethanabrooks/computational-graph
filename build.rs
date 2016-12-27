@@ -35,7 +35,7 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=cudart");
     } else {
         ext = "cpp";
-        compiler = "cc";
+        compiler = "gcc";
         cublas_flag = "";
         xcompiler_flag = "";
         dir = Path::new("src").to_str().unwrap();
@@ -49,6 +49,13 @@ fn main() {
                        .arg(&format!("{}/hello.o", out_dir))
                        .status().unwrap();
     Command::new("ar").args(&["crus", "libhello.a", "hello.o"])
+                      .current_dir(&Path::new(&out_dir))
+                      .status().unwrap();
+
+    Command::new("g++").args(&["src/matrix.cpp", "-c", "-fPIC", "-o"])
+                       .arg(&format!("{}/matrix.o", out_dir))
+                       .status().unwrap();
+    Command::new("ar").args(&["crus", "libhello.a", "matrix.o"])
                       .current_dir(&Path::new(&out_dir))
                       .status().unwrap();
     //////////////
