@@ -48,27 +48,27 @@ fn main() {
     Command::new("gcc").args(&["src/hello.c", "-c", "-fPIC", "-o"])
                        .arg(&format!("{}/hello.o", out_dir))
                        .status().unwrap();
-    Command::new("ar").args(&["crus", "libhello.a", "hello.o"])
+    Command::new("ar").args(&["crus", "libmatrix.a", "hello.o"])
                       .current_dir(&Path::new(&out_dir))
                       .status().unwrap();
 
     Command::new("g++").args(&["src/matrix.cpp", "-c", "-fPIC", "-o"])
                        .arg(&format!("{}/matrix.o", out_dir))
                        .status().expect("matrix.cpp test failed.");
-    Command::new("ar").args(&["crus", "libhello.a", "matrix.o"])
+    Command::new("ar").args(&["crus", "libmatrix.a", "matrix.o"])
                       .current_dir(&Path::new(&out_dir))
                       .status().unwrap();
 
     Command::new("g++").args(&["src/ops.cpp", "-c", "-fPIC", "-o"])
                        .arg(&format!("{}/matrix.o", out_dir))
                        .status().expect("ops.cpp test failed.");
-    Command::new("ar").args(&["crus", "libhello.a", "matrix.o"])
+    Command::new("ar").args(&["crus", "libmatrix.a", "matrix.o"])
                       .current_dir(&Path::new(&out_dir))
                       .status().unwrap();
     Command::new("g++").args(&["src/util.cpp", "-c", "-fPIC", "-o"])
                        .arg(&format!("{}/matrix.o", out_dir))
                        .status().expect("util.cpp test failed.");
-    Command::new("ar").args(&["crus", "libhello.a", "matrix.o"])
+    Command::new("ar").args(&["crus", "libmatrix.a", "matrix.o"])
                       .current_dir(&Path::new(&out_dir))
                       .status().unwrap();
     //////////////
@@ -112,11 +112,11 @@ fn main() {
             //.status().expect("WTF 6").success(), "ar failed");
     //}
 
-    println!("cargo:rustc-link-search=native={}", out_dir);
-    if let Some(paths) = env::var_os("LD_LIBRARY_PATH") {
-        for path in env::split_paths(&paths) {
-            println!("cargo:rustc-link-search=native={}", path.display());
-        }
-    }
+    //println!("cargo:rustc-link-search=native={}", out_dir);
+    //if let Some(paths) = env::var_os("LD_LIBRARY_PATH") {
+        //for path in env::split_paths(&paths) {
+            //println!("cargo:rustc-link-search=native={}", path.display());
+        //}
+    //}
     println!("cargo:rustc-link-lib=static=matrix");
 }
