@@ -46,12 +46,12 @@ fn main() {
         let src_name = format!("{}/{}.{}", dir, c_names[i], ext);
         let out_name = get_out_name(c_names[i]);
 
-        if more_recent_than(&vec![src_name.clone()], &out_name).unwrap() {
+        if more_recent_than(&vec![src_name.clone()], &out_name).expect("WTF 2") {
             assert!(Command::new(compiler)
                 .arg(&src_name)
                 .args(&["-c", "-Xcompiler", "-fPIC", flags, "-o"]) 
                 .arg(&out_name)
-                .status().unwrap().success(), "{} {} failed", compiler, src_name);
+                .status().expect("WTF 3").success(), "{} {} failed", compiler, src_name);
         }
     }
 
