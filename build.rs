@@ -45,6 +45,7 @@ fn main() {
     let out_dir = env::var("OUT_DIR").expect("WTF 1");
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
 
+
     for i in 0..c_names.len() {
         let current_dir = env::current_dir().unwrap();
         let src_str = format!("{}/{}/{}.{}", current_dir.display(), dir, c_names[i], ext);
