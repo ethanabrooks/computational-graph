@@ -27,9 +27,7 @@ impl Matrix {
 
     pub fn array_ptr(&self) -> *const f32 {
         let ptr = Vec::with_capacity(self.size() as usize).as_mut_ptr();
-        unsafe { 
-            download_matrix(self, ptr);
-        }
+        unsafe { download_matrix(self, ptr); }
         ptr
     }
 

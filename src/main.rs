@@ -14,7 +14,7 @@ mod print;
 mod lstm; 
 
 #[allow(unused_imports)]
-use ops::{init, sq, dot, abs, sigmoid, tanh};
+use ops::{sq, dot, abs, sigmoid, tanh};
 #[allow(unused_imports)]
 use function::Function;
 #[allow(unused_imports)]
@@ -24,13 +24,18 @@ use lstm::lstm;
 #[allow(unused_imports)]
 use std::collections::HashMap;
 #[allow(unused_imports)]
-use std::ops::Deref;
-#[allow(unused_imports)]
 use matrix::Matrix;
+
+extern {
+    fn maybe_init_cublas();
+}
+
+fn init() {
+    unsafe { maybe_init_cublas() };
+}
 
 // TODO: design wrapper for matrix ops that checks for this.
 fn main() {
-    init();
     let dim = 10;
     let dims = vec![dim, dim];
     //let inputs = vec![
@@ -130,6 +135,7 @@ mod tests {
 
     #[bench]
     fn simple_op(b: &mut Bencher) {
+        init();
         let f = Function::random_param("x", vec![10, 10], -0.1, 0.1);
         b.iter(|| {
             f.minimize(&HashMap::new(), 0.01, 1000, 10000);

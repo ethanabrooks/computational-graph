@@ -6,7 +6,6 @@ use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign, AddAssign};
 
 // TODO: wrappers
 extern {
-    fn init_cublas();
     fn map_neg(m: *const Matrix, result: *mut Matrix);
     fn map_sq(m: *const Matrix, result: *mut Matrix);
     fn map_abs(m: *const Matrix, result: *mut Matrix);
@@ -28,10 +27,6 @@ extern {
     fn all_equal(matrix: *const Matrix, x: f32) -> bool;
     fn all_less_than(matrix: *const Matrix, x: f32) -> bool;
     fn reduce_sum(matrix: *const Matrix) -> f32;
-}
-
-pub fn init() {
-    unsafe { init_cublas() };
 }
 
 macro_rules! fn1 {
