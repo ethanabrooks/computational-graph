@@ -47,8 +47,7 @@ fn main() {
 
 
     for i in 0..c_names.len() {
-        let current_dir = env::current_dir().unwrap();
-        let src_str = format!("{}/{}/{}.{}", current_dir.display(), dir, c_names[i], ext);
+        let src_str = format!("./{}/{}.{}", dir, c_names[i], ext);
         let src_name = Path::new(&src_str).to_str().unwrap();
         let out_name = get_out_name(c_names[i]);
 
