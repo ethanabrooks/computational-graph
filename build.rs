@@ -28,37 +28,37 @@ fn main() {
     let c_names = vec!["matrix", "ops", "util"];
     let dir = "src/c";
 
-    let out_dir = env::var("OUT_DIR").unwrap();
+    let out_dir = env::var("OUT_DIR").expect("WTF 1");
     let get_out_name = |name| format!("{}/{}.o", out_dir, name);
 
     for i in 0..c_names.len() {
         let src_name = format!("{}/{}.{}", dir, c_names[i], c_ext);
         let out_name = get_out_name(c_names[i]);
 
-        if more_recent_than(&vec![src_name.clone()], &out_name).unwrap() {
+        if more_recent_than(&vec![src_name.clone()], &out_name).expect("WTF 2") {
             assert!(Command::new("nvcc")
                 .arg(&src_name)
                 .args(&["-c", "-Xcompiler", "-fPIC", "-lcublas", "-o"]) 
                 .arg(&out_name)
-                .status().unwrap().success(), "nvcc {} failed", src_name);
+                .status().expect("WTF 3").success(), "nvcc {} failed", src_name);
         }
     }
 
     let out_files: Vec<String> = c_names.into_iter().map(get_out_name).collect();
 
-    if more_recent_than(&out_files, "libmatrix.a").unwrap() {
+    if more_recent_than(&out_files, "libmatrix.a").expect("WTF 4") {
 
         assert!(Command::new("rm")
             .args(&["-f", "libmatrix.a"]) 
             .current_dir(&Path::new(&out_dir)) 
-            .status().unwrap().success(), "rm failed");
+            .status().expect("WTF 5").success(), "rm failed");
 
 
         assert!(Command::new("ar")
             .args(&["crus", "libmatrix.a"])
             .args(&out_files)
             .current_dir(&Path::new(&out_dir)) 
-            .status().unwrap().success(), "ar failed");
+            .status().expect("WTF 6").success(), "ar failed");
     }
 
     println!("cargo:rustc-link-search=native={}", out_dir);
