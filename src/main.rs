@@ -26,14 +26,6 @@ use std::collections::HashMap;
 #[allow(unused_imports)]
 use matrix::Matrix;
 
-extern {
-    fn maybe_init_cublas();
-}
-
-fn init() {
-    unsafe { maybe_init_cublas() };
-}
-
 // TODO: design wrapper for matrix ops that checks for this.
 fn main() {
     let dim = 10;
@@ -65,7 +57,6 @@ mod tests {
         ($test_name:ident, $f:expr, $learn_rate:expr, $goal:expr) => {
             #[test]
             fn $test_name () {
-                init();
                 let x = Function::param("x", Constant::Scalar(START));
                 let m = Function::param("m", Constant::single_val(vec![2, 2], START));
                 for f in &[$f(x), $f(m)] {
@@ -77,7 +68,6 @@ mod tests {
         ($test_name:ident, $f:expr, $const_val:expr, $learn_rate:expr, $goal:expr) => {
             #[test]
             fn $test_name () {
-                init();
                 let cx = Function::scalar($const_val);
                 let cm = Function::single_val_matrix(2, 2, $const_val);
                 let px = Function::param("x", Constant::Scalar(START));
@@ -122,7 +112,6 @@ mod tests {
 
     #[test]
     fn dot_test() {
-        init();
         let x = Function::param("m", Constant::single_val(vec![2, 2], START));
         let c = Function::single_val_matrix(2, 2, 3.); 
         let f1 = dot(&c, &x);
@@ -135,7 +124,6 @@ mod tests {
 
     #[bench]
     fn simple_op(b: &mut Bencher) {
-        init();
         let f = Function::random_param("x", vec![10, 10], -0.1, 0.1);
         b.iter(|| {
             f.minimize(&HashMap::new(), 0.01, 1000, 10000);
@@ -145,7 +133,6 @@ mod tests {
 
     #[allow(dead_code)]
     fn run_lstm(b: &mut Bencher) {
-        init();
         let dim = 10;
         let dims = vec![dim, dim];
         let inputs = vec![

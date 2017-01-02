@@ -8,7 +8,7 @@
 
 #define MAT_IDX(i, j, width) ((i) * (width) + (j))
 
-cublasHandle_t handle;
+cublasHandle_t handle = NULL;
 
 extern "C" {
   void maybe_init_cublas() {
@@ -40,6 +40,10 @@ extern "C" {
 
   // allocates on device
   void alloc_matrix(Matrix *matrix, int height, int width) { 
+    if (!handle) {
+      cublasStatus_t stat = cublasCreate(&handle);
+      check(stat != CUBLAS_STATUS_SUCCESS, "CUBLAS initialization failed"); 
+    }
     matrix->width = width;
     matrix->height = height;
 
