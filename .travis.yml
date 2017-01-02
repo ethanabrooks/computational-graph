@@ -1,6 +1,6 @@
 language: rust
 rust:
   - nightly
-matrix:
+pipes:
   allow_failures:
     - rust: nightly

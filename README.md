@@ -77,7 +77,7 @@ The second graph compares the backpropagation algorithm with the naive version o
 
 For some reason, the naive algorithm is intractably slow on the GPU and comparisons with it have therefore been ommitted.
 
-Besides the backpropation algorithm itself, a second major optimization used by the algorithm is an object pool for matrices. When a matrix goes out of scope, instead of being deallocated, the program moves the matrix into a global object pool. When the program needs a new matrix, instead of simply allocating one, the program first checks the object pool to see if an unused matrix is available. This the matrices that the backpropation algorithm handles maintain a fixed size, the program only allocates matrices on the first iteration, not subsequently.
+Besides the backpropation algorithm itself, a second major optimization used by the algorithm is an pool for matrices maintained at the nodes of functions. These pools contains pre-allocated matrices that the backpropogation algorithm can use for storing temporary values. Since the matrices that the backpropagation algorithm handles maintain a fixed size, this ensures that no new allocations occur during iterations of backpropagation.
 
 The following graph depicts the difference in seconds of optimizing the multiplication of two 2 x 2 matrices with 1000 iterations:
 
