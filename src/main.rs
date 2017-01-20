@@ -11,16 +11,16 @@ mod matrix;
 mod ops; 
 mod optimize; 
 mod print; 
-mod lstm; 
+//mod lstm; 
 
-#[allow(unused_imports)]
-use ops::{sq, dot, abs, sigmoid, tanh};
+//#[allow(unused_imports)]
+//use ops::{sq, dot, abs, sigmoid, tanh};
 #[allow(unused_imports)]
 use function::Function;
 #[allow(unused_imports)]
 use constant::Constant;
-#[allow(unused_imports)]
-use lstm::lstm;
+//#[allow(unused_imports)]
+//use lstm::lstm;
 #[allow(unused_imports)]
 use std::collections::HashMap;
 #[allow(unused_imports)]

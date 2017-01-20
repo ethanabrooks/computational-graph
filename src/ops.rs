@@ -2,28 +2,34 @@ use function::{Function, Expr};
 use constant::Constant;
 use matrix::Matrix;
 use std::collections::HashMap;
-use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign, AddAssign};
+use std::ops::{
+    //Neg, Add, 
+    Sub, 
+    //Mul, 
+    MulAssign};
+    //SubAssign};
+    //AddAssign};
 
 // TODO: wrappers
 extern {
-    fn map_neg(m: *const Matrix, result: *mut Matrix);
-    fn map_sq(m: *const Matrix, result: *mut Matrix);
-    fn map_abs(m: *const Matrix, result: *mut Matrix);
-    fn map_signum(m: *const Matrix, result: *mut Matrix);
-    fn map_sigmoid(m: *const Matrix, result: *mut Matrix);
-    fn map_tanh(m: *const Matrix, result: *mut Matrix);
-    fn map_one_minus(m: *const Matrix, result: *mut Matrix);
-    fn broadcast_mul(val: f32, m: *const Matrix, result: *mut Matrix);
-    fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
+    //fn map_neg(m: *const Matrix, result: *mut Matrix);
+    //fn map_sq(m: *const Matrix, result: *mut Matrix);
+    //fn map_abs(m: *const Matrix, result: *mut Matrix);
+    //fn map_signum(m: *const Matrix, result: *mut Matrix);
+    //fn map_sigmoid(m: *const Matrix, result: *mut Matrix);
+    //fn map_tanh(m: *const Matrix, result: *mut Matrix);
+    //fn map_one_minus(m: *const Matrix, result: *mut Matrix);
+    //fn broadcast_mul(val: f32, m: *const Matrix, result: *mut Matrix);
+    //fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub_rev(m: *const Matrix, val: f32, result: *mut Matrix);
     fn broadcast_mul_rev(m: *const Matrix, val: f32, result: *mut Matrix);
-    fn broadcast_add_rev(m: *const Matrix, val: f32, result: *mut Matrix);
-    fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    //fn broadcast_add_rev(m: *const Matrix, val: f32, result: *mut Matrix);
+    //fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn elemwise_sub(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn elemwise_mul(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
-    fn gemm(m1: *const Matrix, trans1: bool, m2: *const Matrix, trans2: bool,
-            result: *mut Matrix);
+    //fn gemm(m1: *const Matrix, trans1: bool, m2: *const Matrix, trans2: bool,
+            //result: *mut Matrix);
     fn all_equal(matrix: *const Matrix, x: f32) -> bool;
     fn all_less_than(matrix: *const Matrix, x: f32) -> bool;
     fn reduce_sum(matrix: *const Matrix) -> f32;
@@ -256,42 +262,42 @@ macro_rules! assign1 {
 compare!(all_equal, eq);
 compare!(all_less_than, lt);
 //compare!(all_greater_than, gt);
-fn1!(Abs, abs, abs_ref);
-fn1!(Tanh, tanh, tanh_ref);
-fn1!(Signum, signum, signum_ref);
-fn1!(Sq, sq, sq_ref, |x: f32| x * x);
-fn1!(Sigmoid, sigmoid, sigmoid_ref, |x: f32| 1. / (1. + (-x).exp()));
-trait1!(Neg, neg, 0., |x: f32| -x);
-trait2!(Add, add, 0.);
+//fn1!(Abs, abs, abs_ref);
+//fn1!(Tanh, tanh, tanh_ref);
+//fn1!(Signum, signum, signum_ref);
+//fn1!(Sq, sq, sq_ref, |x: f32| x * x);
+//fn1!(Sigmoid, sigmoid, sigmoid_ref, |x: f32| 1. / (1. + (-x).exp()));
+//trait1!(Neg, neg, 0., |x: f32| -x);
+//trait2!(Add, add, 0.);
 trait2!(Sub, sub, 0.);
-trait2!(Mul, mul, 0.);
-assign_trait!(SubAssign, sub_assign, sub, &|x1: &mut f32, x2| *x1 -= x2);
-assign_trait!(AddAssign, add_assign, add, &|x1: &mut f32, x2| *x1 += x2);
+//trait2!(Mul, mul, 0.);
+//assign_trait!(SubAssign, sub_assign, sub, &|x1: &mut f32, x2| *x1 -= x2);
+//assign_trait!(AddAssign, add_assign, add, &|x1: &mut f32, x2| *x1 += x2);
 assign_trait!(MulAssign, mul_assign, mul, &|x1: &mut f32, x2| *x1 *= x2);
-assign2!(mul_assign, &|x1: &mut f32, x2| *x1 *= x2, mul);
+//assign2!(mul_assign, &|x1: &mut f32, x2| *x1 *= x2, mul);
 assign2!(sub_assign, &|x1: &mut f32, x2| *x1 -= x2, sub);
-assign2!(add_assign, &|x1: &mut f32, x2| *x1 += x2, add);
-assign1!(sigmoid_assign, sigmoid, &|x: f32| 1. / (1. + (-x).exp()));
-assign1!(sq_assign, sq, &|x: f32| x * x);
-assign1!(one_minus, one_minus, &|x| 1. - x);
-assign1!(signum_assign, signum);
-assign1!(tanh_assign, tanh);
-assign1!(abs_assign, abs);
+//assign2!(add_assign, &|x1: &mut f32, x2| *x1 += x2, add);
+//assign1!(sigmoid_assign, sigmoid, &|x: f32| 1. / (1. + (-x).exp()));
+//assign1!(sq_assign, sq, &|x: f32| x * x);
+//assign1!(one_minus, one_minus, &|x| 1. - x);
+//assign1!(signum_assign, signum);
+//assign1!(tanh_assign, tanh);
+//assign1!(abs_assign, abs);
 
-pub fn dot_transpose(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
-    let function = apply2!(f1, f2, Expr::Dot(f1.clone(), f2.clone(), trans1, trans2));
+//pub fn dot_transpose(f1: &Function, f2: &Function, trans1: bool, trans2: bool) -> Function {
+    //let function = apply2!(f1, f2, Expr::Dot(f1.clone(), f2.clone(), trans1, trans2));
 
-    // optimization to combine constants
-    match (f1.body(), f2.body()) { 
-        (&Expr::Constant(_), &Expr::Constant(_)) =>
-            Function::constant(function.eval(&HashMap::new())),
-        _ => function
-    }
-}
+    //// optimization to combine constants
+    //match (f1.body(), f2.body()) { 
+        //(&Expr::Constant(_), &Expr::Constant(_)) =>
+            //Function::constant(function.eval(&HashMap::new())),
+        //_ => function
+    //}
+//}
 
-pub fn dot(f1: &Function, f2: &Function) -> Function {
-    dot_transpose(f1, f2, false, false)
-}
+//pub fn dot(f1: &Function, f2: &Function) -> Function {
+    //dot_transpose(f1, f2, false, false)
+//}
 
 pub fn negate(c: &mut Constant) {
     *c *= Constant::Scalar(-1.)
@@ -322,36 +328,36 @@ impl Constant {
         }
     }
 
-    pub fn assign_dot(&mut self, c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) {
-        match (self, c1, c2) {
-            (&mut Constant::Matrix(ref mut m), 
-             &Constant::Scalar(x), &Constant::Matrix(ref m2)) => {
-                unsafe { broadcast_mul(x, m2, m) };
-            }
-            (&mut Constant::Matrix(ref mut m),
-            &Constant::Matrix(ref m1), &Constant::Scalar(x)) => {
-                unsafe { broadcast_mul_rev(m1, x, m) };
-            }
-            (&mut Constant::Matrix(ref mut m),
-            &Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-                unsafe { gemm(m1, trans1, m2, trans2, m) };
-            }
-            _ => panic!("Bad argument types for assign_dot")
-        }
-    }
+    //pub fn assign_dot(&mut self, c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) {
+        //match (self, c1, c2) {
+            //(&mut Constant::Matrix(ref mut m), 
+             //&Constant::Scalar(x), &Constant::Matrix(ref m2)) => {
+                //unsafe { broadcast_mul(x, m2, m) };
+            //}
+            //(&mut Constant::Matrix(ref mut m),
+            //&Constant::Matrix(ref m1), &Constant::Scalar(x)) => {
+                //unsafe { broadcast_mul_rev(m1, x, m) };
+            //}
+            //(&mut Constant::Matrix(ref mut m),
+            //&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
+                //unsafe { gemm(m1, trans1, m2, trans2, m) };
+            //}
+            //_ => panic!("Bad argument types for assign_dot")
+        //}
+    //}
 
-    pub fn dot(c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) -> Constant {
-        let mut result: Matrix;
-        match (c1, c2) {
-            (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-                result = Matrix::empty_for_dot(m1, m2, trans1, trans2);
-                unsafe { gemm(m1, trans1, 
-                              m2, trans2, 
-                              &mut result) }
-            }
-            _ => panic!("dot should not be used with scalars"),
-        };
-        Constant::Matrix(result)
-    }
+    //pub fn dot(c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) -> Constant {
+        //let mut result: Matrix;
+        //match (c1, c2) {
+            //(&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
+                //result = Matrix::empty_for_dot(m1, m2, trans1, trans2);
+                //unsafe { gemm(m1, trans1, 
+                              //m2, trans2, 
+                              //&mut result) }
+            //}
+            //_ => panic!("dot should not be used with scalars"),
+        //};
+        //Constant::Matrix(result)
+    //}
 }
 

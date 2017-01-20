@@ -14,25 +14,25 @@ pub struct Function {
 #[derive(Debug)]
 pub enum Expr {
     Constant(Constant),
-    Input(Input),
+    //Input(Input),
     Param(Param),
-    Neg(Function),
-    Sq(Function),
-    Abs(Function),
-    Signum(Function),
-    Sigmoid(Function),
-    Tanh(Function),
-    Add(Function, Function),
+    //Neg(Function),
+    //Sq(Function),
+    //Abs(Function),
+    //Signum(Function),
+    //Sigmoid(Function),
+    //Tanh(Function),
+    //Add(Function, Function),
     Sub(Function, Function),
-    Mul(Function, Function),
-    Dot(Function, Function, bool, bool),
+    //Mul(Function, Function),
+    //Dot(Function, Function, bool, bool),
 }
 
-#[derive(Debug)]
-pub struct Input {
-    dims: Vec<u32>, 
-    pub name: String,
-}
+//#[derive(Debug)]
+//pub struct Input {
+    //dims: Vec<u32>, 
+    //pub name: String,
+//}
 
 #[derive(Debug)]
 pub struct Param {
@@ -66,14 +66,14 @@ impl Function {
         Function::new(Some(value.clone()), HashSet::new(), Expr::Constant(value))
     }
 
-    #[allow(dead_code)]
-    pub fn input(s: &str, dims: Vec<u32>) -> Function {
-        Function::new(None, hashset![s], 
-                    Expr::Input(Input {
-                        name: String::from(s),
-                        dims: dims,
-                    }))
-    }
+    //#[allow(dead_code)]
+    //pub fn input(s: &str, dims: Vec<u32>) -> Function {
+        //Function::new(None, hashset![s], 
+                    //Expr::Input(Input {
+                        //name: String::from(s),
+                        //dims: dims,
+                    //}))
+    //}
 
     #[allow(dead_code)]
     pub fn param(s: &str, value: Constant) -> Function {

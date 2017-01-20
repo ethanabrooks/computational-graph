@@ -31,6 +31,16 @@ impl Matrix {
         ptr
     }
 
+    pub fn empty(height: u32, width: u32) -> Matrix {
+        let mut matrix = Matrix { 
+            height: height,
+            width: width,
+            dev_array: ptr::null_mut(),
+        };
+        unsafe { alloc_matrix(&mut matrix, height, width) };
+        matrix
+    }
+
     pub fn empty_like(m: &Matrix) -> Matrix { Matrix::empty(m.height(), m.width()) }
 
     pub fn new(height: u32, width: u32, values: Vec<f32>) -> Matrix {
@@ -69,16 +79,6 @@ impl Matrix {
 
     pub fn size(&self) -> u32 {
         self.height * self.width
-    }
-
-    pub fn empty(height: u32, width: u32) -> Matrix {
-        let mut matrix = Matrix { 
-            height: height,
-            width: width,
-            dev_array: ptr::null_mut(),
-        };
-        unsafe { alloc_matrix(&mut matrix, height, width) };
-        matrix
     }
 }
 
