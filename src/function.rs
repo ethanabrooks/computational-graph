@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    value: RefCell<Option<Constant>>,
+    value: Constant,
     params: HashSet<String>,
     body: Rc<Expr>,
     placeholders: RefCell<Vec<Constant>>,
@@ -51,11 +51,11 @@ impl Function {
 
     // Constructors
 
-    pub fn new(value: Option<Constant>, 
-               params: HashSet<String>,
-               body: Expr) -> Function {
+   fn new(value: Constant,
+          params: HashSet<String>,
+          body: Expr) -> Function {
         Function {
-            value: RefCell::new(value),
+            value: value,
             params: params,
             body: Rc::new(body),
             placeholders: RefCell::new(vec![]),
@@ -63,8 +63,12 @@ impl Function {
     }
 
     pub fn constant(value: Constant) -> Function {
-        Function::new(Some(value.clone()), HashSet::new(), Expr::Constant(value))
+        Function::new(value.clone(), HashSet::new(), Expr::Constant(value))
     }
+
+    //pub fn add(value: Constant) -> Function {
+        //Function::new(value
+    //}
 
     //#[allow(dead_code)]
     //pub fn input(s: &str, dims: Vec<u32>) -> Function {
@@ -75,9 +79,10 @@ impl Function {
                     //}))
     //}
 
+
     #[allow(dead_code)]
     pub fn param(s: &str, value: Constant) -> Function {
-        Function::new(Some(value), 
+        Function::new(value, 
                       hashset![s], 
                       Expr::Param(Param { name: String::from(s) }))
     }
@@ -85,7 +90,7 @@ impl Function {
     #[allow(dead_code)]
     pub fn random_param(s: &str, dims: Vec<u32>, lo: f32, hi: f32) -> Function {
         let value = Constant::random(dims, lo, hi);
-        Function::new(Some(value), 
+        Function::new(value, 
                       hashset![s], 
                       Expr::Param(Param { name: String::from(s) }))
     }
@@ -128,25 +133,12 @@ impl Function {
         self.value.borrow()
     }
 
-   pub fn mutate_value(&self, f: &Fn(&mut Constant)) {
-        match *self.value.borrow_mut() {
-            Some(ref mut value) => f(value),
-            None => panic!("Tried to mutate value that hasn't been assigned yet."),
-        }
+   pub fn mutate_value(&self, f: &Fn(&Constant)) {
+        f(*self.value.borrow_mut())
     }
 
-    pub fn unwrap_value<'a>(&'a self) -> Ref<Constant> {
-        Ref::map(self.value.borrow(), |x| match x.as_ref() {
-            Some(x) => x,
-            None => panic!("unwrap value failed on {:?}", self),
-        })
-    }
-
-    pub fn unwrap_value_mut<'a>(&'a self) -> RefMut<Constant> {
-        RefMut::map(self.value.borrow_mut(), |x| match *x {
-            Some(ref mut x) => x,
-            None => panic!("unwrap value failed on {:?}", self),
-        })
+    pub fn unwrap_value<'a>(&'a self) -> Constant {
+        self.value
     }
 
     pub fn alloc_placeholders(&self, c: Vec<Constant>) {

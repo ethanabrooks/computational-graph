@@ -1,12 +1,18 @@
 use function::{Function, Expr};
 use constant::Constant;
-use ops::{sub_assign, negate};
+//use ops::{negate};
 //{mul_assign, sq_ref, signum_ref, add_assign, sub_assign, 
           //sigmoid_assign, signum_assign, tanh_assign, sq_assign, 
           //abs_assign, negate, one_minus};
 use std::collections::HashMap;
 //use std::io::{Write, stderr};
 use std::ops::{Deref, DerefMut};
+
+macro_rules! exec {
+    ($result:ident = $arg1:ident - $arg2:ident) => {
+        $result.sub_assign($arg1, $arg2);
+    } 
+}
 
 impl Function {
     pub fn eval(&self, args: &HashMap<&str, Constant>) -> Constant {
@@ -105,10 +111,16 @@ impl Function {
         if self.get_value().is_none() {
             self.set_value(Constant::empty_like(child1.unwrap_value().deref()))
         }
-        self.mutate_value(&|x| {
-            x.copy(child1.unwrap_value().deref());
-            mutation(x, child2.unwrap_value().deref())
-        });
+
+
+        let mut refmut = self.unwrap_value_mut();
+        let value = refmut.deref_mut();
+        value.copy(child1.unwrap_value().deref());
+        mutation(value, child2.unwrap_value().deref());
+        //self.mutate_value(&|x| {
+            //x.copy(child1.unwrap_value().deref());
+            //mutation(x, child2.unwrap_value().deref())
+        //});
     }
 
     pub fn assign_values(&self, args: &HashMap<&str, Constant>) {
@@ -130,7 +142,24 @@ impl Function {
             //Expr::Sigmoid(ref f) => self.assign1(f, args, &sigmoid_assign),
             //Expr::Tanh(ref f) => self.assign1(f, args, &tanh_assign),
             //Expr::Add(ref f1, ref f2) => self.assign2(f1, f2, args, &add_assign),
-            Expr::Sub(ref f1, ref f2) => self.assign2(f1, f2, args, &sub_assign),
+            Expr::Sub(ref f1, ref f2) => {
+                f1.assign_values(args);
+                f2.assign_values(args);
+                if self.get_value().is_none() {
+                    self.set_value(Constant::empty_like(f1.unwrap_value().deref()))
+                }
+
+
+                let mut refmut = self.unwrap_value_mut();
+                let value = refmut.deref_mut();
+                let out1 = f1.unwrap_value();
+                let value1 = out1.deref();
+                let out2 = f2.unwrap_value();
+                let value2 = out2.deref();
+                exec!(value = value1 - value2)
+            }
+                //self.assign2(f1, f2, args, 
+                                                      //&|x, y| x.sub(y)),
             //Expr::Mul(ref f1, ref f2) => self.assign2(f1, f2, args, &mul_assign),
             //Expr::Dot(ref f1, ref f2, trans1, trans2) => {
                 //f1.assign_values(args);
@@ -153,7 +182,10 @@ impl Function {
         match *self.body() {
             Expr::Param(_) => {
                 //*error *= Constant::Scalar(learn_rate);
-                self.mutate_value(&|x| sub_assign(x, &error));
+                //let mut value = self.unwrap_value_mut();
+                self.unwrap_value_mut().deref_mut()
+                    .sub(error);
+                //self.mutate_value(&|x| x -= error);
             }
             //Expr::Neg(ref f) => {
                 //negate(error);
@@ -200,9 +232,10 @@ impl Function {
                 //f2.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             //}
             Expr::Sub(ref f1, ref f2) => {
+                //self.get_placeholder(0).deref_mut().mul(-1, x)
                 self.mutate_placeholder(0, &|x| {
                     x.copy(error); // error
-                    negate(x);     // -error
+                    //negate(x);     // -error
                 });
 
                 f1.backprop(error, learn_rate);

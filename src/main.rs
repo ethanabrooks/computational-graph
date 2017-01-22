@@ -11,6 +11,7 @@ mod matrix;
 mod ops; 
 mod optimize; 
 mod print; 
+//mod cmatrix;
 //mod lstm; 
 
 //#[allow(unused_imports)]
