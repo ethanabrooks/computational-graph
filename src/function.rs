@@ -3,12 +3,17 @@ use std::cell::{RefCell, Ref, RefMut};
 use std::collections::HashSet;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
+use std::ops::Index;
+
+#[derive(Debug, Clone)]
+struct Pool(Vec<RefCell<Constant>>);
 
 #[derive(Debug, Clone)]
 pub struct Function {
     value: RefCell<Constant>,
     params: HashSet<String>,
     body: Rc<Expr>,
+    pool: Pool,
 }
 
 #[derive(Debug)]
@@ -22,9 +27,9 @@ pub enum Expr {
     //Signum(Function),
     //Sigmoid(Function),
     //Tanh(Function),
-    //Add(Function, Function),
-    Sub(Function, Function, RefCell<Constant>),
-    //Mul(Function, Function),
+    Add(Function, Function),
+    Sub(Function, Function),
+    Mul(Function, Function),
     //Dot(Function, Function, bool, bool),
 }
 
@@ -48,9 +53,36 @@ macro_rules! hashset {
 }
 
 fn combine_params(f1: &Function, f2: &Function) -> HashSet<String> {
-    let params1 = self.params().clone();
-    let params2 = other.params().clone();
+    let params1 = f1.params().clone();
+    let params2 = f2.params().clone();
     return params1.union(&params2).cloned().collect()
+}
+
+impl Pool {
+    fn new(dims: Vec<u32>, size: u32) -> Pool {
+        Pool((0..size)
+             .map(|_| RefCell::new(Constant::empty(dims.clone())))
+             .collect())
+    }
+
+    fn size(&self) -> usize {
+        self.0.len()
+    }
+    
+    fn get(&self, i: usize) -> RefMut<Constant> {
+        match self.0.get(i) {
+            Some(x) => x.borrow_mut(),
+            None    => panic!("Can't get index {} from a pool with {} elements", 
+                              i, self.size())
+        }
+    }
+}
+
+
+impl<'a> Index<usize> for Pool {
+    type Output = RefCell<Constant>;
+
+    fn index(&self, i: usize) -> &RefCell<Constant> { &self.0[i] }
 }
 
 impl Function {
@@ -59,23 +91,27 @@ impl Function {
 
    fn new(value: Constant,
           params: HashSet<String>,
-          body: Expr) -> Function {
+          body: Expr,
+          pool_size: u32) -> Function {
+       let dims = (&value).dims();
         Function {
-            value: value,
+            value: RefCell::new(value),
             params: params,
             body: Rc::new(body),
+            pool: Pool::new(dims, pool_size)
         }
     }
 
     pub fn constant(value: Constant) -> Function {
-        Function::new(value.clone(), HashSet::new(), Expr::Constant(value))
+        Function::new(value.clone(), HashSet::new(), Expr::Constant(value), 0)
     }
 
     pub fn sub(arg1: Function, arg2: Function) -> Function {
         let dummy = arg1.value().clone();
         Function::new(dummy.clone(),
                       combine_params(&arg1, &arg2),
-                      Expr::Add(arg1, arg2, RefCell::new(dummy)))
+                      Expr::Sub(arg1, arg2),
+                      1) 
     }
 
     //#[allow(dead_code)]
@@ -90,17 +126,13 @@ impl Function {
 
     #[allow(dead_code)]
     pub fn param(s: &str, value: Constant) -> Function {
-        Function::new(value, 
-                      hashset![s], 
-                      Expr::Param(Param { name: String::from(s) }))
+        Function::new(value, hashset![s], Expr::Param(Param { name: String::from(s) }), 0)
     }
 
     #[allow(dead_code)]
     pub fn random_param(s: &str, dims: Vec<u32>, lo: f32, hi: f32) -> Function {
         let value = Constant::random(dims, lo, hi);
-        Function::new(value, 
-                      hashset![s], 
-                      Expr::Param(Param { name: String::from(s) }))
+        Function::param(s, value)
     }
 
     #[allow(dead_code)]
@@ -133,9 +165,9 @@ impl Function {
         &self.params
     }
 
-    pub fn set_value(&self, value: Constant) {
-        self.value_mut().get_mut() = value;
-    }
+    //pub fn set_value(&self, value: Constant) {
+        //self.value_mut().get_mut() = value;
+    //}
 
     pub fn value(&self) -> Ref<Constant> {
         self.value.borrow()
@@ -145,13 +177,13 @@ impl Function {
         self.value.borrow_mut()
     }
 
-    pub fn get_value(&self) -> Ref<Constant> {
-        self.value.borrow()
-    }
+    //pub fn get_value(&self) -> Ref<Constant> {
+        //self.value.borrow()
+    //}
 
-   pub fn mutate_value(&self, f: &Fn(&Constant)) {
-        f(self.value_mut().deref_mut())
-    }
+   //pub fn mutate_value(&self, f: &Fn(&Constant)) {
+        //f(self.value_mut().deref_mut())
+    //}
 
     //pub fn unwrap_value<'a>(&'a self) -> Constant {
         //self.value
@@ -161,12 +193,9 @@ impl Function {
         //*self.placeholders.borrow_mut() = c;
     //}
 
-    //pub fn get_placeholder(&self, i: usize) -> RefMut<Constant> {
-        //RefMut::map(self.placeholders.borrow_mut(), |x| match x.get_mut(i) {
-            //Some(x) => x,
-            //None => panic!("Can't access placeholders[{}].", i),
-        //})
-    //}
+    pub fn placeholder(&self, i: usize) -> RefMut<Constant> {
+        self.pool.get(i)
+    }
 
     //pub fn mutate_placeholder(&self, i: usize, f: &Fn(&mut Constant)) {
         //match self.placeholders.borrow_mut().get_mut(i) {

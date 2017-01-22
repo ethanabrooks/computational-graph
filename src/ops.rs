@@ -4,12 +4,13 @@ use matrix::Matrix;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::ops::{
-    //Neg, Add, 
+    //Neg,
+    Add, 
     Sub, 
     Mul, 
     MulAssign,
-    SubAssign};
-    //AddAssign};
+    SubAssign,
+    AddAssign};
 
 // TODO: wrappers
 extern {
@@ -21,12 +22,12 @@ extern {
     //fn map_tanh(m: *const Matrix, result: *mut Matrix);
     //fn map_one_minus(m: *const Matrix, result: *mut Matrix);
     fn broadcast_mul(val: f32, m: *const Matrix, result: *mut Matrix);
-    //fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
+    fn broadcast_add(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub(val: f32, m: *const Matrix, result: *mut Matrix);
     fn broadcast_sub_rev(m: *const Matrix, val: f32, result: *mut Matrix);
     fn broadcast_mul_rev(m: *const Matrix, val: f32, result: *mut Matrix);
-    //fn broadcast_add_rev(m: *const Matrix, val: f32, result: *mut Matrix);
-    //fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
+    fn broadcast_add_rev(m: *const Matrix, val: f32, result: *mut Matrix);
+    fn elemwise_add(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn elemwise_sub(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     fn elemwise_mul(m1: *const Matrix, m2: *const Matrix, result: *mut Matrix);
     //fn gemm(m1: *const Matrix, trans1: bool, m2: *const Matrix, trans2: bool,
@@ -335,9 +336,9 @@ compare!(all_less_than, lt);
 //fn1!(Sq, sq, sq_ref, |x: f32| x * x);
 //fn1!(Sigmoid, sigmoid, sigmoid_ref, |x: f32| 1. / (1. + (-x).exp()));
 //trait1!(Neg, neg, 0., |x: f32| -x);
-//trait2!(Add, add, 0.);
+trait2!(Add, add, AddAssign, add_assign, 0.);
 trait2!(Sub, sub, SubAssign, sub_assign, 0.);
-//trait2!(Mul, mul, MulAssign, mul_assign, 1.);
+trait2!(Mul, mul, MulAssign, mul_assign, 1.);
 //trait2!(Mul, mul, 0.);
 //assign_trait!(SubAssign, sub_assign, sub, &|x1: &mut f32, x2| *x1 -= x2);
 //assign_trait!(AddAssign, add_assign, add, &|x1: &mut f32, x2| *x1 += x2);

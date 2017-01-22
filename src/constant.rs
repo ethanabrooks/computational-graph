@@ -71,6 +71,14 @@ impl Constant {
         }
     }
 
+    pub fn empty(dims: Vec<u32>) -> Constant {
+        match &dims[..] {
+            &[]              => Constant::Scalar(0.),
+            &[height, width] => Constant::Matrix(Matrix::empty(height, width)),
+            _                => panic!("not supported"),
+        }
+    }
+
     pub fn empty_like(c: &Constant) -> Constant {
         match *c {
             Constant::Scalar(_) => Constant::Scalar(0.),
@@ -87,5 +95,12 @@ impl Constant {
             (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => 
                 Constant::Matrix(Matrix::empty_for_dot(m1, m2, trans1, trans2))
         }
+    }
+
+    pub fn dims(&self) -> Vec<u32> {
+         match *self {
+             Constant::Scalar(_) => vec![],
+             Constant::Matrix(ref m) => vec![m.height(), m.width()]
+         }
     }
 }
