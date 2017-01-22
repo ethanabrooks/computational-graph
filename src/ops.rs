@@ -2,6 +2,7 @@ use function::{Function, Expr};
 use constant::Constant;
 use matrix::Matrix;
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::ops::{
     //Neg, Add, 
     Sub, 
@@ -165,11 +166,7 @@ macro_rules! trait2 {
                 } else if other.all_equal($identity) {
                     self.clone()
                 } else {
-                    let params1 = self.params().clone();
-                    let params2 = other.params().clone();
-                    let union = params1.union(&params2).cloned().collect();
-                    let function = Function::$op(None, union, 
-                                                 Expr::$Op(self.clone(), other.clone()));
+                    let function = Function::$op(self.clone(), other.clone());
 
                     // optimization to combine constants
                     match (self.body(), other.body()) { 
@@ -275,10 +272,7 @@ macro_rules! compare {
     ($cmp:ident, $scalar_cmp:ident) => {
         impl Function {
             pub fn $cmp(&self, val:f32) -> bool {
-                match *self.get_value() {
-                    Some(ref c) => c.$cmp(val),
-                    _       => false
-                }
+                self.value().deref().$cmp(val)
             }
         }
         impl Constant {

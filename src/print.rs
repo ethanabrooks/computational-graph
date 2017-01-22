@@ -49,7 +49,7 @@ impl fmt::Display for Expr {
             //Expr::Sigmoid(ref x)    => write!(f, "σ({})", x),
             //Expr::Tanh(ref x)    => write!(f, "tanh({})", x),
             //Expr::Add(ref a, ref b) => write_with_parens(a, "+", b, f),
-            Expr::Sub(ref a, ref b) => write_with_parens(a, "-", b, f),
+            Expr::Sub(ref a, ref b, _) => write_with_parens(a, "-", b, f),
             //Expr::Mul(ref a, ref b) => write_with_parens(a, "⚬", b, f),
             //Expr::Dot(ref a, ref b, trans1, trans2) => {
                 //let t_symb1 = if trans1 { "ᵀ" } else { "" };
@@ -75,7 +75,7 @@ impl fmt::Display for Expr {
 impl fmt::Display for Function {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self.body() {
-            Expr::Param(ref p) => write!(f, "{}≔{}", p.name, self.unwrap_value().deref()),
+            Expr::Param(ref p) => write!(f, "{}≔{}", p.name, self.value().deref()),
             _ => write!(f, "{}", self.body()),
         }
     }

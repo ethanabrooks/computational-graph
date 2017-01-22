@@ -25,7 +25,7 @@ impl Function {
                                    //&i.name, args),
                 //}
             //}
-            Expr::Param(_)            => self.unwrap_value().clone(),
+            Expr::Param(_)            => self.value().clone(),
             //Expr::Neg(ref f)          => -f.eval(args),
             //Expr::Sq(ref f)           => f.eval(args) * f.eval(args),
             //Expr::Abs(ref f)          => f.eval(args).abs(),
@@ -33,7 +33,7 @@ impl Function {
             //Expr::Tanh(ref f)         => f.eval(args).tanh(),
             //Expr::Signum(ref f)       => f.eval(args).signum(),
             //Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
-            Expr::Sub(ref f1, ref f2) => f1.eval(args) - f2.eval(args),
+            Expr::Sub(ref f1, ref f2, _) => f1.eval(args) - f2.eval(args),
             //Expr::Mul(ref f1, ref f2) => f1.eval(args) * f2.eval(args),
             //Expr::Dot(ref f1, ref f2, trans1, trans2) =>
                 //Constant::dot(&f1.eval(args), &f2.eval(args), trans1, trans2)
@@ -52,11 +52,11 @@ impl Function {
                 //Expr::Tanh(ref f)         => 
                     //f.grad(param) * (Function::scalar(1.) - sq_ref(self)),
                 //Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
-                Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
+                Expr::Sub(ref f1, ref f2, _) => f1.grad(param) - f2.grad(param),
                 //Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
                                              //&f2.grad(param) * f1,
                 //Expr::Dot(_, _, _, _) => panic!("not implemented"),
-                Expr::Param(_) => Function::constant(self.unwrap_value()
+                Expr::Param(_) => Function::constant(self.value_mut()
                                                        .copy_and_fill(1.)),
                 Expr::Constant(_) 
                     //| Expr::Input(_) 
@@ -75,10 +75,10 @@ impl Function {
                     print_freq: i32) {
         for i in 0..iters {
             self.assign_values(&args);
-            let mut error = self.unwrap_value().copy_and_fill(1.);
+            let mut error = self.value_mut().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
             if (i + 1) % print_freq  == 0 {
-                println!("{}", self.unwrap_value().deref());
+                println!("{}", self.value().deref());
             }
         }
     }
@@ -108,15 +108,12 @@ impl Function {
                args: &HashMap<&str, Constant>, mutation: &Fn(&mut Constant, &Constant)) {
         child1.assign_values(args);
         child2.assign_values(args);
-        if self.get_value().is_none() {
-            self.set_value(Constant::empty_like(child1.unwrap_value().deref()))
-        }
 
 
-        let mut refmut = self.unwrap_value_mut();
+        let mut refmut = self.value_mut();
         let value = refmut.deref_mut();
-        value.copy(child1.unwrap_value().deref());
-        mutation(value, child2.unwrap_value().deref());
+        value.copy(child1.value().deref());
+        mutation(value, child2.value().deref());
         //self.mutate_value(&|x| {
             //x.copy(child1.unwrap_value().deref());
             //mutation(x, child2.unwrap_value().deref())
@@ -126,8 +123,7 @@ impl Function {
     pub fn assign_values(&self, args: &HashMap<&str, Constant>) {
         // assign final value to outputs
         match *self.body() {
-            Expr::Constant(_) | Expr::Param(_) => assert!(self.get_value().is_some(),
-                "Constants and Params must always have a value"),
+            Expr::Constant(_) | Expr::Param(_) => return;
             //Expr::Input(ref i) =>
                 //self.set_value(args.get::<str>(&i.name).expect("missing arg").clone()),
                 //// TODO: avoid clone?
@@ -142,21 +138,15 @@ impl Function {
             //Expr::Sigmoid(ref f) => self.assign1(f, args, &sigmoid_assign),
             //Expr::Tanh(ref f) => self.assign1(f, args, &tanh_assign),
             //Expr::Add(ref f1, ref f2) => self.assign2(f1, f2, args, &add_assign),
-            Expr::Sub(ref f1, ref f2) => {
+            Expr::Sub(ref f1, ref f2, _) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
-                if self.get_value().is_none() {
-                    self.set_value(Constant::empty_like(f1.unwrap_value().deref()))
-                }
-
-
-                let mut refmut = self.unwrap_value_mut();
-                let value = refmut.deref_mut();
-                let out1 = f1.unwrap_value();
-                let value1 = out1.deref();
-                let out2 = f2.unwrap_value();
-                let value2 = out2.deref();
-                exec!(value = value1 - value2)
+                //if self.get_value().is_none() {
+                    //self.set_value(Constant::empty_like(f1.unwrap_value().deref()))
+                //}
+                //
+                self.value_mut().sub_assign(f1.value().deref(), 
+                                            f2.value().deref());
             }
                 //self.assign2(f1, f2, args, 
                                                       //&|x, y| x.sub(y)),
@@ -177,13 +167,13 @@ impl Function {
     }
 
     fn backprop(&self, error: &mut Constant, learn_rate: f32) {
-        self.maybe_alloc_placeholders(error);
+        //self.maybe_alloc_placeholders(error);
         if self.params().is_empty() { return; }
         match *self.body() {
             Expr::Param(_) => {
                 //*error *= Constant::Scalar(learn_rate);
                 //let mut value = self.unwrap_value_mut();
-                self.unwrap_value_mut().deref_mut()
+                self.value_mut().deref_mut()
                     .sub(error);
                 //self.mutate_value(&|x| x -= error);
             }
@@ -231,15 +221,17 @@ impl Function {
                 //f1.backprop(error, learn_rate);
                 //f2.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             //}
-            Expr::Sub(ref f1, ref f2) => {
+            Expr::Sub(ref f1, ref f2, ref placeholder) => {
                 //self.get_placeholder(0).deref_mut().mul(-1, x)
-                self.mutate_placeholder(0, &|x| {
-                    x.copy(error); // error
-                    //negate(x);     // -error
-                });
+                //self.mutate_placeholder(0, &|x| {
+                    //x.copy(error); // error
+                    ////negate(x);     // -error
+                //});
+
+                placeholder.get_mut().copy(error);
 
                 f1.backprop(error, learn_rate);
-                f2.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
+                f2.backprop(placeholder.get_mut(), learn_rate);
             }
             //Expr::Mul(ref f1, ref f2) => {
                 //self.mutate_placeholder(0, &|x| {
@@ -268,25 +260,25 @@ impl Function {
         }
     }
 
-    fn maybe_alloc_placeholders(&self, error: &Constant) {
-        match *self.body() {
-            Expr::Constant(_) 
-                //| Expr::Input(_) 
-                | Expr::Param(_) 
-                //| Expr::Neg(_)      | Expr::Sq(_)    | Expr::Signum(_) 
-            => return,
-            //Expr::Sigmoid(ref f) | Expr::Tanh(ref f)   | 
-            //Expr::Add(ref f, _)
-            Expr::Sub(ref f, _)
-            //| Expr::Mul(ref f, _) | Expr::Abs(ref f) 
-            => {
-                if self.num_placeholders() < 1 {
-                    self.alloc_placeholders(
-                        vec![Constant::empty_like(f.unwrap_value().deref())]);
+    //fn maybe_alloc_placeholders(&self, error: &Constant) {
+        //match *self.body() {
+            //Expr::Constant(_) 
+                ////| Expr::Input(_) 
+                //| Expr::Param(_) 
+                ////| Expr::Neg(_)      | Expr::Sq(_)    | Expr::Signum(_) 
+            //=> return,
+            ////Expr::Sigmoid(ref f) | Expr::Tanh(ref f)   | 
+            ////Expr::Add(ref f, _)
+            //Expr::Sub(ref f, _, _)
+            ////| Expr::Mul(ref f, _) | Expr::Abs(ref f) 
+            //=> {
+                //if self.num_placeholders() < 1 {
+                    //self.alloc_placeholders(
+                        //vec![Constant::empty_like(f.unwrap_value().deref())]);
 
 
-                }
-            }
+                //}
+            //}
             //Expr::Dot(ref f1, ref f2, trans1, trans2) =>
                 //if self.num_placeholders() < 2 {
                     //self.alloc_placeholders(
@@ -295,8 +287,8 @@ impl Function {
                             //Constant::empty_for_dot(
                                 //&f1.unwrap_value().deref(), &error, !trans1, false)])
                 //}
-        };
-    }
+        //};
+    //}
 
 }
 

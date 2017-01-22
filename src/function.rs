@@ -2,13 +2,13 @@ use constant::Constant;
 use std::cell::{RefCell, Ref, RefMut};
 use std::collections::HashSet;
 use std::rc::Rc;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    value: Constant,
+    value: RefCell<Constant>,
     params: HashSet<String>,
     body: Rc<Expr>,
-    placeholders: RefCell<Vec<Constant>>,
 }
 
 #[derive(Debug)]
@@ -23,7 +23,7 @@ pub enum Expr {
     //Sigmoid(Function),
     //Tanh(Function),
     //Add(Function, Function),
-    Sub(Function, Function),
+    Sub(Function, Function, RefCell<Constant>),
     //Mul(Function, Function),
     //Dot(Function, Function, bool, bool),
 }
@@ -47,6 +47,12 @@ macro_rules! hashset {
     }}
 }
 
+fn combine_params(f1: &Function, f2: &Function) -> HashSet<String> {
+    let params1 = self.params().clone();
+    let params2 = other.params().clone();
+    return params1.union(&params2).cloned().collect()
+}
+
 impl Function {
 
     // Constructors
@@ -58,7 +64,6 @@ impl Function {
             value: value,
             params: params,
             body: Rc::new(body),
-            placeholders: RefCell::new(vec![]),
         }
     }
 
@@ -66,9 +71,12 @@ impl Function {
         Function::new(value.clone(), HashSet::new(), Expr::Constant(value))
     }
 
-    //pub fn add(value: Constant) -> Function {
-        //Function::new(value
-    //}
+    pub fn sub(arg1: Function, arg2: Function) -> Function {
+        let dummy = arg1.value().clone();
+        Function::new(dummy.clone(),
+                      combine_params(&arg1, &arg2),
+                      Expr::Add(arg1, arg2, RefCell::new(dummy)))
+    }
 
     //#[allow(dead_code)]
     //pub fn input(s: &str, dims: Vec<u32>) -> Function {
@@ -126,42 +134,50 @@ impl Function {
     }
 
     pub fn set_value(&self, value: Constant) {
-        *(&self.value).borrow_mut() = Some(value);
+        self.value_mut().get_mut() = value;
     }
 
-    pub fn get_value(&self) -> Ref<Option<Constant>> {
+    pub fn value(&self) -> Ref<Constant> {
+        self.value.borrow()
+    }
+
+    pub fn value_mut(&self) -> RefMut<Constant> {
+        self.value.borrow_mut()
+    }
+
+    pub fn get_value(&self) -> Ref<Constant> {
         self.value.borrow()
     }
 
    pub fn mutate_value(&self, f: &Fn(&Constant)) {
-        f(*self.value.borrow_mut())
+        f(self.value_mut().deref_mut())
     }
 
-    pub fn unwrap_value<'a>(&'a self) -> Constant {
-        self.value
-    }
+    //pub fn unwrap_value<'a>(&'a self) -> Constant {
+        //self.value
+    //}
 
-    pub fn alloc_placeholders(&self, c: Vec<Constant>) {
-        *self.placeholders.borrow_mut() = c;
-    }
+    //pub fn alloc_placeholders(&self, c: Vec<Constant>) {
+        //*self.placeholders.borrow_mut() = c;
+    //}
 
-    pub fn get_placeholder(&self, i: usize) -> RefMut<Constant> {
-        RefMut::map(self.placeholders.borrow_mut(), |x| match x.get_mut(i) {
-            Some(x) => x,
-            None => panic!("Can't access placeholders[{}].", i),
-        })
-    }
+    //pub fn get_placeholder(&self, i: usize) -> RefMut<Constant> {
+        //RefMut::map(self.placeholders.borrow_mut(), |x| match x.get_mut(i) {
+            //Some(x) => x,
+            //None => panic!("Can't access placeholders[{}].", i),
+        //})
+    //}
 
-    pub fn mutate_placeholder(&self, i: usize, f: &Fn(&mut Constant)) {
-        match self.placeholders.borrow_mut().get_mut(i) {
-            Some(ref mut placeholder) => f(placeholder),
-            None => panic!("Tried to mutate a placeholder that hasn't been assigned yet."),
-        }
-    }
+    //pub fn mutate_placeholder(&self, i: usize, f: &Fn(&mut Constant)) {
+        //match self.placeholders.borrow_mut().get_mut(i) {
+            //Some(ref mut placeholder) => f(placeholder),
+            //None => panic!("Tried to mutate a placeholder that hasn't been assigned yet."),
+        //}
+    //}
 
-    pub fn num_placeholders(&self) -> usize {
-        self.placeholders.borrow().len()
-    }
+    //pub fn num_placeholders(&self) -> usize {
+        //self.placeholders.borrow().len()
+    //}
 
     pub fn check_params(functions: Vec<&Function>) {
         for function in functions {
