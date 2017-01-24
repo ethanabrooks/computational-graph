@@ -31,7 +31,7 @@ pub enum Expr {
     //Tanh(Function),
     //Add(Function, Function),
     Sub(Function, Function),
-    //Mul(Function, Function),
+    Mul(Function, Function),
     //Dot(Function, Function, bool, bool),
 }
 
