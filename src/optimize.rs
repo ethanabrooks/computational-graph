@@ -53,7 +53,7 @@ impl Function {
                 //}
             //}
             Expr::Param(_)            => self.value().clone(),
-            //Expr::Neg(ref f)          => -f.eval(args),
+            Expr::Neg(ref f)          => -f.eval(args),
             //Expr::Sq(ref f)           => f.eval(args) * f.eval(args),
             //Expr::Abs(ref f)          => f.eval(args).abs(),
             //Expr::Sigmoid(ref f)      => f.eval(args).sigmoid(),
@@ -70,7 +70,7 @@ impl Function {
     pub fn grad(&self, param: &str) -> Function {
         if self.params().contains::<str>(&param) {
             match *self.body() {
-                //Expr::Neg(ref f)          => -f.grad(param),
+                Expr::Neg(ref f)          => -f.grad(param),
                 //Expr::Sq(ref f)           => &f.grad(param) * f,
                 //Expr::Abs(ref f)          => signum_ref(f) * f.grad(param),
                 //Expr::Signum(_)           => panic!("signum is nondifferentiable"),
@@ -153,12 +153,10 @@ impl Function {
             //Expr::Input(ref i) =>
                 //self.set_value(args.get::<str>(&i.name).expect("missing arg").clone()),
                 //// TODO: avoid clone?
-            //Expr::Neg(ref f) => {
-                //f.assign_values(args);
-                //let self_value = self.value_mut();
-                //let f_value = f.value().deref();
-                //exec!(self_value = -f_value);
-            //}
+            Expr::Neg(ref f) => {
+                f.assign_values(args);
+                exec!((self.value_mut()) = -(value!(f)));
+            }
             //Expr::Sq(ref f) => self.assign1(f, args, &sq_assign),
             //Expr::Abs(ref f) => self.assign1(f, args, &abs_assign),
             //Expr::Signum(ref f) => {
@@ -206,10 +204,10 @@ impl Function {
                 exec![(self.value_mut()) = (error) * (&Constant::Scalar(learn_rate))];
                 //self.mutate_value(&|x| x -= error);
             }
-            //Expr::Neg(ref f) => {
-                //negate(error);
-                //f.backprop(error, learn_rate)
-            //}
+            Expr::Neg(ref f) => {
+                error.negate();
+                f.backprop(error, learn_rate)
+            }
             //Expr::Sq(ref f) => {
                 //mul_assign(error, f.unwrap_value().deref());
                 //f.backprop(error, learn_rate)

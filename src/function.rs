@@ -23,7 +23,7 @@ pub enum Expr {
     Constant(Constant),
     //Input(Input),
     Param(Param),
-    //Neg(Function),
+    Neg(Function),
     //Sq(Function),
     //Abs(Function),
     //Signum(Function),
@@ -92,9 +92,21 @@ macro_rules! bin_op {
         pub fn $op(arg1: Function, arg2: Function) -> Function {
             let dummy = arg1.value().clone();
             Function::new(dummy.clone(),
-                        combine_params(&arg1, &arg2),
-                        Expr::$Op(arg1, arg2),
-                        $n_placeholders) 
+                          combine_params(&arg1, &arg2),
+                          Expr::$Op(arg1, arg2),
+                          $n_placeholders) 
+        }
+    }
+}
+
+macro_rules! un_op {
+    ($Op:ident, $op:ident, $n_placeholders:expr) => {
+        pub fn $op(&self) -> Function {
+            let dummy = self.value().clone();
+            Function::new(dummy.clone(),
+                          self.params().clone(),
+                          Expr::$Op(self.clone()),
+                          $n_placeholders) 
         }
     }
 }
@@ -102,6 +114,7 @@ macro_rules! bin_op {
 impl Function {
 
     // Constructors
+    un_op!(Neg, neg, 0);
     bin_op!(Sub, sub, 1);
     bin_op!(Mul, mul, 1);
     bin_op!(Add, add, 1);
@@ -111,12 +124,12 @@ impl Function {
           body: Expr,
           pool_size: u32) -> Function {
        let dims = (&value).dims();
-        Function {
-            value: RefCell::new(value),
-            params: params,
-            body: Rc::new(body),
-            pool: Pool::new(dims, pool_size)
-        }
+       Function {
+           value: RefCell::new(value),
+           params: params,
+           body: Rc::new(body),
+           pool: Pool::new(dims, pool_size)
+       }
     }
 
     pub fn constant(value: Constant) -> Function {

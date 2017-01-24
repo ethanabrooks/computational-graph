@@ -4,7 +4,7 @@ use matrix::Matrix;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::ops::{
-    //Neg,
+    Neg,
     Add, 
     Sub, 
     Mul, 
@@ -14,7 +14,7 @@ use std::ops::{
 
 // TODO: wrappers
 extern {
-    //fn map_neg(m: *const Matrix, result: *mut Matrix);
+    fn map_neg(m: *const Matrix, result: *mut Matrix);
     //fn map_sq(m: *const Matrix, result: *mut Matrix);
     //fn map_abs(m: *const Matrix, result: *mut Matrix);
     //fn map_signum(m: *const Matrix, result: *mut Matrix);
@@ -68,7 +68,7 @@ macro_rules! fn1 {
 
 
 macro_rules! trait1 {
-    ($Op:ident, $op:ident, $idem:expr, $scalar_fn:expr) => {
+    ($Op:ident, $op:ident, $idem:expr) => {
         impl<'a> $Op for &'a Function {
             type Output = Function;
             fn $op(self) -> Function {
@@ -77,7 +77,7 @@ macro_rules! trait1 {
                 if self.all_equal($idem) {
                     self.clone()
                 } else {
-                    Function::new(None, self.params().clone(), Expr::$Op(self.clone()))
+                    Function::$op(self)
                 }
             }
         }
@@ -91,7 +91,7 @@ macro_rules! trait1 {
             type Output = Constant;
             fn $op(self) -> Constant {
                 match self {
-                    &Constant::Scalar(x) => Constant::Scalar($scalar_fn(x)),
+                    &Constant::Scalar(x) => Constant::Scalar(x.$op()),
                     &Constant::Matrix(ref m) => {
                         let mut result: Matrix = Matrix::empty_like(m);
                         let matrix_fn = concat_idents!(map_, $op);
@@ -211,7 +211,7 @@ compare!(all_less_than, lt);
 //fn1!(Signum, signum, signum_ref);
 //fn1!(Sq, sq, sq_ref, |x: f32| x * x);
 //fn1!(Sigmoid, sigmoid, sigmoid_ref, |x: f32| 1. / (1. + (-x).exp()));
-//trait1!(Neg, neg, 0., |x: f32| -x);
+trait1!(Neg, neg, 0.);
 trait2!(Add, add, AddAssign, add_assign, 0.);
 trait2!(Sub, sub, SubAssign, sub_assign, 0.);
 trait2!(Mul, mul, MulAssign, mul_assign, 1.);
@@ -244,11 +244,11 @@ trait2!(Mul, mul, MulAssign, mul_assign, 1.);
     //dot_transpose(f1, f2, false, false)
 //}
 
-//pub fn negate(c: &mut Constant) {
-    //*c *= Constant::Scalar(-1.)
-//}
-
 impl Constant {
+    pub fn negate(&mut self) {
+        *self *= Constant::Scalar(-1.)
+    }
+
     pub fn avg(&self) -> f32 {
         match self {
             &Constant::Scalar(x) => x,
