@@ -109,51 +109,6 @@ macro_rules! trait1 {
     }
 }
 
-//macro_rules! apply2 {
-    //($f1: expr, $f2:expr, $expr:expr) => {
-        //{
-            //let params1 = $f1.params().clone();
-            //let params2 = $f2.params().clone();
-            //let union = params1.union(&params2).cloned().collect();
-            //let function = Function::new(None, union, $expr);
-
-            //// optimization to combine constants
-            //match ($f1.body(), $f2.body()) { 
-                //(&Expr::Constant(_), &Expr::Constant(_)) =>
-                    //Function::constant(function.eval(&HashMap::new())),
-                //_ => function
-            //}
-        //}
-    //}
-//}
-
-//macro_rules! make_exec {
-    //($op_sign:expr, $op:ident) => {
-        //macro_rules! exec {
-            //($arg1:ident = $arg2:ident $op_sign $arg3:ident) => {
-                //match ($arg2, $arg3) {
-                    //(&Constant::Scalar(x1), &Constant::Scalar(x2)) => {
-                        //$arg1 = Constant::Scalar(x1.$op(x2));
-                    //}
-                    //(&Constant::Scalar(x), &Constant::Matrix(ref m)) => {
-                        //let scalar_matrix_fun = concat_idents!(broadcast_, $op);
-                        //unsafe { scalar_matrix_fun(x, m, &mut $arg1) };
-                    //}
-                    //(&Constant::Matrix(ref m), &Constant::Scalar(x)) => {
-                        //let matrix_scalar_fun = concat_idents!(broadcast_, $op, _rev);
-                        //unsafe { matrix_scalar_fun(m, x, &mut $arg1) };
-                    //}
-                    //(&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-                        //let matrix_fun = concat_idents!(elemwise_, $op);
-                        //unsafe { matrix_fun(m1, m2, &mut $arg1) };
-                    //}
-                //}
-            //}
-        //}
-    //}
-//}
-
-
 
 macro_rules! trait2 {
     ($Op:ident, $op:ident, $OpAssign:ident, $op_assign:ident, $identity:expr) => {
@@ -190,28 +145,6 @@ macro_rules! trait2 {
                 let mut result: Constant = Constant::empty_like(self);
                 result.$op_assign(self, other);
                 result
-                //match (self, other) {
-                    //(&Constant::Scalar(x1), &Constant::Scalar(x2)) => {
-                        //Constant::Scalar(x1.$op(x2)) }
-                    //(&Constant::Scalar(x), &Constant::Matrix(ref m)) => {
-                        //let scalar_matrix_fun = concat_idents!(broadcast_, $op);
-                        //unsafe { scalar_matrix_fun(x, m, &mut result) };
-                        //Constant::Matrix(result)
-                    //}
-                    //(&Constant::Matrix(ref m), &Constant::Scalar(x)) => {
-                        //let mut result = Matrix::empty_like(m);
-                        //let matrix_scalar_fun = concat_idents!(broadcast_, $op, _rev);
-                        //unsafe { matrix_scalar_fun(m, x, &mut result) };
-                        //Constant::Matrix(result)
-                    //}
-                    //(&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => {
-                        //let mut result = Matrix::empty_like(m1);
-                        //let matrix_fun = concat_idents!(elemwise_, $op);
-                        //unsafe { matrix_fun(m1, 
-                                            //m2, 
-                                            //&mut result) };
-                        //Constant::Matrix(result)
-                    //}
             }
         }
 
@@ -219,24 +152,6 @@ macro_rules! trait2 {
             type Output = Constant;
             fn $op(self, other: Constant) -> Constant { (&self).$op(&other) }
         }
-
-        //impl<'a> $OpAssign for &'a Constant {
-            //fn $op_assign(&mut self, other: &mut Constant) {
-                //let scalar_matrix_fun = concat_idents!(broadcast_, $op);
-                //let matrix_scalar_fun = concat_idents!(broadcast_, $op, _rev);
-                //let matrix_fun = concat_idents!(elemwise_, $op);
-                //match (**self, *other) {
-                    //(Constant::Scalar(ref mut x1), Constant::Scalar(x2)) => 
-                        //x1.$op_assign(x2),
-                    //(Constant::Matrix(ref mut m), Constant::Scalar(x)) =>
-                        //unsafe { matrix_scalar_fun(m, x, m) },
-                    //(Constant::Matrix(ref mut m1), Constant::Matrix(ref m2)) =>
-                        //unsafe { matrix_fun(m1, m2, m1) },
-                    //(Constant::Scalar(ref mut x), Constant::Matrix(ref m)) =>
-                        //x.$op_assign(other.avg())
-                //}
-            //}
-        //}
 
         impl $OpAssign for Constant {
             fn $op_assign(&mut self, other: Constant) {
@@ -286,45 +201,6 @@ macro_rules! compare {
         }
     }
 }
-
-//macro_rules! assign_trait {
-    //($trait_:ident, $fun:ident, $op:ident, $scalar_fun:expr) => {
-        //impl $trait_ for Constant {
-            //fn $fun(&mut self, other: Constant) {
-                //let matrix_scalar_fun = concat_idents!(broadcast_, $op, _rev);
-                //let matrix_fun = concat_idents!(elemwise_, $op);
-                //self.assign2(&other, $scalar_fun, matrix_scalar_fun, matrix_fun);
-            //}
-        //}
-    //}
-//}
-
-//macro_rules! assign2 {
-    //($name:ident, $scalar_fun:expr, $op:ident) => {
-        //pub fn $name(c: &mut Constant, other: &Constant) {
-            //let matrix_scalar_fun = concat_idents!(broadcast_, $op, _rev);
-            //let matrix_fun = concat_idents!(elemwise_, $op);
-            //c.assign2(other, $scalar_fun, matrix_scalar_fun, matrix_fun);
-        //}
-    //}
-//}
-
-//macro_rules! assign1 {
-    //($name:ident, $op:ident) => {
-        //assign1!($name, $op, &|x: f32| x.$op());
-    //};
-    //($name:ident, $op:ident, $scalar_fun:expr) => {
-        //pub fn $name(c: &mut Constant) {
-            //let matrix_fun = concat_idents!(map_, $op);
-            //match c {
-                //&mut Constant::Scalar(x) => *c = Constant::Scalar($scalar_fun(x)),
-                //&mut Constant::Matrix(ref mut m) => unsafe { matrix_fun(m, m) },
-            //}
-        //}
-    //}
-//}
-
-
 
 
 compare!(all_equal, eq);

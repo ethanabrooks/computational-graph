@@ -10,19 +10,22 @@ use std::ops::{Deref, DerefMut};
 
 macro_rules! exec {
     [($result:expr) = ($arg1:expr) - ($arg2:expr)] => {
-        ($result).sub_assign(($arg1), ($arg2))
+        ($result).sub_assign(($arg1), ($arg2));
     };
     [($result:expr) = ($arg1:expr) * ($arg2:expr)] => {
-        ($result).mul_assign($arg1, $arg2)
+        ($result).mul_assign($arg1, $arg2);
     };
     [($result:expr) = ($arg1:expr) + ($arg2:expr)] => {
-        ($result).add_assign($arg1, $arg2)
+        ($result).add_assign($arg1, $arg2);
     };
     [($result:expr) -= ($arg:expr)] => {
-        ($result).sub($arg)
+        ($result).sub($arg);
     };
     [($result:expr) *= ($arg:expr)] => {
-        ($result).mul($arg)
+        ($result).mul($arg);
+    };
+    [($result:expr) = ($arg:expr)] => {
+        $result.copy($arg);
     };
     [($result:expr) = -($arg:expr)] => {
         exec!(($result) *= ($arg))
@@ -56,7 +59,7 @@ impl Function {
             //Expr::Sigmoid(ref f)      => f.eval(args).sigmoid(),
             //Expr::Tanh(ref f)         => f.eval(args).tanh(),
             //Expr::Signum(ref f)       => f.eval(args).signum(),
-            //Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
+            Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
             Expr::Sub(ref f1, ref f2) => f1.eval(args) - f2.eval(args),
             Expr::Mul(ref f1, ref f2) => f1.eval(args) * f2.eval(args),
             //Expr::Dot(ref f1, ref f2, trans1, trans2) =>
@@ -75,7 +78,7 @@ impl Function {
                     //f.grad(param) * (self.clone() * (&Function::scalar(1.) - self)),
                 //Expr::Tanh(ref f)         => 
                     //f.grad(param) * (Function::scalar(1.) - sq_ref(self)),
-                //Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
+                Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
                 Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
                 Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
                                              &f2.grad(param) * f1,
@@ -165,16 +168,14 @@ impl Function {
             //}
             //Expr::Sigmoid(ref f) => self.assign1(f, args, &sigmoid_assign),
             //Expr::Tanh(ref f) => self.assign1(f, args, &tanh_assign),
-            //Expr::Add(ref f1, ref f2) => {
-                //assign_values(f1, f2, args);
-                //exec!{(self.value_mut()) = (f1.value().deref()) + (f2.value().deref())}
-            //}
+            Expr::Add(ref f1, ref f2) => {
+                assign_values(f1, f2, args);
+                exec![(self.value_mut()) = (value!(f1)) + (value!(f2))]
+            }
             Expr::Sub(ref f1, ref f2) => {
                 assign_values(f1, f2, args);
                 exec![(self.value_mut()) = (value!(f1)) - (value!(f2))]
             }
-                //self.assign2(f1, f2, args, 
-                                                      //&|x, y| x.sub(y)),
             Expr::Mul(ref f1, ref f2) => {
                 assign_values(f1, f2, args);
                 exec![(self.value_mut()) = (value!(f1)) * (value!(f2))]
@@ -244,12 +245,12 @@ impl Function {
 
                 //f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             //}
-            //Expr::Add(ref f1, ref f2) => {
-                //let placeholder = self.placeholder(0).deref_mut();
-                //exec!{(self.placeholder(0).deref_mut()) = error};
-                //f1.backprop(error, learn_rate);
-                //f2.backprop((self.placeholder(0).deref_mut()), learn_rate);
-            //}
+            Expr::Add(ref f1, ref f2) => {
+                exec![(placeholder!(self)) = (error)];
+
+                f1.backprop(error, learn_rate);
+                f2.backprop(placeholder!(self), learn_rate);
+            }
             Expr::Sub(ref f1, ref f2) => {
                 exec![(placeholder!(self)) = -(error)];
 

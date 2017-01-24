@@ -29,7 +29,7 @@ pub enum Expr {
     //Signum(Function),
     //Sigmoid(Function),
     //Tanh(Function),
-    //Add(Function, Function),
+    Add(Function, Function),
     Sub(Function, Function),
     Mul(Function, Function),
     //Dot(Function, Function, bool, bool),
@@ -87,9 +87,24 @@ impl<'a> Index<usize> for Pool {
     fn index(&self, i: usize) -> &RefCell<Constant> { &self.0[i] }
 }
 
+macro_rules! bin_op {
+    ($Op:ident, $op:ident, $n_placeholders:expr) => {
+        pub fn $op(arg1: Function, arg2: Function) -> Function {
+            let dummy = arg1.value().clone();
+            Function::new(dummy.clone(),
+                        combine_params(&arg1, &arg2),
+                        Expr::$Op(arg1, arg2),
+                        $n_placeholders) 
+        }
+    }
+}
+
 impl Function {
 
     // Constructors
+    bin_op!(Sub, sub, 1);
+    bin_op!(Mul, mul, 1);
+    bin_op!(Add, add, 1);
 
    fn new(value: Constant,
           params: HashSet<String>,
@@ -108,13 +123,21 @@ impl Function {
         Function::new(value.clone(), HashSet::new(), Expr::Constant(value), 0)
     }
 
-    pub fn sub(arg1: Function, arg2: Function) -> Function {
-        let dummy = arg1.value().clone();
-        Function::new(dummy.clone(),
-                      combine_params(&arg1, &arg2),
-                      Expr::Sub(arg1, arg2),
-                      1) 
-    }
+    //pub fn sub(arg1: Function, arg2: Function) -> Function {
+        //let dummy = arg1.value().clone();
+        //Function::new(dummy.clone(),
+                      //combine_params(&arg1, &arg2),
+                      //Expr::Sub(arg1, arg2),
+                      //1) 
+    //}
+
+    //pub fn sub(arg1: Function, arg2: Function) -> Function {
+        //let dummy = arg1.value().clone();
+        //Function::new(dummy.clone(),
+                      //combine_params(&arg1, &arg2),
+                      //Expr::Sub(arg1, arg2),
+                      //1) 
+    //}
 
     //#[allow(dead_code)]
     //pub fn input(s: &str, dims: Vec<u32>) -> Function {
