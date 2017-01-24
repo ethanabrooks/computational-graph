@@ -5,10 +5,12 @@ use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 use std::ops::Index;
 
-#[derive(Debug, Clone)]
+//#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Pool(Vec<RefCell<Constant>>);
 
-#[derive(Debug, Clone)]
+//#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Function {
     value: RefCell<Constant>,
     params: HashSet<String>,
@@ -16,7 +18,7 @@ pub struct Function {
     pool: Pool,
 }
 
-#[derive(Debug)]
+//#[derive(Debug)]
 pub enum Expr {
     Constant(Constant),
     //Input(Input),
@@ -27,9 +29,9 @@ pub enum Expr {
     //Signum(Function),
     //Sigmoid(Function),
     //Tanh(Function),
-    Add(Function, Function),
+    //Add(Function, Function),
     Sub(Function, Function),
-    Mul(Function, Function),
+    //Mul(Function, Function),
     //Dot(Function, Function, bool, bool),
 }
 
@@ -212,7 +214,8 @@ impl Function {
         for function in functions {
             match *function.body {
                 Expr::Param(_) => {},
-                _ => panic!("{} must be a param", &function),
+                _ => panic!("TODO: change this message")
+                    //panic!("{} must be a param", &function),
             }
         }
     }

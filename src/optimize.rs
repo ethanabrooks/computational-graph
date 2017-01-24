@@ -9,61 +9,32 @@ use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
 macro_rules! exec {
+    (($result:expr) = ($arg1:expr) - ($arg2:expr)) => {
+        ($result).sub_assign(($arg1), ($arg2))
+    };
+    (($result:expr) = ($arg1:expr) * ($arg2:ident)) => {
+        ($result).mul_assign($arg1, $arg2)
+    };
+    (($result:expr) = ($arg1:ident) + ($arg2:ident)) => {
+        ($result).add_assign($arg1, $arg2)
+    };
+    (($result:expr) -= ($arg:expr)) => {
+        ($result).sub($arg)
+    };
+    (($result:expr) *= ($arg:expr)) => {
+        ($result).mul($arg)
+    };
+    (($result:expr) = -($arg:expr)) => {
+        exec!(($result) *= ($arg))
+    };
+}
 
-    // Generic
-    ($result:ident.value.$op:ident($arg:ident)) => {
-        $result.value_mut().$op($arg);
-    };
-    ($result:ident.$op:ident($arg:ident.value)) => {
-        $result.$op($arg.value().deref());
-    };
-    //($result:ident.$op:ident($arg1:ident, $arg2:ident)) => {
-        //$result.$op($arg1, $arg2);
-    //};
-    //($result:ident.value.$op:ident($arg:ident.value)) => {
-        //$result.value_mut().$op($arg.value().deref())
-    //};
-    ($result:ident.value.$op:ident($arg1:ident.value, $arg2:ident.value)) => {
-        $result.value_mut().$op($arg1.value().deref(), $arg2.value().deref());
-    };
-    ($result:ident.placeholder[$i:expr].$op:ident($arg1:ident, $arg2:ident.value)) => {
-        $result.placeholder($i).$op($arg1, $arg2.value().deref());
-    };
+macro_rules! value {
+    ($f:expr) => { $f.value().deref() }
+}
 
-    // Operator specific
-    ($result:ident.value = $arg1:ident.value + $arg2:ident.value) => {
-        exec!($result.value.add_assign($arg1.value, $arg2.value))
-    };
-    //($result:ident.value += $arg:ident) => {
-        //exec!($result.value.add($arg))
-    //};
-    ($result:ident.value = $arg1:ident.value - $arg2:ident.value) => {
-        exec!($result.value.sub_assign($arg1.value, $arg2.value))
-    };
-    ($result:ident.value -= $arg:ident) => {
-        exec!($result.value.sub($arg))
-    };
-    ($f:ident.placeholder[$i:expr] = -$arg:ident) => {
-        $f.placeholder($i).deref_mut().mul_assign($arg, &Constant::Scalar(-1.))
-    };
-    ($result:ident.placeholder[$i:expr] = $arg:ident) => {
-        $result.placeholder($i).deref_mut().copy($arg);
-    };
-    ($f:ident.placeholder[$i:expr] = $arg2:ident * $arg1:ident) => {
-        exec!($f.placeholder[$i].mul_assign($arg1, $arg2))
-    };
-    ($f:ident.placeholder[$i:expr] = $arg2:ident.value * $arg1:ident) => {
-        exec!($f.placeholder[$i].mul_assign($arg1, $arg2.value))
-    };
-    ($result:ident.value = $arg1:ident.value * $arg2:ident.value) => {
-        exec!($result.value.mul_assign($arg1.value, $arg2.value))
-    };
-    //($result:ident.value *= $arg:ident) => {
-        //exec!($result.value.mul($arg))
-    //};
-    ($result:ident *= $arg:ident.value) => {
-        exec!($result.mul($arg.value))
-    } 
+macro_rules! placeholder {
+    ($f:expr, $i:expr) => { $f.placeholder($i).deref_mut() }
 }
 
 impl Function {
@@ -84,9 +55,9 @@ impl Function {
             //Expr::Sigmoid(ref f)      => f.eval(args).sigmoid(),
             //Expr::Tanh(ref f)         => f.eval(args).tanh(),
             //Expr::Signum(ref f)       => f.eval(args).signum(),
-            Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
+            //Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
             Expr::Sub(ref f1, ref f2) => f1.eval(args) - f2.eval(args),
-            Expr::Mul(ref f1, ref f2) => f1.eval(args) * f2.eval(args),
+            //Expr::Mul(ref f1, ref f2) => f1.eval(args) * f2.eval(args),
             //Expr::Dot(ref f1, ref f2, trans1, trans2) =>
                 //Constant::dot(&f1.eval(args), &f2.eval(args), trans1, trans2)
         }
@@ -103,10 +74,10 @@ impl Function {
                     //f.grad(param) * (self.clone() * (&Function::scalar(1.) - self)),
                 //Expr::Tanh(ref f)         => 
                     //f.grad(param) * (Function::scalar(1.) - sq_ref(self)),
-                Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
+                //Expr::Add(ref f1, ref f2) => f1.grad(param) + f2.grad(param),
                 Expr::Sub(ref f1, ref f2) => f1.grad(param) - f2.grad(param),
-                Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
-                                             &f2.grad(param) * f1,
+                //Expr::Mul(ref f1, ref f2) => &f1.grad(param) * f2 +
+                                             //&f2.grad(param) * f1,
                 //Expr::Dot(_, _, _, _) => panic!("not implemented"),
                 Expr::Param(_) => Function::constant(self.value_mut()
                                                        .copy_and_fill(1.)),
@@ -129,9 +100,9 @@ impl Function {
             self.assign_values(&args);
             let mut error = self.value_mut().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
-            if (i + 1) % print_freq  == 0 {
-                println!("{}", self.value().deref());
-            }
+            //if (i + 1) % print_freq  == 0 {
+                //println!("{}", self.value().deref());
+            //}
         }
     }
 
@@ -178,7 +149,12 @@ impl Function {
             //Expr::Input(ref i) =>
                 //self.set_value(args.get::<str>(&i.name).expect("missing arg").clone()),
                 //// TODO: avoid clone?
-            //Expr::Neg(ref f) => self.assign1(f, args, &negate),
+            //Expr::Neg(ref f) => {
+                //f.assign_values(args);
+                //let self_value = self.value_mut();
+                //let f_value = f.value().deref();
+                //exec!(self_value = -f_value);
+            //}
             //Expr::Sq(ref f) => self.assign1(f, args, &sq_assign),
             //Expr::Abs(ref f) => self.assign1(f, args, &abs_assign),
             //Expr::Signum(ref f) => {
@@ -188,20 +164,20 @@ impl Function {
             //}
             //Expr::Sigmoid(ref f) => self.assign1(f, args, &sigmoid_assign),
             //Expr::Tanh(ref f) => self.assign1(f, args, &tanh_assign),
-            Expr::Add(ref f1, ref f2) => {
-                assign_values(f1, f2, args);
-                exec!(self.value = f1.value + f2.value)
-            }
+            //Expr::Add(ref f1, ref f2) => {
+                //assign_values(f1, f2, args);
+                //exec!{(self.value_mut()) = (f1.value().deref()) + (f2.value().deref())}
+            //}
             Expr::Sub(ref f1, ref f2) => {
                 assign_values(f1, f2, args);
-                exec!(self.value = f1.value - f2.value)
+                exec!((self.value_mut()) = (value!(f1)) - (value!(f2)))
             }
                 //self.assign2(f1, f2, args, 
                                                       //&|x, y| x.sub(y)),
-            Expr::Mul(ref f1, ref f2) => {
-                assign_values(f1, f2, args);
-                exec!(self.value = f1.value * f2.value)
-            }
+            //Expr::Mul(ref f1, ref f2) => {
+                //assign_values(f1, f2, args);
+                //exec!{(self.value_mut()) = (f1.value().deref()) * (f2.value().deref())}
+            //}
             //Expr::Dot(ref f1, ref f2, trans1, trans2) => {
                 //f1.assign_values(args);
                 //f2.assign_values(args);
@@ -224,7 +200,8 @@ impl Function {
             Expr::Param(_) => {
                 //*error *= Constant::Scalar(learn_rate);
                 //let mut value = self.unwrap_value_mut();
-                exec!(self.value -= error);
+                //let self_value = self.value_mut();
+                exec!{(self.value_mut()) -= (error)};
                 //self.mutate_value(&|x| x -= error);
             }
             //Expr::Neg(ref f) => {
@@ -266,12 +243,14 @@ impl Function {
 
                 //f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             //}
-            Expr::Add(ref f1, ref f2) => {
-                exec!(self.placeholder[0] = error);
-                f1.backprop(error, learn_rate);
-                f2.backprop(self.placeholder(0).deref_mut(), learn_rate);
-            }
+            //Expr::Add(ref f1, ref f2) => {
+                //let placeholder = self.placeholder(0).deref_mut();
+                //exec!{(self.placeholder(0).deref_mut()) = error};
+                //f1.backprop(error, learn_rate);
+                //f2.backprop((self.placeholder(0).deref_mut()), learn_rate);
+            //}
             Expr::Sub(ref f1, ref f2) => {
+                //let placeholder = self.placeholder(0).deref_mut();
                 //self.get_placeholder(0).deref_mut().mul(-1, x)
                 //self.mutate_placeholder(0, &|x| {
                     //x.copy(error); // error
@@ -281,23 +260,26 @@ impl Function {
                 //let mut refmut = self.placeholder(0);
                 //let placeholder = refmut.deref_mut();
                 //placeholder.copy(error);
-                exec!(self.placeholder[0] = -error);
+                exec!((placeholder!(self, 0)) = -(error));
 
                 f1.backprop(error, learn_rate);
-                f2.backprop(self.placeholder(0).deref_mut(), learn_rate);
+                f2.backprop(placeholder!(self, 0), learn_rate);
             }
-            Expr::Mul(ref f1, ref f2) => {
-                //self.mutate_placeholder(0, &|x| {
-                    //x.copy(error);
-                    //mul_assign(x, &f1.unwrap_value().deref()); // error * f1
-                //});
-                //mul_assign(error, &f2.unwrap_value().deref()); // error * f2
-                exec!(self.placeholder[0] = f1.value * error);
-                exec!(error *= f2.value);
+            //Expr::Mul(ref f1, ref f2) => {
+                //let placeholder = self.placeholder(0).deref_mut();
+                //let f1_value = f1.value().deref();
+                //let f2_value = f2.value().deref();
+                ////self.mutate_placeholder(0, &|x| {
+                    ////x.copy(error);
+                    ////mul_assign(x, &f1.unwrap_value().deref()); // error * f1
+                ////});
+                ////mul_assign(error, &f2.unwrap_value().deref()); // error * f2
+                //exec!(placeholder = f1_value * error);
+                //exec!(error *= f2_value);
 
-                f1.backprop(error, learn_rate);
-                f2.backprop(self.placeholder(0).deref_mut(), learn_rate);
-            }
+                //f1.backprop(error, learn_rate);
+                //f2.backprop(placeholder, learn_rate);
+            //}
             //Expr::Dot(ref f1, ref f2, trans1, trans2) => {
                 //// placeholder[0]: dot(error, f2.T)
                 //self.mutate_placeholder(0, &|x| x.assign_dot(&error, &f2.unwrap_value(),
