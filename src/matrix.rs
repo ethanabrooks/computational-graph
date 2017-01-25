@@ -50,8 +50,8 @@ impl Matrix {
         matrix
     }
 
-    pub fn empty_for_dot(m1: &Matrix, m2: &Matrix, 
-                         trans1: bool, trans2: bool) -> Matrix {
+    pub fn empty_for_dot(m1: &Matrix, trans1: bool,
+                         m2: &Matrix, trans2: bool) -> Matrix {
         if trans1 {
             if trans2 {
                 Matrix::empty(m1.width().clone(), m2.height().clone())

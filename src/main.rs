@@ -119,8 +119,8 @@ mod tests {
     fn dot_test() {
         let x = Function::param("m", Constant::single_val(vec![2, 2], START));
         let c = Function::single_val_matrix(2, 2, 3.); 
-        let f1 = dot(&c, &x);
-        let f2 = dot(&x, &c);
+        let f1 = dot!(&c, &x);
+        let f2 = dot!(&x, &c);
         for f in &[f1, f2] {
             f.minimize(&HashMap::new(), 0.1, 10, 1);
             assert!(f.all_less_than(-29.), "F: {}", f);

@@ -24,19 +24,10 @@
 #define BIN_BROADCAST(name, op) \
   __global__ \
   void _ ## name ## _scalar(int len, float *result, const float *a, float val) { \
-    SET(result, val op a[IDx]) \
+    SET(result, a[IDx] op val) \
   } \
   void broadcast_ ## name(float val, const Matrix *m, Matrix *result) { \
     DEFAULT_LAUNCH(_ ## name ## _scalar, result, m->dev_array, val); \
-  }
-
-#define BIN_BROADCAST_REV(name, op) \
-  __global__ \
-  void _ ## name ## _scalar_rev(int len, float *result, const float *a, float val) { \
-    SET(result, a[IDx] op val) \
-  } \
-  void broadcast_ ## name ## _rev(const Matrix *m, float val, Matrix *result) { \
-    DEFAULT_LAUNCH(_ ## name ## _scalar_rev, result, m->dev_array, val); \
   }
 
 #define BIN_ELEMWISE(name, op) \
@@ -74,10 +65,6 @@ extern "C" {
   BIN_BROADCAST(mul, *) // broadcast_mult
   BIN_BROADCAST(add, +) // broadcast_add
   BIN_BROADCAST(sub, -) // broadcast_sub
-
-  BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
-  BIN_BROADCAST_REV(mul, *) // broadcast_mul_rev
-  BIN_BROADCAST_REV(add, +) // broadcast_add_rev
 
   void gemm(const Matrix *m1, bool trans1,
             const Matrix *m2, bool trans2,

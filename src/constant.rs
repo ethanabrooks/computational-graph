@@ -86,14 +86,14 @@ impl Constant {
         }
     }
 
-    pub fn empty_for_dot(c1: &Constant, c2: &Constant, 
-                        trans1: bool, trans2: bool) -> Constant {
+    pub fn empty_for_dot(c1: &Constant, trans1: bool, 
+                         c2: &Constant, trans2: bool) -> Constant {
         match (c1, c2) {
             (&Constant::Scalar(_), &Constant::Scalar(_)) |
             (&Constant::Matrix(_), &Constant::Scalar(_)) |
             (&Constant::Scalar(_), &Constant::Matrix(_)) => Constant::empty_like(c1),
             (&Constant::Matrix(ref m1), &Constant::Matrix(ref m2)) => 
-                Constant::Matrix(Matrix::empty_for_dot(m1, m2, trans1, trans2))
+                Constant::Matrix(Matrix::empty_for_dot(m1, trans1, m2, trans2))
         }
     }
 

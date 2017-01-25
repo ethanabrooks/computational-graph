@@ -28,20 +28,7 @@
     CHECK_EQUAL(m->width, result->width); \
     int i; \
     rng(i, 0, size(m)) { \
-      result->array[i] = f_broadcast_ ## name(val, m->array[i]); \
-    } \
-  } \
-
-#define BIN_BROADCAST_REV(name, op) \
-  float f_broadcast_rev_ ## name(float val1, float val2) { \
-    return val1 op val2; \
-  } \
-  void broadcast_ ## name ## _rev(float val, const Matrix *m, Matrix *result) { \
-    CHECK_EQUAL(m->height, result->height); \
-    CHECK_EQUAL(m->width, result->width); \
-    int i; \
-    rng(i, 0, size(m)) { \
-      result->array[i] = f_broadcast_rev_ ## name(m->array[i], val); \
+      result->array[i] = f_broadcast_ ## name(m->array[i], val); \
     } \
   } \
 
@@ -83,10 +70,6 @@ extern "C" {
   BIN_BROADCAST(mul, *) // broadcast_mult
   BIN_BROADCAST(add, +) // broadcast_add
   BIN_BROADCAST(sub, -) // broadcast_sub
-
-  BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
-  BIN_BROADCAST_REV(mul, *) // broadcast_mul_rev
-  BIN_BROADCAST_REV(add, +) // broadcast_add_rev
 
   void gemm(const Matrix *m1, bool trans1,
             const Matrix *m2, bool trans2,

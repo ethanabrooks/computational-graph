@@ -23,10 +23,6 @@ extern "C" {
   void broadcast_add(float val, Matrix *m, Matrix *result); 
   void broadcast_sub(float val, Matrix *m, Matrix *result); // e.g. 1 - [ [1 1] [1 1] ]
 
-  void broadcast_sub_rev(Matrix *m, float val, Matrix *result); // e.g. [ [1 1] [1 1] ] - 1
-  void broadcast_mul_rev(Matrix *m, float val, Matrix *result); // e.g. [ [1 1] [1 1] ] * 1
-  void broadcast_add_rev(Matrix *m, float val, Matrix *result); // for use with assign2
-
   bool all_equal(const Matrix *m, float x);
   bool all_less_than(const Matrix *m, float x);
   float reduce_sum(const Matrix *m);

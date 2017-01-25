@@ -2,7 +2,6 @@ use constant::Constant;
 use std::cell::{RefCell, Ref, RefMut};
 use std::collections::HashSet;
 use std::rc::Rc;
-use std::ops::{Deref, DerefMut};
 use std::ops::Index;
 
 //#[derive(Debug, Clone)]
@@ -25,14 +24,14 @@ pub enum Expr {
     Param(Param),
     Neg(Function),
     Sq(Function),
-    //Abs(Function),
+    Abs(Function),
     Signum(Function),
-    //Sigmoid(Function),
-    //Tanh(Function),
+    Sigmoid(Function),
+    Tanh(Function),
     Add(Function, Function),
     Sub(Function, Function),
     Mul(Function, Function),
-    //Dot(Function, Function, bool, bool),
+    Dot(Function, bool, Function, bool),
 }
 
 //#[derive(Debug)]
