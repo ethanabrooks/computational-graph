@@ -5,7 +5,7 @@ use constant::Constant;
           //sigmoid_assign, signum_assign, tanh_assign, sq_assign, 
           //abs_assign, negate, one_minus};
 use std::collections::HashMap;
-//use std::io::{Write, stderr};
+use std::io::{Write, stderr};
 use std::ops::{Deref, DerefMut};
 
 macro_rules! exec {
@@ -18,14 +18,19 @@ macro_rules! exec {
     [($result:expr) = ($arg1:expr) + ($arg2:expr)] => {
         ($result).add_assign($arg1, $arg2);
     };
+    [($result:expr) = sq($arg:expr)] => {
+        $result.copy($arg);
+        $result.sq();
+    };
     [($result:expr) -= ($arg:expr)] => {
         ($result).sub($arg);
     };
     [($result:expr) *= ($arg:expr)] => {
         ($result).mul($arg);
     };
-    [($result:expr) = ($arg:expr)] => {
+    [($result:expr) = sign($arg:expr)] => {
         $result.copy($arg);
+        $result.signum();
     };
     [($result:expr) = -($arg:expr)] => {
         exec!(($result) *= ($arg))
@@ -34,11 +39,6 @@ macro_rules! exec {
 
 macro_rules! value {
     ($f:expr) => { $f.value().deref() }
-}
-
-macro_rules! placeholder {
-    ($f:expr) => { $f.placeholder(0).deref_mut() };
-    ($f:expr, $i:expr) => { $f.placeholder($i).deref_mut() };
 }
 
 impl Function {
@@ -54,11 +54,11 @@ impl Function {
             //}
             Expr::Param(_)            => self.value().clone(),
             Expr::Neg(ref f)          => -f.eval(args),
-            //Expr::Sq(ref f)           => f.eval(args) * f.eval(args),
+            Expr::Sq(ref f)           => f.eval(args) * f.eval(args),
             //Expr::Abs(ref f)          => f.eval(args).abs(),
             //Expr::Sigmoid(ref f)      => f.eval(args).sigmoid(),
             //Expr::Tanh(ref f)         => f.eval(args).tanh(),
-            //Expr::Signum(ref f)       => f.eval(args).signum(),
+            Expr::Signum(ref f)       => f.eval(args).signum(),
             Expr::Add(ref f1, ref f2) => f1.eval(args) + f2.eval(args),
             Expr::Sub(ref f1, ref f2) => f1.eval(args) - f2.eval(args),
             Expr::Mul(ref f1, ref f2) => f1.eval(args) * f2.eval(args),
@@ -71,9 +71,9 @@ impl Function {
         if self.params().contains::<str>(&param) {
             match *self.body() {
                 Expr::Neg(ref f)          => -f.grad(param),
-                //Expr::Sq(ref f)           => &f.grad(param) * f,
+                Expr::Sq(ref f)           => &f.grad(param) * f,
                 //Expr::Abs(ref f)          => signum_ref(f) * f.grad(param),
-                //Expr::Signum(_)           => panic!("signum is nondifferentiable"),
+                Expr::Signum(_)           => panic!("signum is nondifferentiable"),
                 //Expr::Sigmoid(ref f)      =>
                     //f.grad(param) * (self.clone() * (&Function::scalar(1.) - self)),
                 //Expr::Tanh(ref f)         => 
@@ -157,13 +157,21 @@ impl Function {
                 f.assign_values(args);
                 exec!((self.value_mut()) = -(value!(f)));
             }
-            //Expr::Sq(ref f) => self.assign1(f, args, &sq_assign),
-            //Expr::Abs(ref f) => self.assign1(f, args, &abs_assign),
-            //Expr::Signum(ref f) => {
-                //writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
-                //Running `backprop` on this function will cause an error").unwrap();
-                //self.assign1(f, args, &signum_assign);
+            Expr::Sq(ref f) => {
+                f.assign_values(args);
+                exec!((self.value_mut()) = sq(value!(f)));
+            }
+            //Expr::Abs(ref f) => {
+                //f.assign_values(args);
+                //exec!((self.value_mut()) = abs(value!(f)));
             //}
+            Expr::Signum(ref f) => {
+                f.assign_values(args);
+                writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
+                //Running `backprop` on this function will cause an error").unwrap();
+                exec!((self.value_mut()) = sign(value!(f)));
+                //self.assign1(f, args, &signum_assign);
+            }
             //Expr::Sigmoid(ref f) => self.assign1(f, args, &sigmoid_assign),
             //Expr::Tanh(ref f) => self.assign1(f, args, &tanh_assign),
             Expr::Add(ref f1, ref f2) => {
@@ -194,25 +202,29 @@ impl Function {
     }
 
     fn backprop(&self, error: &mut Constant, learn_rate: f32) {
-        //self.maybe_alloc_placeholders(error);
+
+        macro_rules! placeholder {
+            () => { self.placeholder(0).deref_mut() };
+            (i:expr) => { self.placeholder($i).deref_mut() };
+        }
+
         if self.params().is_empty() { return; }
         match *self.body() {
-            Expr::Param(_) => {
-                //*error *= Constant::Scalar(learn_rate);
-                //let mut value = self.unwrap_value_mut();
-                //let self_value = self.value_mut();
-                exec![(self.value_mut()) = (error) * (&Constant::Scalar(learn_rate))];
-                //self.mutate_value(&|x| x -= error);
-            }
+            Expr::Param(_) => 
+                exec![(self.value_mut()) = (error) * (&Constant::Scalar(learn_rate))], 
             Expr::Neg(ref f) => {
                 error.negate();
                 f.backprop(error, learn_rate)
             }
-            //Expr::Sq(ref f) => {
-                //mul_assign(error, f.unwrap_value().deref());
-                //f.backprop(error, learn_rate)
-            //}
+            Expr::Sq(ref f) => {
+                exec![(error) *= (&Constant::Scalar(2.))];  // TODO: is this right??
+                exec![(error) *= (value!(*self))];
+                f.backprop(error, learn_rate)
+            }
             //Expr::Abs(ref f) => {
+                //exec![(placeholder!()) = signum(value!(self))];  // TODO: is this right??
+                //exec![(placeholder!()) *= (error)];
+                //f.backprop(placeholder!(), learn_rate);
                 //self.mutate_placeholder(0, &|x| {
                     //x.copy(f.unwrap_value().deref()); // out
                     //signum_assign(x);                 // signum(out)
@@ -220,7 +232,7 @@ impl Function {
                 //});
                 //f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             //}
-            //Expr::Signum(_) => panic!("sign is not differentiable"),
+            Expr::Signum(_) => panic!("sign is not differentiable"),
             //Expr::Sigmoid(ref f) => {
                 //let val = self.unwrap_value();
                 //self.mutate_placeholder(0, &|x| {
@@ -244,23 +256,23 @@ impl Function {
                 //f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             //}
             Expr::Add(ref f1, ref f2) => {
-                exec![(placeholder!(self)) = (error)];
+                placeholder!().copy(error);
 
                 f1.backprop(error, learn_rate);
-                f2.backprop(placeholder!(self), learn_rate);
+                f2.backprop(placeholder!(), learn_rate);
             }
             Expr::Sub(ref f1, ref f2) => {
-                exec![(placeholder!(self)) = -(error)];
+                exec![(placeholder!()) = -(error)];
 
                 f1.backprop(error, learn_rate);
-                f2.backprop(placeholder!(self), learn_rate);
+                f2.backprop(placeholder!(), learn_rate);
             }
             Expr::Mul(ref f1, ref f2) => {
-                exec![(placeholder!(self)) = (value!(f1)) * (error)];
+                exec![(placeholder!()) = (value!(f1)) * (error)];
                 exec![(error) *= (value!(f2))];
 
                 f1.backprop(error, learn_rate);
-                f2.backprop(placeholder!(self), learn_rate);
+                f2.backprop(placeholder!(), learn_rate);
             }
             //Expr::Dot(ref f1, ref f2, trans1, trans2) => {
                 //// placeholder[0]: dot(error, f2.T)

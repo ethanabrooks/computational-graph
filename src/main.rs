@@ -1,4 +1,8 @@
-#![feature(advanced_slice_patterns, slice_patterns, concat_idents, test, drop_types_in_const)]
+#![feature(advanced_slice_patterns,
+           slice_patterns,
+           concat_idents,
+           test,
+           drop_types_in_const)]
 
 #[macro_use]
 extern crate lazy_static;

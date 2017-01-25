@@ -3,21 +3,13 @@ use constant::Constant;
 use matrix::Matrix;
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::ops::{
-    Neg,
-    Add, 
-    Sub, 
-    Mul, 
-    MulAssign,
-    SubAssign,
-    AddAssign};
+use std::ops::{Neg, Add, Sub, Mul, MulAssign, SubAssign, AddAssign};
 
-// TODO: wrappers
 extern {
     fn map_neg(m: *const Matrix, result: *mut Matrix);
-    //fn map_sq(m: *const Matrix, result: *mut Matrix);
+    fn map_sq(m: *const Matrix, result: *mut Matrix);
     //fn map_abs(m: *const Matrix, result: *mut Matrix);
-    //fn map_signum(m: *const Matrix, result: *mut Matrix);
+    fn map_signum(m: *const Matrix, result: *mut Matrix);
     //fn map_sigmoid(m: *const Matrix, result: *mut Matrix);
     //fn map_tanh(m: *const Matrix, result: *mut Matrix);
     //fn map_one_minus(m: *const Matrix, result: *mut Matrix);
@@ -37,68 +29,138 @@ extern {
     fn reduce_sum(matrix: *const Matrix) -> f32;
 }
 
-macro_rules! fn1 {
-    ($Op:ident, $op:ident, $op_ref:ident) => {
-        fn1!($Op, $op, $op_ref, |x: f32| x.$op());
+// constructor for function
+macro_rules! Function1 {
+    ($Op:ident, $op:ident, $f:ident, $n_placeholders:expr) => {
+        Function::new($f.value().clone(),
+                        $f.params().clone(),
+                        Expr::$Op($f.clone()),
+                        $n_placeholders) 
     };
-    ($Op:ident, $op:ident, $op_ref:ident, $scalar_fn:expr) => {
-        #[allow(dead_code)]
-        pub fn $op(f: Function) -> Function {
-            Function::new(None, f.params().clone(), Expr::$Op(f.clone()))
+
+    ($Op:ident, $op:ident, $f:ident, $n_placeholders:expr, $identity:expr) => {{
+
+        // optimization to eliminate identities
+        if $f.all_equal($identity) {
+            $f.clone()
+        } else {
+            Function1!($Op, $op, $f, $n_placeholders)
         }
-        #[allow(dead_code)]
-        pub fn $op_ref(f: &Function) -> Function {
-            Function::new(None, f.params().clone(), Expr::$Op(f.clone()))
-        }
-        impl Constant {
-            pub fn $op(&self) -> Constant {
-                match self {
-                    &Constant::Scalar(x) => Constant::Scalar($scalar_fn(x)),
-                    &Constant::Matrix(ref m) => {
-                        let mut result: Matrix = Matrix::empty_like(m);
-                        let matrix_fn = concat_idents!(map_, $op);
-                        unsafe { matrix_fn(m, &mut result) };
-                        Constant::Matrix(result)
-                    }
-                }
+    }}
+}
+
+// implement op for constants
+macro_rules! Constant1 {
+    ($self_:expr, $op:ident, $scalar_fn:expr) => {
+        match *$self_ {
+            Constant::Scalar(x) => Constant::Scalar($scalar_fn(x)),
+            Constant::Matrix(ref m) => {
+                let mut result: Matrix = Matrix::empty_like(m);
+                let matrix_fn = concat_idents!(map_, $op);
+                unsafe { matrix_fn(m, &mut result) };
+                Constant::Matrix(result)
             }
         }
+    }
+}
+
+macro_rules! fn1 {
+
+    // use default implementation for scalar_fn
+    ($Op:ident, 
+     $op:ident, 
+     placeholders: $n_placeholders:expr) => {
+        fn1!($Op, $op, |x: f32| x.$op(),  // default implementation
+             placeholders: $n_placeholders);
     };
+
+    // use default implementation for scalar_fn
+    ($Op:ident, 
+     $op:ident, 
+     placeholders: $n_placeholders:expr, 
+     identity: $identity:expr) => {
+        fn1!($Op, $op, |x: f32| x.$op(),  // default implementation
+             placeholders: $n_placeholders, 
+             identity: $identity);
+    };
+
+    // no identity
+    ($Op:ident, 
+     $op:ident,
+     $scalar_fn:expr, 
+     placeholders: 
+     $n_placeholders:expr) => {
+        fn1!($Op, $op, |x: f32| x.$op(), 
+             placeholders: $n_placeholders, 
+             identity: $identity);
+
+        #[allow(dead_code)]
+        pub fn $op(f: Function) -> Function {
+            Function1!($Op, $op, f, $n_placeholders);
+        }
+    };
+
+    // identity
+    ($Op:ident, 
+     $op:ident, 
+     $scalar_fn:expr, 
+     placeholders: $n_placeholders:expr, 
+     identity: $identity:expr) => {
+
+        #[allow(dead_code)]
+        pub fn $op(f: Function) -> Function {
+            Function1!($Op, $op, f, $n_placeholders)
+        }
+
+        impl Constant {
+            pub fn $op(&mut self) -> Constant {
+
+                // in-place mutation
+                Constant1!(self, $op, $scalar_fn)
+            }
+        }
+    }
 }
 
 
 macro_rules! trait1 {
-    ($Op:ident, $op:ident, $idem:expr) => {
+
+    // use default implementation for scalar_fn
+    ($Op:ident, 
+     $op:ident, 
+     placeholders: $n_placeholders:expr, 
+     identity: $identity:expr) => {
+        trait1!($Op, $op, |x: f32| x.$op(), 
+             placeholders: $n_placeholders, 
+             identity: $identity);
+    };
+
+    ($Op:ident, 
+     $op:ident, 
+     $scalar_fn:expr, 
+     placeholders: $n_placeholders:expr, 
+     identity: $identity:expr) => {
+
         impl<'a> $Op for &'a Function {
             type Output = Function;
             fn $op(self) -> Function {
-
-                // optimization to eliminate identities
-                if self.all_equal($idem) {
-                    self.clone()
-                } else {
-                    Function::$op(self)
-                }
+                Function1!($Op, $op, self, $n_placeholders, $identity)
             }
         }
 
         impl $Op for Function {
             type Output = Function;
-            fn  $op(self) -> Function { (&self).$op() }
+            fn $op(self) -> Function {
+                self.$op()
+            }
         }
 
         impl<'a> $Op for &'a Constant {
             type Output = Constant;
             fn $op(self) -> Constant {
-                match self {
-                    &Constant::Scalar(x) => Constant::Scalar(x.$op()),
-                    &Constant::Matrix(ref m) => {
-                        let mut result: Matrix = Matrix::empty_like(m);
-                        let matrix_fn = concat_idents!(map_, $op);
-                        unsafe { matrix_fn(m, &mut result) };
-                        Constant::Matrix(result)
-                    }
-                }
+
+                // in-place mutation
+                Constant1!(self, $op, $scalar_fn)
             }
         }
 
@@ -111,7 +173,13 @@ macro_rules! trait1 {
 
 
 macro_rules! trait2 {
-    ($Op:ident, $op:ident, $OpAssign:ident, $op_assign:ident, $identity:expr) => {
+    ($Op:ident, 
+     $op:ident, 
+     $OpAssign:ident, 
+     $op_assign:ident, 
+     placeholders: $n_placeholders:expr, 
+     identity: $identity:expr) => {
+
         impl<'a> $Op for &'a Function {
             type Output = Function;
             fn $op(self, other: &Function) -> Function {
@@ -136,7 +204,17 @@ macro_rules! trait2 {
 
         impl $Op for Function {
             type Output = Function;
-            fn  $op(self, other: Function) -> Function { (&self).$op(&other) }
+            //fn $op(self, other: Function) -> Function { (&self).$op(&other) }
+
+            fn $op(self, other: Function) -> Function {
+                let params1 = self.params().clone();
+                let params2 = other.params().clone();
+                let params = params1.union(&params2).cloned().collect();
+                Function::new(self.value().clone(),
+                              params,
+                              Expr::$Op(self.clone(), other),
+                              $n_placeholders) 
+            }
         }
 
         impl<'a> $Op for &'a Constant {
@@ -206,15 +284,16 @@ macro_rules! compare {
 compare!(all_equal, eq);
 compare!(all_less_than, lt);
 //compare!(all_greater_than, gt);
-//fn1!(Abs, abs, abs_ref);
+//fn1!(Abs, abs, placeholders: 1, identity: 0.);
 //fn1!(Tanh, tanh, tanh_ref);
-//fn1!(Signum, signum, signum_ref);
-//fn1!(Sq, sq, sq_ref, |x: f32| x * x);
+fn1!(Signum, signum, placeholders: 0, identity: 0.);
+fn1!(Sq, sq, |x: f32| x * x, placeholders: 0, identity: 0.);
 //fn1!(Sigmoid, sigmoid, sigmoid_ref, |x: f32| 1. / (1. + (-x).exp()));
-trait1!(Neg, neg, 0.);
-trait2!(Add, add, AddAssign, add_assign, 0.);
-trait2!(Sub, sub, SubAssign, sub_assign, 0.);
-trait2!(Mul, mul, MulAssign, mul_assign, 1.);
+trait1!(Neg, neg, placeholders: 0, identity: 0.);
+trait2!(Add, add, AddAssign, add_assign, placeholders: 1, identity: 0.);
+trait2!(Sub, sub, SubAssign, sub_assign, placeholders: 1, identity: 0.);
+trait2!(Mul, mul, MulAssign, mul_assign, placeholders: 1, identity: 1.);
+
 //trait2!(Mul, mul, 0.);
 //assign_trait!(SubAssign, sub_assign, sub, &|x1: &mut f32, x2| *x1 -= x2);
 //assign_trait!(AddAssign, add_assign, add, &|x1: &mut f32, x2| *x1 += x2);
@@ -258,20 +337,20 @@ impl Constant {
         }
     }
 
-    fn assign2(&mut self, other: &Constant, 
-                  scalar_fun: &Fn(&mut f32, f32), 
-                  matrix_scalar_fun: unsafe extern "C" fn(*const Matrix, f32, *mut Matrix),
-                  matrix_fun: unsafe extern "C" fn(*const Matrix, *const Matrix, *mut Matrix)) {
-        match (self, other) {
-            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) => scalar_fun(x1, x2),
-            (&mut Constant::Matrix(ref mut m), &Constant::Scalar(x)) =>
-                unsafe { matrix_scalar_fun(m, x, m) },
-            (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) =>
-                unsafe { matrix_fun(m1, m2, m1) },
-            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) =>
-                scalar_fun(x, other.avg())
-        }
-    }
+    //fn assign2(&mut self, other: &Constant, 
+                  //scalar_fun: &Fn(&mut f32, f32), 
+                  //matrix_scalar_fun: unsafe extern "C" fn(*const Matrix, f32, *mut Matrix),
+                  //matrix_fun: unsafe extern "C" fn(*const Matrix, *const Matrix, *mut Matrix)) {
+        //match (self, other) {
+            //(&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) => scalar_fun(x1, x2),
+            //(&mut Constant::Matrix(ref mut m), &Constant::Scalar(x)) =>
+                //unsafe { matrix_scalar_fun(m, x, m) },
+            //(&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) =>
+                //unsafe { matrix_fun(m1, m2, m1) },
+            //(&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) =>
+                //scalar_fun(x, other.avg())
+        //}
+    //}
 
     //pub fn assign_dot(&mut self, c1: &Constant, c2: &Constant, trans1: bool, trans2: bool) {
         //match (self, c1, c2) {

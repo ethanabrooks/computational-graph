@@ -24,9 +24,9 @@ pub enum Expr {
     //Input(Input),
     Param(Param),
     Neg(Function),
-    //Sq(Function),
+    Sq(Function),
     //Abs(Function),
-    //Signum(Function),
+    Signum(Function),
     //Sigmoid(Function),
     //Tanh(Function),
     Add(Function, Function),
@@ -54,12 +54,6 @@ macro_rules! hashset {
     }}
 }
 
-fn combine_params(f1: &Function, f2: &Function) -> HashSet<String> {
-    let params1 = f1.params().clone();
-    let params2 = f2.params().clone();
-    return params1.union(&params2).cloned().collect()
-}
-
 impl Pool {
     fn new(dims: Vec<u32>, size: u32) -> Pool {
         Pool((0..size)
@@ -70,7 +64,7 @@ impl Pool {
     fn size(&self) -> usize {
         self.0.len()
     }
-    
+
     fn get(&self, i: usize) -> RefMut<Constant> {
         match self.0.get(i) {
             Some(x) => x.borrow_mut(),
@@ -87,39 +81,16 @@ impl<'a> Index<usize> for Pool {
     fn index(&self, i: usize) -> &RefCell<Constant> { &self.0[i] }
 }
 
-macro_rules! bin_op {
-    ($Op:ident, $op:ident, $n_placeholders:expr) => {
-        pub fn $op(arg1: Function, arg2: Function) -> Function {
-            let dummy = arg1.value().clone();
-            Function::new(dummy.clone(),
-                          combine_params(&arg1, &arg2),
-                          Expr::$Op(arg1, arg2),
-                          $n_placeholders) 
-        }
-    }
-}
-
-macro_rules! un_op {
-    ($Op:ident, $op:ident, $n_placeholders:expr) => {
-        pub fn $op(&self) -> Function {
-            let dummy = self.value().clone();
-            Function::new(dummy.clone(),
-                          self.params().clone(),
-                          Expr::$Op(self.clone()),
-                          $n_placeholders) 
-        }
-    }
-}
-
 impl Function {
 
     // Constructors
-    un_op!(Neg, neg, 0);
-    bin_op!(Sub, sub, 1);
-    bin_op!(Mul, mul, 1);
-    bin_op!(Add, add, 1);
+    //un_op!(Sq, sq, 0);
+    //un_op!(Neg, neg, 0);
+    //bin_op!(Sub, sub, 1);
+    //bin_op!(Mul, mul, 1);
+    //bin_op!(Add, add, 1);
 
-   fn new(value: Constant,
+   pub fn new(value: Constant,
           params: HashSet<String>,
           body: Expr,
           pool_size: u32) -> Function {
