@@ -358,22 +358,6 @@ pub fn dot(f1: &Function, trans1: bool, f2: &Function, trans2: bool) -> Function
     }
 }
 
-// user friendly version of dot
-macro_rules! dot {
-    (f1:$ident, f2:$ident) => {
-        dot(f1, false, f2, false)
-    };
-    (f1:$ident^T, f2:$ident) => {
-        dot(f1, true, f2, false)
-    };
-    (f1:$ident, f2:$ident^T) => {
-        dot(f1, false, f2, true)
-    };
-    (f1:$ident^T, f2:$ident^T) => {
-        dot(f1, true, f2, true)
-    };
-}
-
 impl Constant {
     pub fn dot_assign(&mut self, c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) {
         match (self, c1, c2) {

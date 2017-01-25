@@ -8,42 +8,6 @@ use std::collections::HashMap;
 use std::io::{Write, stderr};
 use std::ops::{Deref, DerefMut};
 
-macro_rules! exec {
-    [($result:expr) = dot(($arg1:expr) T=($t1:expr), ($arg2:expr) T=($t2:expr))] => {
-        $result.dot_assign($arg1, $t1, $arg2, $t2)
-    };
-    [($result:expr) = ($arg1:expr) - ($arg2:expr)] => {
-        ($result).sub_assign(($arg1), ($arg2));
-    };
-    [($result:expr) = ($arg1:expr) * ($arg2:expr)] => {
-        ($result).mul_assign($arg1, $arg2);
-    };
-    [($result:expr) = ($arg1:expr) + ($arg2:expr)] => {
-        ($result).add_assign($arg1, $arg2);
-    };
-    [($result:expr) -= ($arg:expr)] => {
-        ($result).sub($arg);
-    };
-    [($result:expr) *= ($arg:expr)] => {
-        ($result).mul($arg);
-    };
-    [($result:expr) = 1 - ($arg:expr)] => {
-        $result.copy($arg);
-        one_minus($result);
-    };
-    [($result:expr) = -($arg:expr)] => {
-        exec!(($result) *= ($arg))
-    };
-    [($result:expr) = $op:ident ($arg:expr)] => {
-        $result.copy($arg);
-        $result.$op();
-    };
-}
-
-macro_rules! value {
-    ($f:expr) => { $f.value().deref() }
-}
-
 impl Function {
     pub fn eval(&self, args: &HashMap<&str, Constant>) -> Constant {
         match *self.body() {
@@ -108,8 +72,7 @@ impl Function {
             let mut error = self.value_mut().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
             if (i + 1) % print_freq  == 0 {
-                //println!("{}", self.value().deref());
-                println!("blah");
+                println!("{}", self.value().deref());
             }
         }
     }
@@ -174,7 +137,7 @@ impl Function {
             Expr::Dot(ref f1, t1, ref f2, t2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
-                exec![(self.value_mut()) = dot((value!(f1)) T=(t1), (value!(f2)) T=(t2))]
+                exec![(self.value_mut()) = dot((value!(f1)) T=t1, (value!(f2)) T=t2)]
                 //self.mutate_value(&|x| x.assign_dot(val1.deref(), val2.deref(),
                                                     //trans1, trans2));
             }
@@ -263,18 +226,16 @@ impl Function {
                 f2.backprop(placeholder!(), learn_rate);
             }
             Expr::Dot(ref f1, t1, ref f2, t2) => {
-                // placeholder[0]: dot(error, f2.T)
-                exec![(placeholder!(0)) = dot((error) T=(false), (value!(f2)) T=(!t2))];
-                //self.mutate_placeholder(0, &|x| x.assign_dot(&error, &f2.unwrap_value(),
-                                                             //false, !trans2));
-                // placeholder[1]: dot(f1.T, error)
-                exec![(placeholder!(1)) = dot((value!(f1)) T=(!t1), (error) T=(false))];
-                //self.mutate_placeholder(1, &|x| x.assign_dot(&f1.unwrap_value(),
-                                                             //&error, !trans1, false));
+                exec![(placeholder!(0)) = dot((error) T=false, (value!(f2)) T=!t2)];
+                exec![(placeholder!(1)) = dot((value!(f1)) T=!t1, (error) T=false)];
 
                 f1.backprop(placeholder!(0), learn_rate);
                 f2.backprop(placeholder!(1), learn_rate);
 
+                //self.mutate_placeholder(0, &|x| x.assign_dot(&error, &f2.unwrap_value(),
+                                                             //false, !trans2));
+                //self.mutate_placeholder(1, &|x| x.assign_dot(&f1.unwrap_value(),
+                                                             //&error, !trans1, false));
                 //f1.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
                 //f2.backprop(self.get_placeholder(1).deref_mut(), learn_rate);
             }

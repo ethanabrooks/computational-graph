@@ -4,32 +4,22 @@
            test,
            drop_types_in_const)]
 
-#[macro_use]
-extern crate lazy_static;
 extern crate rand;
 extern crate test;
 
+#[macro_use]
+mod macros; 
 mod function; 
 mod constant; 
 mod matrix; 
 mod ops; 
 mod optimize; 
-//mod print; 
-//mod cmatrix;
-//mod lstm; 
+mod print; 
+mod lstm; 
 
-//#[allow(unused_imports)]
-//use ops::{sq, dot, abs, sigmoid, tanh};
-#[allow(unused_imports)]
 use function::Function;
-#[allow(unused_imports)]
-use constant::Constant;
-//#[allow(unused_imports)]
-//use lstm::lstm;
-#[allow(unused_imports)]
 use std::collections::HashMap;
-#[allow(unused_imports)]
-use matrix::Matrix;
+
 
 // TODO: design wrapper for matrix ops that checks for this.
 fn main() {
@@ -44,22 +34,23 @@ fn main() {
     //let m = Function::single_val_matrix(2, 2, 0.1);
     let f = Function::random_param("x", dims.clone(), -0.1, 0.1);
     f.minimize(&HashMap::new(), 0.01, 1000, 1000);
-    //PMatrix::empty(2, 2);
-    //println!("HERE");
-    //PMatrix::empty(2, 2);
-    //println!("HERE");
 }
 
 
 #[cfg(test)]
 mod tests {
+    use constant::Constant;
+    use lstm::lstm;
     use super::*;
     use test::Bencher;
+    use ops::dot;
 
     const START: f32 = 0.5;
 
     macro_rules! test {
-        ($test_name:ident, $f:expr, $learn_rate:expr, $goal:expr) => {
+        ($test_name:ident, $f:expr,
+         learning rate: $learn_rate:expr, 
+         test less than $goal:expr) => {
             #[test]
             fn $test_name () {
                 let x = Function::param("x", Constant::Scalar(START));
@@ -70,7 +61,10 @@ mod tests {
                 }
             }
         };
-        ($test_name:ident, $f:expr, $const_val:expr, $learn_rate:expr, $goal:expr) => {
+        ($test_name:ident, $f:expr, 
+         constants value: $const_val:expr, 
+         learning rate: $learn_rate:expr, 
+         test less than $goal:expr) => {
             #[test]
             fn $test_name () {
                 let cx = Function::scalar($const_val);
@@ -92,19 +86,54 @@ mod tests {
         }
     }
 
-    test!(single_param_test, |x| x, 1., -9.4);
-    test!(neg_test, |x: Function| -x, 1., -9.4);
-    test!(sq_test, |x: Function| sq(x), 0.1, 0.1);
-    test!(abs_test, |x: Function| abs(x), 0.1, 0.1);
-    test!(sigmoid_test, |x: Function| sigmoid(x), 1., 0.2);
-    test!(tanh_test, |x: Function| tanh(x), 1., -0.9);
-    test!(add_test, |x: Function, y: Function| x + y, 1., 1., -7.4);
-    test!(mul_test, |x: Function, y: Function| x * y, 2., 0.1, -2.5);
-    test!(sub_scalar_l_test, |x: Function| Function::scalar(1.) - x, 1., -8.4);
+    test!(single_param_test, |x| x, 
+          learning rate: 1., 
+          test less than -9.4);
+
+    test!(neg_test, |x: Function| -x, 
+          learning rate: 1., 
+          test less than -9.4);
+
+    test!(sq_test, |x: Function| x.sq(),
+          learning rate: 0.1,
+          test less than 0.1);
+
+    test!(abs_test, |x: Function| x.abs(),
+          learning rate: 0.1, 
+          test less than 0.1);
+
+    test!(sigmoid_test, |x: Function| x.sigmoid(),
+          learning rate: 1.,
+          test less than 0.2);
+
+    test!(tanh_test, |x: Function| x.tanh(),
+          learning rate: 1., 
+          test less than -0.9);
+
+    test!(add_test, |x: Function, y: Function| x + y,
+          constants value: 1., 
+          learning rate: 1., 
+          test less than -7.4);
+
+    test!(mul_test, |x: Function, y: Function| x * y,
+          constants value: 2., 
+          learning rate: 0.1, 
+          test less than -2.5);
+
+    test!(sub_scalar_l_test, |x: Function| Function::scalar(1.) - x,
+          learning rate: 1., 
+          test less than -8.4);
+
     test!(sub_matrix_r_test,
-          |x: Function| x - Function::single_val_matrix(2, 2, 1.), 1., -9.4);
+          |x: Function| x - Function::single_val_matrix(2, 2, 1.),
+          learning rate: 1., 
+          test less than -9.4);
+
     test!(sub_matrix_l_test,
-          |x: Function| Function::single_val_matrix(2, 2, 1.) - x, 1., -8.4);
+          |x: Function| Function::single_val_matrix(2, 2, 1.) - x,
+          learning rate: 1.,
+          test less than -8.4);
+
     test!(complex_test, |x: Function| {
         let a = Function::scalar(100.);
         let b = Function::matrix(2, 2, vec![
@@ -112,8 +141,10 @@ mod tests {
                                 0., 10.
                                 ]);
         let c = Function::scalar(10.);
-        sq(((&x - &a) * (&x + &b) - c))
-    }, 0.0001, 0.00001);
+        (((&x - &a) * (&x + &b) - c).sq())
+    }, 
+          learning rate: 0.0001,
+          test less than 0.0000);
 
     #[test]
     fn dot_test() {
@@ -145,7 +176,7 @@ mod tests {
             Constant::random(dims.clone(), -0.1, 0.1)
             ]; 
         let target = Function::random_matrix(dims.clone(), -0.1, 0.1);
-        let f = sq(lstm(inputs) - target);
+        let f = (lstm(inputs) - target).sq();
         b.iter(|| {
             f.minimize(&HashMap::new(), 0.01, 100, 1000);
             println!("iterating...");

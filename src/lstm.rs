@@ -1,4 +1,4 @@
-use ops::{dot, sigmoid, tanh};
+use ops::dot;
 use function::Function;
 use constant::Constant;
 
@@ -29,12 +29,12 @@ pub fn lstm_custom_params(input: Vec<Constant>,
             let x = Function::constant(head.clone());
 
             // The LSTM equations
-            let i = sigmoid(dot(&x, &Wi) + (&dot(&h, &Ui) + &bi));
-            let c = tanh(dot(&x, &Wc) + (&dot(&h, &Uc) + &bc));
-            let f = sigmoid(dot(&x, &Wf) + (&dot(&h, &Uf) + &bf));
+            let i = (dot!(&x, &Wi) + (&dot!(&h, &Ui) + &bi)).sigmoid();
+            let c = (dot!(&x, &Wc) + (&dot!(&h, &Uc) + &bc)).tanh();
+            let f = (dot!(&x, &Wf) + (&dot!(&h, &Uf) + &bf)).sigmoid();
             let C_new = i * c + (&f * &C);
-            let o = sigmoid(dot(&x, &Wo) + dot(&h, &Uo) + (&dot(&C_new, &Vo) + &bo));
-            let h_new = o * tanh(C);
+            let o = (dot!(&x, &Wo) + dot!(&h, &Uo) + (&dot!(&C_new, &Vo) + &bo)).sigmoid();
+            let h_new = o * C.tanh();
 
             lstm_custom_params(tail.to_vec(), Wi, Ui, bi, Wc, Uc, bc, Wf, Uf, bf,
                                               Wo, Uo, Vo, bo, C_new, h_new)
@@ -76,13 +76,14 @@ pub fn lstm(inputs: Vec<Constant>) -> Function {
     )
 }
 
+
 #[allow(non_snake_case, dead_code)]
 pub fn rnn(inputs: Vec<&Constant>, hidden_state: Function, bias: Function) -> Function {
     match &inputs[..] {
         &[] => hidden_state,
         &[ref head, ref tail..] => {
             let x = Function::constant((*head).clone());
-            sigmoid(&dot(&x, &hidden_state) + &bias) 
+            (&dot!(&x, &hidden_state) + &bias).sigmoid()
                 + rnn(tail.to_vec(), hidden_state, bias)
         }
     }
