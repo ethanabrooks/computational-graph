@@ -359,6 +359,7 @@ pub fn dot(f1: &Function, trans1: bool, f2: &Function, trans2: bool) -> Function
 }
 
 impl Constant {
+    // TODO implement for scalars
     pub fn dot_assign(&mut self, c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) {
         match (self, c1, c2) {
             (&mut Constant::Matrix(ref mut result),

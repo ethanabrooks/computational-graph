@@ -4,12 +4,10 @@ use std::collections::HashSet;
 use std::rc::Rc;
 use std::ops::Index;
 
-//#[derive(Debug, Clone)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct Pool(Vec<RefCell<Constant>>);
 
-//#[derive(Debug, Clone)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Function {
     value: RefCell<Constant>,
     params: HashSet<String>,
@@ -17,7 +15,7 @@ pub struct Function {
     pool: Pool,
 }
 
-//#[derive(Debug)]
+#[derive(Debug)]
 pub enum Expr {
     Constant(Constant),
     //Input(Input),
@@ -83,11 +81,6 @@ impl<'a> Index<usize> for Pool {
 impl Function {
 
     // Constructors
-    //un_op!(Sq, sq, 0);
-    //un_op!(Neg, neg, 0);
-    //bin_op!(Sub, sub, 1);
-    //bin_op!(Mul, mul, 1);
-    //bin_op!(Add, add, 1);
 
    pub fn new(value: Constant,
           params: HashSet<String>,
@@ -105,22 +98,6 @@ impl Function {
     pub fn constant(value: Constant) -> Function {
         Function::new(value.clone(), HashSet::new(), Expr::Constant(value), 0)
     }
-
-    //pub fn sub(arg1: Function, arg2: Function) -> Function {
-        //let dummy = arg1.value().clone();
-        //Function::new(dummy.clone(),
-                      //combine_params(&arg1, &arg2),
-                      //Expr::Sub(arg1, arg2),
-                      //1) 
-    //}
-
-    //pub fn sub(arg1: Function, arg2: Function) -> Function {
-        //let dummy = arg1.value().clone();
-        //Function::new(dummy.clone(),
-                      //combine_params(&arg1, &arg2),
-                      //Expr::Sub(arg1, arg2),
-                      //1) 
-    //}
 
     //#[allow(dead_code)]
     //pub fn input(s: &str, dims: Vec<u32>) -> Function {
@@ -173,10 +150,6 @@ impl Function {
         &self.params
     }
 
-    //pub fn set_value(&self, value: Constant) {
-        //self.value_mut().get_mut() = value;
-    //}
-
     pub fn value(&self) -> Ref<Constant> {
         self.value.borrow()
     }
@@ -185,36 +158,9 @@ impl Function {
         self.value.borrow_mut()
     }
 
-    //pub fn get_value(&self) -> Ref<Constant> {
-        //self.value.borrow()
-    //}
-
-   //pub fn mutate_value(&self, f: &Fn(&Constant)) {
-        //f(self.value_mut().deref_mut())
-    //}
-
-    //pub fn unwrap_value<'a>(&'a self) -> Constant {
-        //self.value
-    //}
-
-    //pub fn alloc_placeholders(&self, c: Vec<Constant>) {
-        //*self.placeholders.borrow_mut() = c;
-    //}
-
     pub fn placeholder(&self, i: usize) -> RefMut<Constant> {
         self.pool.get(i)
     }
-
-    //pub fn mutate_placeholder(&self, i: usize, f: &Fn(&mut Constant)) {
-        //match self.placeholders.borrow_mut().get_mut(i) {
-            //Some(ref mut placeholder) => f(placeholder),
-            //None => panic!("Tried to mutate a placeholder that hasn't been assigned yet."),
-        //}
-    //}
-
-    //pub fn num_placeholders(&self) -> usize {
-        //self.placeholders.borrow().len()
-    //}
 
     pub fn check_params(functions: Vec<&Function>) {
         for function in functions {
