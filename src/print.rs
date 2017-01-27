@@ -36,11 +36,13 @@ impl fmt::Display for Expr {
             Expr::Constant(ref c) => write!(f, "{}", c),
             //Expr::Input(ref i) => write!(f, "{}", i.name),
             Expr::Param(ref p) => write!(f, "{}", p.name),
-            Expr::Neg(ref x) => match *x.body().clone() {
+            Expr::Neg(ref x) => {
+                match *x.body().clone() {
                 Expr::Constant(_) 
                     //| Expr::Input(_) 
                     => write!(f, "-{}", x),
                 _                                   => write!(f, "-({})", x),
+            }
             },
             Expr::Sq(ref x) => match *x.body().clone() {
                 Expr::Constant(_) 
@@ -86,7 +88,9 @@ impl fmt::Display for Function {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self.body() {
             Expr::Param(ref p) => write!(f, "{}≔{}", p.name, self.value().deref()),
-            _ => write!(f, "{}", self.body()),
+            _ => {
+                write!(f, "{}", self.body())
+            }
         }
     }
 }
@@ -151,3 +155,17 @@ macro_rules! constant_print {
 
 constant_print!(Debug);
 constant_print!(Display);
+
+macro_rules! easy_print {
+    ($type_: ty) => {
+        impl $type_ {
+            pub fn print(&self) {
+                println!("{}", self);
+            }
+        }
+    }
+}
+
+easy_print!(Function);
+easy_print!(Constant);
+easy_print!(Matrix);

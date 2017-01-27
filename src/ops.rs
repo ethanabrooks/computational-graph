@@ -30,9 +30,9 @@ extern {
 macro_rules! Function1 {
     ($Op:ident, $op:ident, $f:ident, $n_placeholders:expr) => {
         Function::new($f.value().clone(),
-                        $f.params().clone(),
-                        Expr::$Op($f.clone()),
-                        $n_placeholders) 
+                      $f.params().clone(),
+                      Expr::$Op($f.clone()),
+                      $n_placeholders) 
     };
 
     ($Op:ident, $op:ident, $f:ident, $n_placeholders:expr, $identity:expr) => {{
@@ -44,22 +44,6 @@ macro_rules! Function1 {
             Function1!($Op, $op, $f, $n_placeholders)
         }
     }}
-}
-
-macro_rules! Function2 {
-    ($op:ident, $f1:expr, $f2:expr) => {
-        // default implementation of $function
-        Function2!($op, $f1, $f2, (Function::$op($f1.clone(), $f2.clone())))
-    };
-
-    ($op:ident, $f1:expr, $f2:expr, ($function:expr)) => {
-        // optimization to combine constants
-        match ($f1.body(), $f2.body()) { 
-            (&Expr::Constant(_), &Expr::Constant(_)) =>
-                Function::constant($function.eval(&HashMap::new())),
-            _ => $function
-        }
-    }
 }
 
 macro_rules! mutateConstant1 {
@@ -224,6 +208,33 @@ macro_rules! trait1 {
     }
 }
 
+macro_rules! Function2 {
+    ($op:ident, $f1:expr, $f2:expr, ($function:expr)) => {
+        // optimization to combine constants
+        match ($f1.body(), $f2.body()) { 
+            (&Expr::Constant(_), &Expr::Constant(_)) =>
+                Function::constant($function.eval(&HashMap::new())),
+            _ => $function
+        }
+    };
+
+    ($Op:ident, $op:ident, $f1:expr, $f2:expr, $n_placeholders:expr) => {
+        Function2!($op, $f1, $f2, (Function::new($f1.value().clone(),
+                                                 $f1.params().clone()
+                                                    .union(&($f2.params().clone()))
+                                                    .cloned().collect(),
+                                                 Expr::$Op($f1.clone(), $f2.clone()),
+                                                 $n_placeholders)))
+        // default implementation of $function
+        //let params1 = self.params().clone();
+        //let params2 = other.params().clone();
+        //let params = params1.union(&params2).cloned().collect();
+                //Function::$op($f1.clone(), $f2.clone()
+                              //)))
+    };
+
+}
+
 
 macro_rules! trait2 {
     ($Op:ident, 
@@ -243,31 +254,21 @@ macro_rules! trait2 {
                 } else if other.all_equal($identity) {
                     self.clone()
                 } else {
-                    Function2!($op, self, other)
+                    Function2!($Op, $op, self, other, $n_placeholders)
                 }
             }
         }
 
         impl $Op for Function {
             type Output = Function;
-            //fn $op(self, other: Function) -> Function { (&self).$op(&other) }
-
-            fn $op(self, other: Function) -> Function {
-                let params1 = self.params().clone();
-                let params2 = other.params().clone();
-                let params = params1.union(&params2).cloned().collect();
-                Function::new(self.value().clone(),
-                              params,
-                              Expr::$Op(self.clone(), other),
-                              $n_placeholders) 
-            }
+            fn $op(self, other: Function) -> Function { (&self).$op(&other) }
         }
 
         impl<'a> $Op for &'a Constant {
             type Output = Constant;
             fn $op(self, other: &'a Constant) -> Constant {
-                let mut result: Constant = Constant::empty_like(self);
-                result.$op_assign(self, other);
+                let mut result: Constant = self.clone();
+                (&mut result).$op_assign(other);
                 result
             }
         }
@@ -279,12 +280,12 @@ macro_rules! trait2 {
 
         impl $OpAssign for Constant {
             fn $op_assign(&mut self, other: Constant) {
-                self.$op(&other)
+                self.$op_assign(&other);
             }
         }
 
         impl Constant {
-            pub fn $op(&mut self, other: &Constant) {
+            pub fn $op_assign(&mut self, other: &Constant) {
                 let matrix_scalar_fun = concat_idents!(broadcast_, $op, );
                 let matrix_fun = concat_idents!(elemwise_, $op);
                 match (self, other) {
@@ -297,11 +298,6 @@ macro_rules! trait2 {
                     (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) =>
                         x.$op_assign(other.avg())
                 }
-            }
-
-            pub fn $op_assign(&mut self, arg1: &Constant, arg2: &Constant) {
-                self.copy(arg1);
-                self.$op(arg2);
             }
         }
     }
@@ -360,14 +356,14 @@ pub fn dot(f1: &Function, trans1: bool, f2: &Function, trans2: bool) -> Function
 
 impl Constant {
     // TODO implement for scalars
-    pub fn dot_assign(&mut self, c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) {
+    pub fn assign_dot(&mut self, c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) {
         match (self, c1, c2) {
             (&mut Constant::Matrix(ref mut result),
-                 &Constant::Matrix(ref m1), 
+                 &Constant::Matrix(ref m1),
                  &Constant::Matrix(ref m2)) => {
-                unsafe { gemm(m1, trans1, 
-                              m2, trans2, 
-                              result) }
+                     unsafe { gemm(m1, trans1, 
+                                   m2, trans2, 
+                                   result) }
             }
             _ => panic!("dot should not be used with scalars"),
         };
@@ -375,7 +371,7 @@ impl Constant {
 
     pub fn dot(c1: &Constant, trans1: bool, c2: &Constant, trans2: bool) -> Constant {
         let mut result: Constant = Constant::empty_for_dot(c1, trans1, c2, trans2);
-        result.dot_assign(c1, trans1, c2, trans2);
+        result.assign_dot(c1, trans1, c2, trans2);
         result
     }
 

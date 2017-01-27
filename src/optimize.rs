@@ -1,6 +1,6 @@
 use function::{Function, Expr};
 use constant::Constant;
-use ops::{one_minus, negate};
+use ops::{one_minus, negate, sq, abs, tanh, sigmoid, signum};
 //{mul_assign, sq_ref, signum_ref, add_assign, sub_assign, 
           //sigmoid_assign, signum_assign, tanh_assign, sq_assign, 
           //abs_assign, negate, one_minus};
@@ -72,7 +72,8 @@ impl Function {
             let mut error = self.value_mut().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
             if (i + 1) % print_freq  == 0 {
-                println!("{}", self.value().deref());
+                //println!("{}", self);
+                self.value().print();
             }
         }
     }
@@ -92,59 +93,67 @@ impl Function {
             Expr::Constant(_) | Expr::Param(_) => return,
             //Expr::Input(ref i) =>
                 //self.set_value(args.get::<str>(&i.name).expect("missing arg").clone()),
-                //// TODO: avoid clone?
             Expr::Neg(ref f) => {
                 f.assign_values(args);
-                exec!((self.value_mut()) = -(value!(f)));
+                exec![(value_mut!(self)) = -(value!(f))];
             }
             Expr::Sq(ref f) => {
                 f.assign_values(args);
-                exec!((self.value_mut()) = sq(value!(f)));
+                exec![(value_mut!(self)) = sq(value!(f))];
             }
             Expr::Abs(ref f) => {
                 f.assign_values(args);
-                exec!((self.value_mut()) = abs(value!(f)));
+                exec![(value_mut!(self)) = abs(value!(f))];
             }
             Expr::Signum(ref f) => {
                 f.assign_values(args);
                 writeln!(&mut stderr(), "WARN: Signum is non-differentiable.
                 //Running `backprop` on this function will cause an error").unwrap();
-                exec!((self.value_mut()) = signum(value!(f)));
+                exec![(value_mut!(self)) = signum(value!(f))];
             }
             Expr::Sigmoid(ref f) => {
                 f.assign_values(args);
-                exec!((self.value_mut()) = sigmoid(value!(f)));
+                exec!((value_mut!(self)) = sigmoid(value!(f)));
             }
             Expr::Tanh(ref f) => {
                 f.assign_values(args);
-                exec!((self.value_mut()) = tanh(value!(f)));
+                exec![(value_mut!(self)) = tanh(value!(f))];
             }
             Expr::Add(ref f1, ref f2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
-                exec![(self.value_mut()) = (value!(f1)) + (value!(f2))]
+                exec![(value_mut!(self)) = (value!(f1)) + (value!(f2))]
             }
             Expr::Sub(ref f1, ref f2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
-                exec![(self.value_mut()) = (value!(f1)) - (value!(f2))]
+                exec![(value_mut!(self)) = (value!(f1)) - (value!(f2))];
+
+                print!("f1: ");
+                f1.print();
+                print!("f2: ");
+                f2.print();
+                print!("value: ");
+                self.value().print();
             }
             Expr::Mul(ref f1, ref f2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
-                exec![(self.value_mut()) = (value!(f1)) * (value!(f2))]
+                exec![(value_mut!(self)) = (value!(f1)) * (value!(f2))];
             }
             Expr::Dot(ref f1, t1, ref f2, t2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
-                exec![(self.value_mut()) = dot((value!(f1)) T=t1, (value!(f2)) T=t2)]
+                exec![(value_mut!(self)) = dot((value!(f1)) T=t1, (value!(f2)) T=t2)];
                 //self.mutate_value(&|x| x.assign_dot(val1.deref(), val2.deref(),
                                                     //trans1, trans2));
             }
         }
     }
 
-    fn backprop(&self, error: &mut Constant, learn_rate: f32) {
+    // TODO:make this private
+    pub fn backprop(&self, error: &mut Constant, learn_rate: f32) {
+        //print!("Body: {:#?}", self.body());
 
         macro_rules! placeholder {
             () => { self.placeholder(0).deref_mut() };
@@ -153,19 +162,34 @@ impl Function {
 
         if self.params().is_empty() { return; }
         match *self.body() {
-            Expr::Param(_) => 
-                exec![(self.value_mut()) = (error) * (&Constant::Scalar(learn_rate))], 
+            Expr::Param(_) => {
+                //print!("\n\nerror: "); 
+                //error.print();
+                *error *= Constant::Scalar(learn_rate);
+                //print!("error after multiplication with learn_rate: "); 
+                //error.print();
+                //print!("value: "); 
+                //self.value().print();
+                exec![(self.value_mut()) -= (error)];
+                //print!("value after subtraction of error: "); 
+                //self.value().print();
+                //println!("\n");
+            }
             Expr::Neg(ref f) => {
                 negate(error);
                 f.backprop(error, learn_rate)
             }
             Expr::Sq(ref f) => {
                 exec![(error) *= (&Constant::Scalar(2.))];  // TODO: is this right??
-                exec![(error) *= (value!(*self))];
+                exec![(error) *= (value!(f))];
                 f.backprop(error, learn_rate)
             }
             Expr::Abs(ref f) => {
-                exec![(placeholder!()) = signum(value!(self))];
+                //print!("value: ");
+                //self.value().print();
+                exec![(placeholder!()) = signum(value!(f))];
+                //print!("signum(value): ");
+                //(placeholder!()).print();
                 exec![(placeholder!()) *= (error)];
                 f.backprop(placeholder!(), learn_rate);
                 //self.mutate_placeholder(0, &|x| {
