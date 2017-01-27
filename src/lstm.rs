@@ -42,7 +42,7 @@ pub fn lstm_custom_params(input: Vec<Constant>,
     }
 }
 
-fn get_input_dim(inputs: &Vec<Constant>) -> u32 {
+fn get_input_dim(inputs: &Vec<Constant>) -> usize {
     let mut dim = None;
     for input in inputs {
         match dim {

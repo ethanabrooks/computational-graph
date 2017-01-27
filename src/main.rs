@@ -6,6 +6,7 @@
 
 extern crate rand;
 extern crate test;
+extern crate libc;
 
 #[macro_use]
 mod macros; 
@@ -21,57 +22,16 @@ use function::Function;
 use std::collections::HashMap;
 
 use constant::Constant;
+use matrix::Matrix;
 
 fn main() {
     let args = HashMap::new();
-    let dim = 10;
-    let dims = vec![dim, dim];
 
     let x = Function::param("x", Constant::Scalar(0.5));
-    //let a = Function::scalar(100.);
-    //let b = Function::matrix(2, 2, vec![
-                            //8., -5.,
-                            //0., 10.
-                            //]);
-    //let c = Function::scalar(10.);
-    let f = Function::single_val_matrix(2, 2, 1.) - x;
-    //let f =((&x - &a) * (&x + &b) - c).sq();
-
-    //let x = Function::param("x", Constant::Scalar(1.));
-    //x.print();
-    //let f = x.abs(); 
-    //f.print();
-    f.assign_values(&args);
-    println!("f: ");
-    f.print();
-    f.value().print();
-
-    //println!("g: ");
-    //let g = &x + &b;
-    //g.print();
-    //println!("b: {}", b.value().avg());
-    //println!("g: ");
-    //g.assign_values(&args);
-    //g.value().print();
-
-    //let h = (&f * &g).sq();
-    //println!("h: {:#?}", h);
-    //h.assign_values(&args);
-    //h.print();
-    //h.value().print();
-
-    //f.print();
-    //f.backprop(&mut Constant::Scalar(1.), 0.1);
-    //f.minimize(&args, 0.1, 10, 1);
-    //let inputs = vec![
-        //Constant::random(dims.clone(), -0.1, 0.1),
-        //Constant::random(dims.clone(), -0.1, 0.1)
-        //]; 
-    //let target = Function::random_matrix(dims.clone(), -0.1, 0.1);
-    //let f = sq(lstm(inputs) - target);
-    //let m = Function::single_val_matrix(2, 2, 0.1);
-    //let f = Function::random_param("x", dims.clone(), -0.1, 0.1);
-    //f.minimize(&HashMap::new(), 0.01, 1000, 1000);
+    let m = Function::param("m", Constant::single_val(vec![2, 2], 0.5));
+    //x.minimize(&args, 1., 10, 1);
+    m.minimize(&args, 1., 10, 1);
+    //assert!(f.all_less_than(-9.), "F: {}", f);
 }
 
 
@@ -128,49 +88,49 @@ mod tests {
           learning rate: 1., 
           test less than -9.49);
 
-    test!(neg_test, |x: Function| -x, 
-          learning rate: 1., 
-          test less than -9.49);
+    //test!(neg_test, |x: Function| -x, 
+          //learning rate: 1., 
+          //test less than -9.49);
 
-    test!(sq_test, |x: Function| x.sq(),
-          learning rate: 0.1,
-          test less than 0.01);
+    //test!(sq_test, |x: Function| x.sq(),
+          //learning rate: 0.1,
+          //test less than 0.01);
 
-    test!(abs_test, |x: Function| x.abs(),
-          learning rate: 0.1, 
-          test less than 0.00001);
+    //test!(abs_test, |x: Function| x.abs(),
+          //learning rate: 0.1, 
+          //test less than 0.00001);
 
-    test!(sigmoid_test, |x: Function| x.sigmoid(),
-          learning rate: 1.,
-          test less than -9.49);
+    //test!(sigmoid_test, |x: Function| x.sigmoid(),
+          //learning rate: 1.,
+          //test less than -9.49);
 
-    test!(tanh_test, |x: Function| x.tanh(),
-          learning rate: 1., 
-          test less than -0.97);
+    //test!(tanh_test, |x: Function| x.tanh(),
+          //learning rate: 1., 
+          //test less than -0.97);
 
-    test!(add_test, |x: Function, y: Function| x + y,
-          constants value: 1., 
-          learning rate: 1., 
-          test less than -7.4);
+    //test!(add_test, |x: Function, y: Function| x + y,
+          //constants value: 1., 
+          //learning rate: 1., 
+          //test less than -7.4);
 
-    test!(mul_test, |x: Function, y: Function| x * y,
-          constants value: 2., 
-          learning rate: 0.1, 
-          test less than -2.60);
+    //test!(mul_test, |x: Function, y: Function| x * y,
+          //constants value: 2., 
+          //learning rate: 0.1, 
+          //test less than -2.60);
 
-    test!(sub_scalar_l_test, |x: Function| Function::scalar(1.) - x,
-          learning rate: 1., 
-          test less than -8.4);
+    //test!(sub_scalar_l_test, |x: Function| Function::scalar(1.) - x,
+          //learning rate: 1., 
+          //test less than -8.4);
 
-    test!(sub_matrix_r_test,
-          |x: Function| x - Function::single_val_matrix(2, 2, 1.),
-          learning rate: 1., 
-          test less than -9.4);
+    //test!(sub_matrix_r_test,
+          //|x: Function| x - Function::single_val_matrix(2, 2, 1.),
+          //learning rate: 1., 
+          //test less than -9.4);
 
-    test!(sub_matrix_l_test,
-          |x: Function| Function::single_val_matrix(2, 2, 1.) - x,
-          learning rate: 1.,
-          test less than -80.4);
+    //test!(sub_matrix_l_test,
+          //|x: Function| Function::single_val_matrix(2, 2, 1.) - x,
+          //learning rate: 1.,
+          //test less than -80.4);
 
     //test!(complex_test, |x: Function| {
         //let a = Function::scalar(100.);

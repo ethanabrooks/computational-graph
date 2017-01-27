@@ -153,7 +153,6 @@ impl Function {
 
     // TODO:make this private
     pub fn backprop(&self, error: &mut Constant, learn_rate: f32) {
-        //print!("Body: {:#?}", self.body());
 
         macro_rules! placeholder {
             () => { self.placeholder(0).deref_mut() };

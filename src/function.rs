@@ -34,7 +34,7 @@ pub enum Expr {
 
 //#[derive(Debug)]
 //pub struct Input {
-    //dims: Vec<u32>, 
+    //dims: Vec<usize>, 
     //pub name: String,
 //}
 
@@ -52,7 +52,7 @@ macro_rules! hashset {
 }
 
 impl Pool {
-    fn new(dims: Vec<u32>, size: u32) -> Pool {
+    fn new(dims: Vec<usize>, size: usize) -> Pool {
         Pool((0..size)
              .map(|_| RefCell::new(Constant::empty(dims.clone())))
              .collect())
@@ -85,7 +85,7 @@ impl Function {
    pub fn new(value: Constant,
           params: HashSet<String>,
           body: Expr,
-          pool_size: u32) -> Function {
+          pool_size: usize) -> Function {
        let dims = (&value).dims();
        Function {
            value: RefCell::new(value),
@@ -100,7 +100,7 @@ impl Function {
     }
 
     //#[allow(dead_code)]
-    //pub fn input(s: &str, dims: Vec<u32>) -> Function {
+    //pub fn input(s: &str, dims: Vec<usize>) -> Function {
         //Function::new(None, hashset![s], 
                     //Expr::Input(Input {
                         //name: String::from(s),
@@ -115,13 +115,13 @@ impl Function {
     }
 
     #[allow(dead_code)]
-    pub fn random_param(s: &str, dims: Vec<u32>, lo: f32, hi: f32) -> Function {
+    pub fn random_param(s: &str, dims: Vec<usize>, lo: f32, hi: f32) -> Function {
         let value = Constant::random(dims, lo, hi);
         Function::param(s, value)
     }
 
     #[allow(dead_code)]
-    pub fn random_matrix(dims: Vec<u32>, lo: f32, hi: f32) -> Function {
+    pub fn random_matrix(dims: Vec<usize>, lo: f32, hi: f32) -> Function {
         Function::constant(Constant::random(dims, lo, hi))
     }
 
@@ -131,12 +131,12 @@ impl Function {
     }
 
     #[allow(dead_code)]
-    pub fn matrix(height: u32, width: u32, values: Vec<f32>) -> Function {
+    pub fn matrix(height: usize, width: usize, values: Vec<f32>) -> Function {
         Function::constant(Constant::matrix(height, width, values))
     }
 
     #[allow(dead_code)]
-    pub fn single_val_matrix(height: u32, width: u32, value: f32) -> Function {
+    pub fn single_val_matrix(height: usize, width: usize, value: f32) -> Function {
         Function::constant(Constant::single_val(vec![height, width], value))
     }
 

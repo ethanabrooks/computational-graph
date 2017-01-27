@@ -9,21 +9,21 @@ pub enum Constant {
 }
 
 impl Constant {
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> usize {
         match *self {
             Constant::Scalar(_) => 1,
             Constant::Matrix(ref m) => m.width(),
         }
     }
 
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> usize {
         match *self {
             Constant::Scalar(_) => 1,
             Constant::Matrix(ref m) => m.height(),
         }
     }
 
-    pub fn single_val(dims: Vec<u32>, val: f32) -> Constant {
+    pub fn single_val(dims: Vec<usize>, val: f32) -> Constant {
         match dims.len() {
             0 => Constant::Scalar(val),
             2 => Constant::Matrix(Matrix::single_val(dims[0], dims[1], val)),
@@ -31,7 +31,7 @@ impl Constant {
         }
     }
 
-    pub fn random(dims: Vec<u32>, lo: f32, hi: f32) -> Constant {
+    pub fn random(dims: Vec<usize>, lo: f32, hi: f32) -> Constant {
         let between = Range::new(lo, hi);
         let mut rng = rand::thread_rng();
         match dims.len() {
@@ -48,8 +48,8 @@ impl Constant {
         }
     }
 
-    pub fn matrix(height: u32, width: u32, vals: Vec<f32>) -> Constant {
-        Constant::Matrix(Matrix::new(height as u32, width as u32, vals))
+    pub fn matrix(height: usize, width: usize, vals: Vec<f32>) -> Constant {
+        Constant::Matrix(Matrix::new(height as usize, width as usize, vals))
     }
 
     // allocates on device
@@ -71,7 +71,7 @@ impl Constant {
         }
     }
 
-    pub fn empty(dims: Vec<u32>) -> Constant {
+    pub fn empty(dims: Vec<usize>) -> Constant {
         match &dims[..] {
             &[]              => Constant::Scalar(0.),
             &[height, width] => Constant::Matrix(Matrix::empty(height, width)),
@@ -97,7 +97,7 @@ impl Constant {
         }
     }
 
-    pub fn dims(&self) -> Vec<u32> {
+    pub fn dims(&self) -> Vec<usize> {
          match *self {
              Constant::Scalar(_) => vec![],
              Constant::Matrix(ref m) => vec![m.height(), m.width()]

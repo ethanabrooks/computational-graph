@@ -38,11 +38,11 @@ impl fmt::Display for Expr {
             Expr::Param(ref p) => write!(f, "{}", p.name),
             Expr::Neg(ref x) => {
                 match *x.body().clone() {
-                Expr::Constant(_) 
-                    //| Expr::Input(_) 
-                    => write!(f, "-{}", x),
-                _                                   => write!(f, "-({})", x),
-            }
+                    Expr::Constant(_) 
+                        //| Expr::Input(_) 
+                        => write!(f, "-{}", x),
+                    _                                   => write!(f, "-({})", x),
+                }
             },
             Expr::Sq(ref x) => match *x.body().clone() {
                 Expr::Constant(_) 
@@ -100,7 +100,7 @@ macro_rules! matrix_print {
     ($trait_:ident) => {
         impl fmt::$trait_ for Matrix {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                let dst = self.array_ptr();
+                let vec = self.as_vec();
                 let mut result;
 
                 let h = self.height() - 1;
@@ -111,9 +111,7 @@ macro_rules! matrix_print {
                 for i in 0..self.height() {
 
                     for j in 0..self.width() {
-                        result = write!(f, "{:^10.3}", unsafe { 
-                            *dst.offset((j * self.height() + i) as isize)
-                        });
+                        result = write!(f, "{:^10.3}", vec[j * self.height() + i]);
                         if result.is_err() { return result }
                     }
 
@@ -156,7 +154,7 @@ macro_rules! constant_print {
 constant_print!(Debug);
 constant_print!(Display);
 
-macro_rules! easy_print {
+macro_rules! print_method {
     ($type_: ty) => {
         impl $type_ {
             pub fn print(&self) {
@@ -166,6 +164,6 @@ macro_rules! easy_print {
     }
 }
 
-easy_print!(Function);
-easy_print!(Constant);
-easy_print!(Matrix);
+print_method!(Function);
+print_method!(Constant);
+print_method!(Matrix);

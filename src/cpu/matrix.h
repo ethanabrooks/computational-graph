@@ -8,15 +8,16 @@ typedef struct matrix_struct {
 } Matrix;
 
 extern "C" {
-  void alloc_matrix(Matrix *matrix, int height, int width);
+  void alloc_matrix(Matrix *matrix);
   int size(const Matrix *m);
+  float* get_array(const Matrix *matrix);
+  void set_array(Matrix *matrix, const float *array, bool transpose);
   void init_cublas();
   void copy_matrix(const Matrix *src, Matrix *dst);
-  void init_matrix(Matrix *matrix, const float *array, int height, int width);
+  void init_matrix(Matrix *matrix, const float *array,
+          unsigned height, unsigned width);
   void fill_matrix(Matrix *matrix, float value);
   void print_matrix(const Matrix *matrix);
-  void download_matrix(const Matrix *src, float *dst);
-  void upload_matrix(const float *src, Matrix *dst);
   void free_matrix(Matrix *matrix);
   void maybe_init_cublas();
 }

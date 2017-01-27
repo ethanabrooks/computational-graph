@@ -1,52 +1,58 @@
 use std::ptr;
+use libc::{c_uint, c_float};
 
 extern {
-    fn alloc_matrix(m: *mut Matrix, width: u32, height: u32);
+    fn alloc_matrix(m: *mut Matrix);
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
-    fn download_matrix(m1: *const Matrix, m2: *mut f32);
     fn free_matrix(m: *mut Matrix);
-    fn upload_matrix(array: *const f32, m: *mut Matrix);
     fn fill_matrix(m: *mut Matrix, value: f32);
+    fn get_array(m: *const Matrix) -> *mut f32;
+    fn set_array(m: *mut Matrix, values: *const f32, transpose: bool);
 }
 
 #[repr(C)]
 pub struct Matrix {
-    height: u32,
-    width: u32,
-    dev_array: *mut f32,
+    height: c_uint,
+    width: c_uint,
+    array: *mut c_float,
 }
 
 impl Matrix {
-    pub fn height(&self) -> u32 {
-        self.height
+    pub fn height(&self) -> usize {
+        self.height as usize
     }
 
-    pub fn width(&self) -> u32 {
-        self.width
+    pub fn width(&self) -> usize {
+        self.width as usize
     }
 
-    pub fn array_ptr(&self) -> *const f32 {
-        let ptr = Vec::with_capacity(self.size() as usize).as_mut_ptr();
-        unsafe { download_matrix(self, ptr); }
-        ptr
+    pub fn size(&self) -> usize {
+        self.height() * self.width()
     }
 
-    pub fn empty(height: u32, width: u32) -> Matrix {
+    pub fn as_vec(&self) -> Vec<f32> {
+        let copy = self.clone();
+        unsafe { Vec::from_raw_parts(get_array(&copy), copy.size(), copy.size()) }
+    }
+
+    pub fn empty(height: usize, width: usize) -> Matrix {
         let mut matrix = Matrix { 
-            height: height,
-            width: width,
-            dev_array: ptr::null_mut(),
+            height: height as c_uint,
+            width: width as c_uint,
+            array: ptr::null_mut(),
         };
-        unsafe { alloc_matrix(&mut matrix, height, width) };
+        println!("bef");
+        unsafe { alloc_matrix(&mut matrix) };
+        println!("aft");
         matrix
     }
 
     pub fn empty_like(m: &Matrix) -> Matrix { Matrix::empty(m.height(), m.width()) }
 
-    pub fn new(height: u32, width: u32, values: Vec<f32>) -> Matrix {
-        assert!(values.len() as u32 == height * width, "wrong number of values");
+    pub fn new(height: usize, width: usize, values: Vec<f32>) -> Matrix {
+        assert!(values.len() as usize == height * width, "wrong number of values");
         let mut matrix: Matrix = Matrix::empty(height, width);
-        unsafe { upload_matrix(values.as_ptr(), &mut matrix) };
+        unsafe { set_array(&mut matrix, values.as_ptr(), true) };
         matrix
     }
 
@@ -54,44 +60,44 @@ impl Matrix {
                          m2: &Matrix, trans2: bool) -> Matrix {
         if trans1 {
             if trans2 {
-                Matrix::empty(m1.width().clone(), m2.height().clone())
+                Matrix::empty(m1.width(), m2.height())
             } else {
-                Matrix::empty(m1.width().clone(), m2.width().clone())
+                Matrix::empty(m1.width(), m2.width())
             }
         } else {
             if trans2 {
-                Matrix::empty(m1.height().clone(), m2.height().clone())
+                Matrix::empty(m1.height(), m2.height())
             } else {
-                Matrix::empty(m1.height().clone(), m2.width().clone())
+                Matrix::empty(m1.height(), m2.width())
             }
         }
     }
 
-    pub fn single_val(height: u32, width: u32, val: f32) -> Matrix {
+    pub fn single_val(height: usize, width: usize, val: f32) -> Matrix {
         let mut matrix: Matrix = Matrix::empty(height, width);
         unsafe { fill_matrix(&mut matrix, val) };
         matrix
     }
 
     pub fn copy(&mut self, other: &Matrix) {
-        unsafe { copy_matrix(other, self) }
-    }
-
-    pub fn size(&self) -> u32 {
-        self.height * self.width
+        unsafe { 
+            copy_matrix(other, // src
+                        self)  // dest
+        }
     }
 }
 
 impl Clone for Matrix {
     fn clone(&self) -> Self {
-        let mut m: Matrix = Matrix::empty(self.height, self.width);
-        unsafe { copy_matrix(self, &mut m) };
+        let mut m: Matrix = Matrix::empty(self.height(), self.width());
+        m.copy(self);
         m
     }
 }
 
 impl Drop for Matrix {
     fn drop(&mut self) {
+        println!("DROPPING");
         unsafe { free_matrix(self as *mut Matrix) };
     }
 } 

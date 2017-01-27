@@ -14,35 +14,26 @@ extern "C" {
 
   int size(const Matrix *m) { return m->width * m->height; }
 
-  void download_matrix(const Matrix *src, float *dst) {
-      dst = src->array;
-  }
-
-  void upload_matrix(const float *src, Matrix *dst) {
-      memcpy(dst->array, src, size(dst) * sizeof(*src));
-  }
-
   // allocates on device
-  void alloc_matrix(Matrix *matrix, int height, int width) { 
-    matrix->width = width;
-    matrix->height = height;
+  void alloc_matrix(Matrix *matrix) {
+    printf("size(matrix): %d\n", size(matrix));
     matrix->array = safe_malloc<float>(size(matrix));
   }
 
-  void init_matrix(Matrix *matrix, const float *array, int height, int width) {
-    alloc_matrix(matrix, height, width);
-    int i;
-    rng(i, 0, size(matrix)) {
-        int iT = (i % matrix->height) * matrix->width + int(i / matrix->height);
-        matrix->array[i] = array[iT];
-    }
+  float* get_array(const Matrix *matrix) {
+    return matrix->array;
   }
 
-  void copy_matrix(const Matrix *src, Matrix *dst) {
-    assert(size(dst) == size(src));
-    dst->height = src->height;
-    dst->width = src->width;
-    memcpy(dst->array, src->array, size(src) * sizeof(float));
+  void set_array(Matrix *matrix, const float *array, bool transpose) {
+    if (transpose) {
+        int i;
+        rng(i, 0, size(matrix)) {
+            int iT = (i % matrix->height) * matrix->width + int(i / matrix->height);
+            matrix->array[i] = array[iT];
+        }
+    } else {
+        memcpy(matrix->array, array, size(matrix) * sizeof(float));
+    }
   }
 
   void fill_matrix(Matrix *matrix, float value) {
@@ -52,6 +43,19 @@ extern "C" {
     }
   }
 
+  void init_matrix(Matrix *matrix, const float *array, 
+          unsigned height, unsigned width) {
+    matrix->height = height;
+    matrix->width = width;
+    alloc_matrix(matrix);
+    set_array(matrix, array, true);
+  }
+
+  void copy_matrix(const Matrix *src, Matrix *dst) {
+    assert(dst->height == src->height);
+    assert(dst->width == src->width);
+    set_array(dst, src->array, false);
+  }
 
   void print_matrix(const Matrix *matrix) {
     int i, j;
