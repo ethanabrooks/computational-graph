@@ -41,9 +41,7 @@ impl Matrix {
             width: width as c_uint,
             array: ptr::null_mut(),
         };
-        println!("bef");
         unsafe { alloc_matrix(&mut matrix) };
-        println!("aft");
         matrix
     }
 

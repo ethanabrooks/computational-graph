@@ -95,12 +95,23 @@ impl fmt::Display for Function {
     }
 }
 
+unsafe {
+    fn get_array(m: *const Matrix) -> *mut f32;
+}
+
 
 macro_rules! matrix_print {
     ($trait_:ident) => {
         impl fmt::$trait_ for Matrix {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                let vec = self.as_vec();
+                //println!("before clone");
+                //let x = self.clone();
+                //println!("after clone");
+                println!("before as_vec");
+                //let vec = self.as_vec();
+                let copy = self.clone();
+                let vec = unsafe { Vec::from_raw_parts(get_array(&copy), copy.size(), copy.size()) };
+                println!("after as_vec");
                 let mut result;
 
                 let h = self.height() - 1;

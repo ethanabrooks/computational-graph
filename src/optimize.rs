@@ -72,6 +72,7 @@ impl Function {
             let mut error = self.value_mut().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
             if (i + 1) % print_freq  == 0 {
+                println!("before print");
                 //println!("{}", self);
                 self.value().print();
             }

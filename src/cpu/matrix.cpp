@@ -16,7 +16,6 @@ extern "C" {
 
   // allocates on device
   void alloc_matrix(Matrix *matrix) {
-    printf("size(matrix): %d\n", size(matrix));
     matrix->array = safe_malloc<float>(size(matrix));
   }
 

@@ -36,12 +36,18 @@ int main (void) {
   int i, j;
   float *array;
   Matrix m1;
-  Matrix m2;
+  Matrix m2 = {.height=2, .width=2};
   Matrix result;
 
   array = (float *)malloc (M * N * sizeof (float)); 
   check(!array, "host memory allocation failed"); 
-  //init_matrix(&m2, weights_vals, 3, 2);
-  //print_matrix(&m2);
+  init_matrix(&m1, weights_vals, 3, 2);
+
+  //struct car c = {.year=1923, .make="Nash", .model="48 Sports Touring Car"};
+  alloc_matrix(&m2);
+  fill_matrix(&m2, 4);
+  print_matrix(&m1);
+  printf("\n");
+  print_matrix(&m2);
   return EXIT_SUCCESS;
 }
