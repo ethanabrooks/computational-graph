@@ -3,6 +3,8 @@ use function::{Function, Expr};
 use constant::Constant;
 use matrix::Matrix;
 use std::ops::Deref;
+use std::slice;
+use libc::{c_uint, c_float};
 
 fn write_with_parens(a: &Function, 
                      operator: &str,
@@ -95,7 +97,7 @@ impl fmt::Display for Function {
     }
 }
 
-unsafe {
+extern {
     fn get_array(m: *const Matrix) -> *mut f32;
 }
 
@@ -104,25 +106,16 @@ macro_rules! matrix_print {
     ($trait_:ident) => {
         impl fmt::$trait_ for Matrix {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                //println!("before clone");
-                //let x = self.clone();
-                //println!("after clone");
-                println!("before as_vec");
-                //let vec = self.as_vec();
-                let copy = self.clone();
-                let vec = unsafe { Vec::from_raw_parts(get_array(&copy), copy.size(), copy.size()) };
-                println!("after as_vec");
-                let mut result;
 
+                let mut result;
+                //let vec = self.as_vec();
                 let h = self.height() - 1;
                 result = if h == 0 { write!(f, "\n{:^2}", "[") }
-                            else      { write!(f, "\n{:^2}", "⎡") };
+                            else   { write!(f, "\n{:^2}", "⎡") };
                 if result.is_err() { return result }
-
                 for i in 0..self.height() {
-
                     for j in 0..self.width() {
-                        result = write!(f, "{:^10.3}", vec[j * self.height() + i]);
+                        result = write!(f, "{:^10.3}", self.as_vec()[j * self.height() + i]);
                         if result.is_err() { return result }
                     }
 

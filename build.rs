@@ -1,15 +1,22 @@
 use std::process::Command;
 use std::{env, fs, str};
 use std::path::Path;
+use std::io::{Write, stderr};
 
 fn more_recent_than(srcs: &Vec<String>, dst: &str) -> std::io::Result<bool> {
     match fs::metadata(dst) {
         Ok(metadata_dst) => {
             let time_mod_dst = metadata_dst.modified()?;
+            writeln!(&mut stderr(), "srcs: {:?}", srcs);
             for src in srcs {
                 let time_mod_src = fs::metadata(src)?.modified()?;
 
+                writeln!(&mut stderr(), "src: {:?}, time_mod_src: {:?}; time_mod_dst: {:?};",
+                            src, time_mod_src, time_mod_dst);
+                writeln!(&mut stderr(), "src: {:?}, time_mod_src: {:?}; time_mod_dst: {:?};",
+                            src, time_mod_src, time_mod_dst);
                 if time_mod_src > time_mod_dst {
+                    writeln!(&mut stderr(), "time_mod_src > time_mod_dst");
                     return Ok(true)
                 }
             } 
@@ -52,11 +59,12 @@ fn main() {
         let out_name = get_out_name(c_names[i]);
 
         if more_recent_than(&vec![String::from(src_name)], &out_name).unwrap() {
-            let output = Command::new("find")
-                            .arg(".")
-                            .arg("-name")
-                            .arg(format!("{}.{}", c_names[i], ext)).output().unwrap();
-            println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+            //panic!("recompile");
+            //let output = Command::new("find")
+                            //.arg(".")
+                            //.arg("-name")
+                            //.arg(format!("{}.{}", c_names[i], ext)).output().unwrap();
+            //println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
             assert!(Command::new(compiler)
                 .arg(&src_name)
                 .args(&["-c", xcompiler_flag, "-fPIC", cublas_flag, "-o"]) 

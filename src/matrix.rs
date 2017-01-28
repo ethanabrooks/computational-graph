@@ -1,4 +1,4 @@
-use std::ptr;
+use std::{ptr, slice};
 use libc::{c_uint, c_float};
 
 extern {
@@ -6,7 +6,7 @@ extern {
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
     fn free_matrix(m: *mut Matrix);
     fn fill_matrix(m: *mut Matrix, value: f32);
-    fn get_array(m: *const Matrix) -> *mut f32;
+    fn get_array(m: *const Matrix) -> *mut c_float;
     fn set_array(m: *mut Matrix, values: *const f32, transpose: bool);
 }
 
@@ -14,7 +14,7 @@ extern {
 pub struct Matrix {
     height: c_uint,
     width: c_uint,
-    array: *mut c_float,
+    pub array: *mut c_float,
 }
 
 impl Matrix {
@@ -30,9 +30,10 @@ impl Matrix {
         self.height() * self.width()
     }
 
-    pub fn as_vec(&self) -> Vec<f32> {
-        let copy = self.clone();
-        unsafe { Vec::from_raw_parts(get_array(&copy), copy.size(), copy.size()) }
+    //pub fn as_slice<'a>(&self) -> &'a [c_float] {
+    pub fn as_vec(&self) -> Vec<c_float> {
+        //let clone = self.clone();
+        unsafe { slice::from_raw_parts(get_array(self), self.size()) }.to_vec()
     }
 
     pub fn empty(height: usize, width: usize) -> Matrix {
@@ -95,7 +96,6 @@ impl Clone for Matrix {
 
 impl Drop for Matrix {
     fn drop(&mut self) {
-        println!("DROPPING");
         unsafe { free_matrix(self as *mut Matrix) };
     }
 } 

@@ -72,8 +72,6 @@ impl Function {
             let mut error = self.value_mut().copy_and_fill(1.);
             self.backprop(&mut error, learn_rate);
             if (i + 1) % print_freq  == 0 {
-                println!("before print");
-                //println!("{}", self);
                 self.value().print();
             }
         }
@@ -129,13 +127,12 @@ impl Function {
                 f1.assign_values(args);
                 f2.assign_values(args);
                 exec![(value_mut!(self)) = (value!(f1)) - (value!(f2))];
-
-                print!("f1: ");
-                f1.print();
-                print!("f2: ");
-                f2.print();
-                print!("value: ");
-                self.value().print();
+                //print!("f1: ");
+                //f1.print();
+                //print!("f2: ");
+                //f2.print();
+                //print!("value: ");
+                //self.value().print();
             }
             Expr::Mul(ref f1, ref f2) => {
                 f1.assign_values(args);
@@ -154,6 +151,11 @@ impl Function {
 
     // TODO:make this private
     pub fn backprop(&self, error: &mut Constant, learn_rate: f32) {
+        //print!("value at top of backprop: "); 
+        //self.value().print();
+        //print!("value after -=: "); 
+        //exec![(self.value_mut()) -= (&Constant::Scalar(1.))];
+        //self.value().print();
 
         macro_rules! placeholder {
             () => { self.placeholder(0).deref_mut() };
@@ -163,14 +165,20 @@ impl Function {
         if self.params().is_empty() { return; }
         match *self.body() {
             Expr::Param(_) => {
+
                 //print!("\n\nerror: "); 
                 //error.print();
+                //println!("learn rate: {}", learn_rate); 
+
                 *error *= Constant::Scalar(learn_rate);
+
                 //print!("error after multiplication with learn_rate: "); 
                 //error.print();
                 //print!("value: "); 
                 //self.value().print();
+
                 exec![(self.value_mut()) -= (error)];
+
                 //print!("value after subtraction of error: "); 
                 //self.value().print();
                 //println!("\n");
