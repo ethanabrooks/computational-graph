@@ -70,9 +70,8 @@ macro_rules! Constant1 {
                 m.fill($scalar_fn(x)),
             (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) => 
                 unsafe { matrix_fn(m2, m1) },
-            (&mut Constant::Scalar(_), &Constant::Matrix(_)) => 
-                panic!("The result of this operation yields a matrix. 
-                        Can't place a matrix result of a matrix operation in a scalar"),
+            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) => 
+                *x = $scalar_fn($arg.avg()),
         }
     }}
 }
@@ -90,8 +89,8 @@ macro_rules! Constant2 {
                 *result = $scalar_scalar_fn(result.clone(), x),
             (&mut Constant::Matrix(ref mut result), &Constant::Scalar(x)) => 
                 unsafe { matrix_scalar_fn(result, x, result) },
-            (&mut Constant::Scalar(mut result), &Constant::Matrix(ref m)) => 
-                result = $scalar_scalar_fn(result, $other.avg()), // do not use with nonlinear functions
+            (&mut Constant::Scalar(ref mut result), &Constant::Matrix(ref m)) => 
+                *result = $scalar_scalar_fn(result.clone(), $other.avg()), // do not use with nonlinear functions
             (&mut Constant::Matrix(ref mut result), &Constant::Matrix(ref m)) => 
                 unsafe { matrix_matrix_fn(result, m, result) },
         }

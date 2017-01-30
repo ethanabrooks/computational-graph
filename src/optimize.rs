@@ -69,11 +69,11 @@ impl Function {
                     print_freq: i32) {
         for i in 0..iters {
             self.assign_values(&args);
-            let mut error = self.value_mut().copy_and_fill(1.);
-            self.backprop(&mut error, learn_rate);
             if (i + 1) % print_freq  == 0 {
                 self.value().print();
             }
+            let mut error = self.value_mut().copy_and_fill(1.);
+            self.backprop(&mut error, learn_rate);
         }
     }
 
@@ -88,8 +88,8 @@ impl Function {
 
     // assign final value to outputs
     pub fn assign_values(&self, args: &HashMap<&str, Constant>) {
-        print!("Value in assign_values: ");
-        self.value().print();
+        //print!("Value in assign_values: ");
+        //self.value().print();
         match *self.body() {
             Expr::Constant(_) | Expr::Param(_) => return,
             //Expr::Input(ref i) =>
@@ -168,22 +168,22 @@ impl Function {
         match *self.body() {
             Expr::Param(_) => {
 
-                print!("\n\nerror: "); 
-                error.print();
-                println!("learn rate: {}", learn_rate); 
+                //print!("\n\nerror: "); 
+                //error.print();
+                //println!("learn rate: {}", learn_rate); 
 
                 *error *= Constant::Scalar(learn_rate); // possibly matrix * scalar
 
-                print!("error after multiplication with learn_rate: "); 
-                error.print();
-                print!("value: "); 
-                self.value().print();
+                //print!("error after multiplication with learn_rate: "); 
+                //error.print();
+                //print!("value: "); 
+                //self.value().print();
 
                 exec![(self.value_mut()) -= (error)]; // possibly scalar -= matrix
 
-                print!("value after subtraction of error: "); 
-                self.value().print();
-                println!("\n");
+                //print!("value after subtraction of error: "); 
+                //self.value().print();
+                //println!("\n");
             }
             Expr::Neg(ref f) => {
                 error.assign_neg();
