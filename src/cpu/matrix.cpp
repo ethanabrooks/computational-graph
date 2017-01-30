@@ -10,8 +10,6 @@
 #define MAT_IDX(i, j, width) ((i) * (width) + (j))
 
 extern "C" {
-  void maybe_init_cublas() {}
-
   int size(const Matrix *m) { return m->width * m->height; }
 
   // allocates on device

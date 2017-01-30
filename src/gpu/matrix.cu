@@ -20,8 +20,8 @@ extern "C" {
 
   void download_matrix(const Matrix *src, float *dst) {
     cublasStatus_t stat = cublasGetMatrix(src->width, src->height, 
-        sizeof(*src->dev_array), 
-        src->dev_array, src->width, dst, src->width);
+        sizeof(*src->array), 
+        src->array, src->width, dst, src->width);
     check(stat != CUBLAS_STATUS_SUCCESS, "download_matrix failed");
   }
 
@@ -48,8 +48,8 @@ extern "C" {
     matrix->height = height;
 
     // allocate space for matrix on GPU 
-    cudaError_t cudaStat = cudaMalloc((void**)&matrix->dev_array, 
-        width*height*sizeof(*matrix->dev_array)); 
+    cudaError_t cudaStat = cudaMalloc((void**)&matrix->array, 
+        width*height*sizeof(*matrix->array)); 
     check(cudaStat != cudaSuccess, "device memory allocation failed"); 
   }
 
@@ -63,7 +63,7 @@ extern "C" {
     dst->width = src->width;
 
     cudaError_t stat = device2device<float>(size(src), 
-        src->dev_array, dst->dev_array);
+        src->array, dst->array);
     check(stat != cudaSuccess, "copy_matrix failed");
   }
 
@@ -96,7 +96,7 @@ extern "C" {
   }
 
   void free_matrix(Matrix *matrix) {
-    cudaFree(matrix->dev_array);
+    cudaFree(matrix->array);
   }
 }
 
