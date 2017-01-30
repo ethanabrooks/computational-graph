@@ -184,8 +184,7 @@ impl Function {
         for function in functions {
             match *function.body {
                 Expr::Param(_) => {},
-                _ => panic!("TODO: change this message")
-                    //panic!("{} must be a param", &function),
+                _ => panic!("{} must be a param", &function),
             }
         }
     }

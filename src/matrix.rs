@@ -89,16 +89,13 @@ impl Matrix {
     }
 
     pub fn copy(&mut self, other: &Matrix) {
-        unsafe { 
-            copy_matrix(other, // src
-                        self)  // dest
-        }
+        unsafe { copy_matrix(other /* src */, self /* dst */) }
     }
 }
 
 impl Clone for Matrix {
     fn clone(&self) -> Self {
-        let mut m: Matrix = Matrix::empty(self.height(), self.width());
+        let mut m: Matrix = Matrix::empty_like(self);
         m.copy(self);
         m
     }

@@ -107,7 +107,7 @@ macro_rules! matrix_print {
                 if result.is_err() { return result }
                 for i in 0..self.height() {
                     for j in 0..self.width() {
-                        result = write!(f, "{:^10.3}", self.to_vec()[j * self.height() + i]);
+                        result = write!(f, "{:^10.3}", self.to_slice()[j * self.height() + i]);
                         if result.is_err() { return result }
                     }
 

@@ -133,14 +133,11 @@ impl Function {
                 f1.assign_values(args);
                 f2.assign_values(args);
                 exec![(value_mut!(self)) = dot((value!(f1)) T=t1, (value!(f2)) T=t2)];
-                //self.mutate_value(&|x| x.assign_dot(val1.deref(), val2.deref(),
-                                                    //trans1, trans2));
             }
         }
     }
 
-    // TODO:make this private
-    pub fn backprop(&self, error: &mut Constant, learn_rate: f32) {
+    fn backprop(&self, error: &mut Constant, learn_rate: f32) {
 
         macro_rules! placeholder {
             () => { self.placeholder(0).deref_mut() };
@@ -191,17 +188,7 @@ impl Function {
                 f2.backprop(placeholder!(), learn_rate);
             }
             Expr::Mul(ref f1, ref f2) => {
-
-                print!("f1 value: ");
-                f1.print();
-                print!("error: ");
-                error.print();
-
-                exec![(placeholder!()) = (value!(f1)) * (error)]; // if scalar = scalar * matrix, first reduce matrix to scalar.
-
-                print!("placeholder: ");
-                placeholder!().print();
-
+                exec![(placeholder!()) = (value!(f1)) * (error)];
                 exec![(error) *= (value!(f2))];
                 f1.backprop(error, learn_rate);
                 f2.backprop(placeholder!(), learn_rate);
