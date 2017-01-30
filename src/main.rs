@@ -1,8 +1,8 @@
-#![feature(advanced_slice_patterns,
-           slice_patterns,
-           concat_idents,
-           test,
-           drop_types_in_const)]
+#![feature(
+    slice_patterns,
+    concat_idents,
+    test,
+)]
 
 extern crate rand;
 extern crate test;
@@ -10,6 +10,7 @@ extern crate libc;
 
 #[macro_use]
 mod macros; 
+
 mod function; 
 mod constant; 
 mod matrix; 
@@ -20,16 +21,6 @@ mod lstm;
 
 use function::Function;
 use std::collections::HashMap;
-
-use constant::Constant;
-
-fn main() {
-    let args = HashMap::new();
-
-    let m = Function::param("m", Constant::single_val(vec![2, 2], 0.5));
-    m.minimize(&args, 1., 3, 1);
-}
-
 
 #[cfg(test)]
 mod tests {

@@ -14,7 +14,7 @@ extern {
 pub struct Matrix {
     height: c_uint,
     width: c_uint,
-    pub array: *mut c_float,
+    array: *mut c_float,
 }
 
 impl Matrix {

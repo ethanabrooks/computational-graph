@@ -47,6 +47,7 @@ macro_rules! hashset {
     () => { 
         HashSet::new() 
     };
+
     ($( $val: expr ),*) => {{
          let mut set = HashSet::new();
          $( set.insert(String::from($val)); )*
@@ -56,9 +57,8 @@ macro_rules! hashset {
 
 impl Pool {
     fn new(dims: Vec<usize>, size: usize) -> Pool {
-        Pool((0..size)
-             .map(|_| RefCell::new(Constant::empty(dims.clone())))
-             .collect())
+        Pool((0..size).map(|_| RefCell::new(Constant::empty(dims.clone())))
+                      .collect())
     }
 
     fn size(&self) -> usize {
@@ -77,7 +77,6 @@ impl Pool {
 
 impl<'a> Index<usize> for Pool {
     type Output = RefCell<Constant>;
-
     fn index(&self, i: usize) -> &RefCell<Constant> { &self.0[i] }
 }
 
@@ -108,7 +107,6 @@ impl Function {
         let expr = Expr::Input(Input { name: String::from(s), dims: dims.clone(), }); 
         Function::new(Constant::empty(dims), hashset![s], expr, 0)
     }
-
 
     #[allow(dead_code)]
     pub fn param(s: &str, value: Constant) -> Function {
