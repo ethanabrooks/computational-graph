@@ -5,9 +5,9 @@ extern {
     fn alloc_matrix(m: *mut Matrix);
     fn copy_matrix(m1: *const Matrix, m2: *mut Matrix);
     fn free_matrix(m: *mut Matrix);
-    fn fill_matrix(m: *mut Matrix, value: f32);
-    fn get_array(m: *const Matrix) -> *mut c_float;
-    fn set_array(m: *mut Matrix, values: *const f32, transpose: bool);
+    fn fill_matrix(m: *mut Matrix, value: c_float);
+    fn get_array(m: *const Matrix, dst: *mut c_float);
+    fn set_array(m: *mut Matrix, values: *const c_float, transpose: bool);
 }
 
 #[repr(C)]
@@ -35,10 +35,14 @@ impl Matrix {
     }
 
     pub fn to_slice<'a>(&self) -> &'a [c_float] {
-        unsafe { slice::from_raw_parts(get_array(self), self.size()) }
+        let ptr: *mut f32 = Vec::with_capacity(self.size()).as_mut_ptr();
+        unsafe { 
+            get_array(self, ptr);
+            slice::from_raw_parts(ptr, self.size())
+        }
     }
 
-    pub fn to_vec(&self) -> Vec<c_float> {
+    pub fn to_vec(&self) -> Vec<f32> {
         self.to_slice().to_vec()
     }
 
@@ -79,7 +83,7 @@ impl Matrix {
     }
 
     pub fn fill(&mut self, val: f32) {
-        unsafe { fill_matrix(self, val) };
+        unsafe { fill_matrix(self, val as c_float) };
     }
 
     pub fn single_val(height: usize, width: usize, val: f32) -> Matrix {

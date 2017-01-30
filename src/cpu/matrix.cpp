@@ -19,8 +19,8 @@ extern "C" {
     matrix->array = safe_malloc<float>(size(matrix));
   }
 
-  float* get_array(const Matrix *matrix) {
-    return matrix->array;
+  void get_array(const Matrix *matrix, float *dst) {
+    memcpy(dst, matrix->array, size(matrix) * sizeof(float));
   }
 
   void set_array(Matrix *matrix, const float *array, bool transpose) {

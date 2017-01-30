@@ -22,6 +22,13 @@ mod lstm;
 use function::Function;
 use std::collections::HashMap;
 
+use matrix::Matrix;
+
+fn main() {
+    Matrix::new(2, 2, vec![1., 2., 
+                           3., 4.]).print();
+}
+
 #[cfg(test)]
 mod tests {
     use constant::Constant;

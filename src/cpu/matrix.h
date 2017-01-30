@@ -10,7 +10,7 @@ typedef struct matrix_struct {
 extern "C" {
   void alloc_matrix(Matrix *matrix);
   int size(const Matrix *m);
-  float* get_array(const Matrix *matrix);
+  void get_array(const Matrix *matrix, float *dst);
   void set_array(Matrix *matrix, const float *array, bool transpose);
   void copy_matrix(const Matrix *src, Matrix *dst);
   void init_matrix(Matrix *matrix, const float *array,
