@@ -63,11 +63,11 @@ impl Constant {
 
     pub fn absorb(&mut self, other: &Constant) {
         match (self, other) {
-            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(ref x2)) =>
-                *x1 = *x2,
+            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) =>
+                *x1 = x2,
             (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) => 
                 m1.copy(m2),
-            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(ref m)) =>
+            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) =>
                 *x = other.avg(),
             (&mut Constant::Matrix(ref mut m), &Constant::Scalar(ref x)) => 
                 m.fill(x.clone()),

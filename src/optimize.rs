@@ -1,9 +1,5 @@
 use function::{Function, Expr};
 use constant::Constant;
-//use ops::{one_minus, negate, sq, abs, tanh, sigmoid, signum};
-//{mul_assign, sq_ref, signum_ref, add_assign, sub_assign, 
-          //sigmoid_assign, signum_assign, tanh_assign, sq_assign, 
-          //abs_assign, negate, one_minus};
 use std::collections::HashMap;
 use std::io::{Write, stderr};
 use std::ops::{Deref, DerefMut};
@@ -88,8 +84,6 @@ impl Function {
 
     // assign final value to outputs
     pub fn assign_values(&self, args: &HashMap<&str, Constant>) {
-        //print!("Value in assign_values: ");
-        //self.value().print();
         match *self.body() {
             Expr::Constant(_) | Expr::Param(_) => return,
             //Expr::Input(ref i) =>
@@ -129,12 +123,6 @@ impl Function {
                 f1.assign_values(args);
                 f2.assign_values(args);
                 exec![(value_mut!(self)) = (value!(f1)) - (value!(f2))];
-                //print!("f1: ");
-                //f1.print();
-                //print!("f2: ");
-                //f2.print();
-                //print!("value: ");
-                //self.value().print();
             }
             Expr::Mul(ref f1, ref f2) => {
                 f1.assign_values(args);
@@ -153,11 +141,6 @@ impl Function {
 
     // TODO:make this private
     pub fn backprop(&self, error: &mut Constant, learn_rate: f32) {
-        //print!("value at top of backprop: "); 
-        //self.value().print();
-        //print!("value after -=: "); 
-        //exec![(self.value_mut()) -= (&Constant::Scalar(1.))];
-        //self.value().print();
 
         macro_rules! placeholder {
             () => { self.placeholder(0).deref_mut() };
@@ -167,47 +150,22 @@ impl Function {
         if self.params().is_empty() { return; }
         match *self.body() {
             Expr::Param(_) => {
-
-                //print!("\n\nerror: "); 
-                //error.print();
-                //println!("learn rate: {}", learn_rate); 
-
                 *error *= Constant::Scalar(learn_rate); // possibly matrix * scalar
-
-                //print!("error after multiplication with learn_rate: "); 
-                //error.print();
-                //print!("value: "); 
-                //self.value().print();
-
                 exec![(self.value_mut()) -= (error)]; // possibly scalar -= matrix
-
-                //print!("value after subtraction of error: "); 
-                //self.value().print();
-                //println!("\n");
             }
             Expr::Neg(ref f) => {
                 error.assign_neg();
                 f.backprop(error, learn_rate)
             }
             Expr::Sq(ref f) => {
-                exec![(error) *= (&Constant::Scalar(2.))];  // TODO: is this right??
+                exec![(error) *= (&Constant::Scalar(2.))];
                 exec![(error) *= (value!(f))];  // possibly scalar *= matrix
                 f.backprop(error, learn_rate)
             }
             Expr::Abs(ref f) => {
-                //print!("value: ");
-                //self.value().print();
                 exec![(placeholder!()) = signum(value!(f))];
-                //print!("signum(value): ");
-                //(placeholder!()).print();
                 exec![(placeholder!()) *= (error)];
                 f.backprop(placeholder!(), learn_rate);
-                //self.mutate_placeholder(0, &|x| {
-                    //x.copy(f.unwrap_value().deref()); // out
-                    //signum_assign(x);                 // signum(out)
-                    //mul_assign(x, error);             // error * signum(out)
-                //});
-                //f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             }
             Expr::Signum(_) => panic!("sign is not differentiable"),
             Expr::Sigmoid(ref f) => {
@@ -216,30 +174,12 @@ impl Function {
                 exec![(error) *= (placeholder!())];
                 f.backprop(placeholder!(), learn_rate);
             }
-                //let val = self.unwrap_value();
-                //self.mutate_placeholder(0, &|x| {
-                    //x.copy(val.deref());        // out
-                    //one_minus(x);               // 1 - out
-                    //mul_assign(x, val.deref()); // out * (1 - out)
-                    //mul_assign(x, error);       // error * out * (1 - out)
-                //});
-
-                //f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             Expr::Tanh(ref f) => {
                 exec![(placeholder!()) = sq(value!(self))];
                 placeholder!().assign_one_minus();
                 exec![(error) *= (placeholder!())];
                 f.backprop(placeholder!(), learn_rate);
             }
-                //let val = self.unwrap_value();
-                //self.mutate_placeholder(0, &|x| {
-                    //x.copy(val.deref());        // out
-                    //sq_assign(x);               // out^2
-                    //one_minus(x);               // 1 - out^2
-                    //mul_assign(x, error);       // error * (1 - out^2)
-                //});
-
-                //f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             Expr::Add(ref f1, ref f2) => {
                 placeholder!().absorb(error); 
                 f1.backprop(error, learn_rate);
@@ -261,13 +201,6 @@ impl Function {
                 exec![(placeholder!(1)) = dot((value!(f1)) T=!t1, (error) T=false)];
                 f1.backprop(placeholder!(0), learn_rate);
                 f2.backprop(placeholder!(1), learn_rate);
-
-                //self.mutate_placeholder(0, &|x| x.assign_dot(&error, &f2.unwrap_value(),
-                                                             //false, !trans2));
-                //self.mutate_placeholder(1, &|x| x.assign_dot(&f1.unwrap_value(),
-                                                             //&error, !trans1, false));
-                //f1.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
-                //f2.backprop(self.get_placeholder(1).deref_mut(), learn_rate);
             }
             Expr::Constant(_)
                 //| Expr::Input(_) 

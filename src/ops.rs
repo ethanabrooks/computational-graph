@@ -89,7 +89,7 @@ macro_rules! Constant2 {
                 *result = $scalar_scalar_fn(result.clone(), x),
             (&mut Constant::Matrix(ref mut result), &Constant::Scalar(x)) => 
                 unsafe { matrix_scalar_fn(result, x, result) },
-            (&mut Constant::Scalar(ref mut result), &Constant::Matrix(ref m)) => 
+            (&mut Constant::Scalar(ref mut result), &Constant::Matrix(_)) => 
                 *result = $scalar_scalar_fn(result.clone(), $other.avg()), // do not use with nonlinear functions
             (&mut Constant::Matrix(ref mut result), &Constant::Matrix(ref m)) => 
                 unsafe { matrix_matrix_fn(result, m, result) },
@@ -102,22 +102,22 @@ macro_rules! Constant2 {
         let matrix_matrix_fn = concat_idents!(elemwise_, $op);
         match ($result, $c1, $c2) {
             (&mut Constant::Scalar(ref mut result), 
-                &Constant::Scalar(x1), 
-                &Constant::Scalar(x2)) => *result = $scalar_scalar_fn(x1, x2),
+                 &Constant::Scalar(x1), 
+                 &Constant::Scalar(x2)) => *result = $scalar_scalar_fn(x1, x2),
             (&mut Constant::Matrix(ref mut result), 
-                &Constant::Scalar(x1), 
-                &Constant::Scalar(x2)) => result.fill($scalar_scalar_fn(x1, x2)),
+                 &Constant::Scalar(x1), 
+                 &Constant::Scalar(x2)) => result.fill($scalar_scalar_fn(x1, x2)),
             (&mut Constant::Matrix(ref mut result), 
-                &Constant::Matrix(ref m), 
-                &Constant::Scalar(x)) => unsafe { matrix_scalar_fn(m, x, result) },
+                 &Constant::Matrix(ref m), 
+                 &Constant::Scalar(x)) => unsafe { matrix_scalar_fn(m, x, result) },
             (&mut Constant::Matrix(ref mut result), 
-                &Constant::Scalar(x), 
-                &Constant::Matrix(ref m)) => unsafe { scalar_matrix_fn(x, m, result) },
+                 &Constant::Scalar(x), 
+                 &Constant::Matrix(ref m)) => unsafe { scalar_matrix_fn(x, m, result) },
             (&mut Constant::Matrix(ref mut result), 
-                &Constant::Matrix(ref m1), 
-                &Constant::Matrix(ref m2)) => unsafe { matrix_matrix_fn(m1, m2, result) },
-                _ => panic!("The result of this operation yields a matrix. Can't place 
-                a matrix result of a matrix operation in a scalar"),
+                 &Constant::Matrix(ref m1), 
+                 &Constant::Matrix(ref m2)) => unsafe { matrix_matrix_fn(m1, m2, result) },
+                 _ => panic!("The result of this operation yields a matrix. Can't place 
+                 a matrix result of a matrix operation in a scalar"),
         }
     }}
 }

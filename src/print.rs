@@ -3,8 +3,6 @@ use function::{Function, Expr};
 use constant::Constant;
 use matrix::Matrix;
 use std::ops::Deref;
-use std::slice;
-use libc::{c_uint, c_float};
 
 fn write_with_parens(a: &Function, 
                      operator: &str,
@@ -96,11 +94,6 @@ impl fmt::Display for Function {
         }
     }
 }
-
-extern {
-    fn get_array(m: *const Matrix) -> *mut f32;
-}
-
 
 macro_rules! matrix_print {
     ($trait_:ident) => {

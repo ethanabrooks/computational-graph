@@ -22,16 +22,12 @@ use function::Function;
 use std::collections::HashMap;
 
 use constant::Constant;
-use matrix::Matrix;
 
 fn main() {
     let args = HashMap::new();
 
-    let x = Function::param("x", Constant::Scalar(0.5));
     let m = Function::param("m", Constant::single_val(vec![2, 2], 0.5));
-    //x.minimize(&args, 1., 10, 1);
     m.minimize(&args, 1., 3, 1);
-    //assert!(f.all_less_than(-9.), "F: {}", f);
 }
 
 
