@@ -242,27 +242,23 @@ impl Function {
                 //f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             Expr::Add(ref f1, ref f2) => {
                 placeholder!().absorb(error); 
-
                 f1.backprop(error, learn_rate);
                 f2.backprop(placeholder!(), learn_rate);
             }
             Expr::Sub(ref f1, ref f2) => {
                 exec![(placeholder!()) = -(error)];
-
                 f1.backprop(error, learn_rate);
                 f2.backprop(placeholder!(), learn_rate);
             }
             Expr::Mul(ref f1, ref f2) => {
                 exec![(placeholder!()) = (value!(f1)) * (error)]; // if scalar = scalar * matrix, first reduce matrix to scalar.
                 exec![(error) *= (value!(f2))];
-
                 f1.backprop(error, learn_rate);
                 f2.backprop(placeholder!(), learn_rate);
             }
             Expr::Dot(ref f1, t1, ref f2, t2) => {
                 exec![(placeholder!(0)) = dot((error) T=false, (value!(f2)) T=!t2)];
                 exec![(placeholder!(1)) = dot((value!(f1)) T=!t1, (error) T=false)];
-
                 f1.backprop(placeholder!(0), learn_rate);
                 f2.backprop(placeholder!(1), learn_rate);
 

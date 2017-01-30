@@ -162,14 +162,21 @@ macro_rules! no_trait1 {
 
 
 macro_rules! Function2 {
-    ($op:ident, $f1:expr, $f2:expr, ($function:expr)) => {
+    ($op:ident, $f1:expr, $f2:expr, 
+     value:        $value:expr, 
+     expr:         $expr:expr, 
+     placeholders: $n_placeholders:expr) => {{
         // optimization to combine constants
+        let params = $f1.params().clone()
+                        .union(&($f2.params().clone()))
+                        .cloned().collect();
+        let function = Function::new($value, params, $expr, $n_placeholders);
         match ($f1.body(), $f2.body()) { 
             (&Expr::Constant(_), &Expr::Constant(_)) =>
-                Function::constant($function.eval(&HashMap::new())),
-            _ => $function
+                Function::constant(function.eval(&HashMap::new())),
+            _ => function,
         }
-    };
+    }};
 
     ($Op:ident, $op:ident, $f1:expr, $f2:expr, $n_placeholders:expr) => {{
 
@@ -184,12 +191,11 @@ macro_rules! Function2 {
                 Constant::Matrix(m1.clone())
             }
         };
-        let params = $f1.params().clone()
-                        .union(&($f2.params().clone()))
-                        .cloned().collect();
-        Function2!($op, $f1, $f2, (Function::new(value, params,
-                                                 Expr::$Op($f1.clone(), $f2.clone()),
-                                                 $n_placeholders)))
+        let expr = Expr::$Op($f1.clone(), $f2.clone());
+        Function2!($op, $f1, $f2, 
+                   value:        value, 
+                   expr:         expr, 
+                   placeholders: $n_placeholders)
     }};
 
 }
@@ -355,7 +361,11 @@ pub fn dot(f1: &Function, trans1: bool, f2: &Function, trans2: bool) -> Function
     match (f1.body(), f2.body()) { 
         (&Expr::Constant(ref c1), &Expr::Constant(ref c2)) =>
             Function::constant(Constant::dot(c1, trans1, c2, trans2)),
-        _ => Function2!(dot, f1, f2, (dot(f1, trans1, f2, trans2))),
+        _ => Function2!(dot, f1, f2, 
+                        value:        Constant::empty_for_dot(value!(f1), trans1,
+                                                              value!(f2), trans2),
+                        expr:         Expr::Dot(f1.clone(), trans1, f2.clone(), trans2),
+                        placeholders: 2),
     }
 }
 

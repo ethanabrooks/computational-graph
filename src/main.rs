@@ -84,65 +84,65 @@ mod tests {
         }
     }
 
-    //test!(single_param_test, |x| x, 
-          //learning rate: 1., 
-          //test less than -9.49);
+    test!(single_param_test, |x| x, 
+          learning rate: 1., 
+          test less than -9.49);
 
-    //test!(neg_test, |x: Function| -x, 
-          //learning rate: 1., 
-          //test less than -9.49);
+    test!(neg_test, |x: Function| -x, 
+          learning rate: 1., 
+          test less than -9.49);
 
-    //test!(sq_test, |x: Function| x.sq(),
-          //learning rate: 0.1,
-          //test less than 0.01);
+    test!(sq_test, |x: Function| x.sq(),
+          learning rate: 0.1,
+          test less than 0.01);
 
-    //test!(abs_test, |x: Function| x.abs(),
-          //learning rate: 0.1, 
-          //test less than 0.00001);
+    test!(abs_test, |x: Function| x.abs(),
+          learning rate: 0.1, 
+          test less than 0.00001);
 
-    //test!(sigmoid_test, |x: Function| x.sigmoid(),
-          //learning rate: 1.,
-          //test less than -9.49);
+    test!(sigmoid_test, |x: Function| x.sigmoid(),
+          learning rate: 1.,
+          test less than -9.49);
 
-    //test!(tanh_test, |x: Function| x.tanh(),
-          //learning rate: 1., 
-          //test less than -0.97);
+    test!(tanh_test, |x: Function| x.tanh(),
+          learning rate: 1., 
+          test less than -0.97);
 
-    //test!(add_test, |x: Function, y: Function| x + y,
-          //constants value: 1., 
-          //learning rate: 1., 
-          //test less than -7.4);
+    test!(add_test, |x: Function, y: Function| x + y,
+          constants value: 1., 
+          learning rate: 1., 
+          test less than -7.4);
 
-    //test!(mul_test, |x: Function, y: Function| x * y,
-          //constants value: 2., 
-          //learning rate: 0.1, 
-          //test less than -2.60);
+    test!(mul_test, |x: Function, y: Function| x * y,
+          constants value: 2., 
+          learning rate: 0.1, 
+          test less than -2.60);
 
-    //test!(sub_scalar_l_test, |x: Function| Function::scalar(1.) - x,
-          //learning rate: 1., 
-          //test less than -8.4);
+    test!(sub_scalar_l_test, |x: Function| Function::scalar(1.) - x,
+          learning rate: 1., 
+          test less than -8.4);
 
-    //test!(sub_matrix_r_test,
-          //|x: Function| x - Function::single_val_matrix(2, 2, 1.),
-          //learning rate: 1., 
-          //test less than -9.4);
+    test!(sub_matrix_r_test,
+          |x: Function| x - Function::single_val_matrix(2, 2, 1.),
+          learning rate: 1., 
+          test less than -9.4);
 
-    //test!(sub_matrix_l_test,
-          //|x: Function| Function::single_val_matrix(2, 2, 1.) - x,
-          //learning rate: 1.,
-          //test less than -8.4);
+    test!(sub_matrix_l_test,
+          |x: Function| Function::single_val_matrix(2, 2, 1.) - x,
+          learning rate: 1.,
+          test less than -8.4);
 
-    //test!(complex_test, |x: Function| {
-        //let a = Function::scalar(2.);
-        //let b = Function::matrix(2, 2, vec![
-                                //1.2, -1.,
-                                //0., 1.5
-                                //]);
-        //let c = Function::scalar(10.);
-        //(((&x - &a) * (&x + &b) - c)).sq()
-    //}, 
-          //learning rate: 0.04,
-          //test less than 10.8);
+    test!(complex_test, |x: Function| {
+        let a = Function::scalar(2.);
+        let b = Function::matrix(2, 2, vec![
+                                1.2, -1.,
+                                0., 1.5
+                                ]);
+        let c = Function::scalar(10.);
+        (((&x - &a) * (&x + &b) - c)).sq()
+    }, 
+          learning rate: 0.04,
+          test less than 10.8);
 
     #[test]
     fn dot_test() {
@@ -156,14 +156,14 @@ mod tests {
         }
     }
 
-    //#[bench]
-    //fn simple_op(b: &mut Bencher) {
-        //let f = Function::random_param("x", vec![10, 10], -0.1, 0.1);
-        //b.iter(|| {
-            //f.minimize(&HashMap::new(), 0.01, 1000, 10000);
-            //println!("iterating...");
-        //})
-    //}
+    #[bench]
+    fn simple_op(b: &mut Bencher) {
+        let f = Function::random_param("x", vec![10, 10], -0.1, 0.1);
+        b.iter(|| {
+            f.minimize(&HashMap::new(), 0.01, 1000, 10000);
+            println!("iterating...");
+        })
+    }
 
     #[allow(dead_code)]
     fn run_lstm(b: &mut Bencher) {
