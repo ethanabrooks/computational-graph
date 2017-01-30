@@ -53,7 +53,7 @@ fn main() {
         if more_recent_than(&vec![String::from(src_name)], &out_name).unwrap() {
             assert!(Command::new(compiler)
                 .arg(&src_name)
-                .args(&["-c", xcompiler_flag, "-fPIC", cublas_flag, "-o"]) 
+                .args(&["-I", "src/", "-c", xcompiler_flag, "-fPIC", cublas_flag, "-o"]) 
                 .arg(&out_name)
                 .status().unwrap().success(), "{} {} failed", compiler, src_name);
         }
