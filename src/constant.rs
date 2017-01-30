@@ -61,16 +61,22 @@ impl Constant {
         }
     }
 
+    pub fn copy(&mut self, other: &Constant) {
+        match (&self, &other) {
+            (&&mut Constant::Scalar(_), &&Constant::Matrix(_)) |
+            (&&mut Constant::Matrix(_), &&Constant::Scalar(_)) => 
+            panic!("Cannot copy mismatched Constants."),
+            _ => {},
+        }
+        self.absorb(other);
+    }
+
     pub fn absorb(&mut self, other: &Constant) {
         match (self, other) {
-            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) =>
-                *x1 = x2,
-            (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) => 
-                m1.copy(m2),
-            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) =>
-                *x = other.avg(),
-            (&mut Constant::Matrix(ref mut m), &Constant::Scalar(ref x)) => 
-                m.fill(x.clone()),
+            (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) => *x1 = x2,
+            (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) => m1.copy(m2),
+            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) => *x = other.avg(),
+            (&mut Constant::Matrix(ref mut m), &Constant::Scalar(ref x)) => m.fill(x.clone()),
         }
     }
 

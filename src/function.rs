@@ -18,7 +18,7 @@ pub struct Function {
 #[derive(Debug)]
 pub enum Expr {
     Constant(Constant),
-    //Input(Input),
+    Input(Input),
     Param(Param),
     Neg(Function),
     Sq(Function),
@@ -32,11 +32,11 @@ pub enum Expr {
     Dot(Function, bool, Function, bool),
 }
 
-//#[derive(Debug)]
-//pub struct Input {
-    //dims: Vec<usize>, 
-    //pub name: String,
-//}
+#[derive(Debug)]
+pub struct Input {
+    dims: Vec<usize>, 
+    pub name: String,
+}
 
 #[derive(Debug)]
 pub struct Param {
@@ -98,18 +98,16 @@ impl Function {
        }
     }
 
+    #[allow(dead_code)]
     pub fn constant(value: Constant) -> Function {
         Function::new(value.clone(), hashset!(), Expr::Constant(value), 0)
     }
 
-    //#[allow(dead_code)]
-    //pub fn input(s: &str, dims: Vec<usize>) -> Function {
-        //Function::new(None, hashset![s], 
-                    //Expr::Input(Input {
-                        //name: String::from(s),
-                        //dims: dims,
-                    //}))
-    //}
+    #[allow(dead_code)]
+    pub fn input(s: &str, dims: Vec<usize>) -> Function {
+        let expr = Expr::Input(Input { name: String::from(s), dims: dims.clone(), }); 
+        Function::new(Constant::empty(dims), hashset![s], expr, 0)
+    }
 
 
     #[allow(dead_code)]

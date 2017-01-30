@@ -8,13 +8,13 @@ impl Function {
     pub fn eval(&self, args: &HashMap<&str, Constant>) -> Constant {
         match *self.body() {
             Expr::Constant(ref x) => x.clone(),
-            //Expr::Input(ref i) => {
-                //match args.get::<str>(&i.name) {
-                    //Some(val) => val.clone(),
-                    //None => panic!("`args` is missing {}. Content of `args`: \n{:#?}",
-                                   //&i.name, args),
-                //}
-            //}
+            Expr::Input(ref i) => {
+                match args.get::<str>(&i.name) {
+                    Some(val) => val.clone(),
+                    None => panic!("`args` is missing {}. Content of `args`: \n{:#?}",
+                                   &i.name, args),
+                }
+            }
             Expr::Param(_)            => self.value().clone(),
             Expr::Neg(ref f)          => -f.eval(args),
             Expr::Sq(ref f)           => f.eval(args) * f.eval(args),
@@ -48,9 +48,7 @@ impl Function {
                 Expr::Dot(_, _, _, _) => panic!("not implemented"),
                 Expr::Param(_) => Function::constant(self.value_mut()
                                                          .copy_and_fill(1.)),
-                Expr::Constant(_) 
-                    //| Expr::Input(_) 
-                    => panic!("should never reach here"),
+                Expr::Constant(_) | Expr::Input(_) => panic!("should never reach here"),
             }
         } else {
             Function::scalar(0.)
@@ -86,8 +84,10 @@ impl Function {
     pub fn assign_values(&self, args: &HashMap<&str, Constant>) {
         match *self.body() {
             Expr::Constant(_) | Expr::Param(_) => return,
-            //Expr::Input(ref i) =>
-                //self.set_value(args.get::<str>(&i.name).expect("missing arg").clone()),
+            Expr::Input(ref i) => {
+                let value = args.get::<str>(&i.name).expect("missing arg").clone();
+                value_mut!(self).copy(&value);
+            }
             Expr::Neg(ref f) => {
                 f.assign_values(args);
                 exec![(value_mut!(self)) = -(value!(f))];
@@ -199,9 +199,7 @@ impl Function {
                 f1.backprop(placeholder!(0), learn_rate);
                 f2.backprop(placeholder!(1), learn_rate);
             }
-            Expr::Constant(_)
-                //| Expr::Input(_) 
-                => return,
+            Expr::Constant(_) | Expr::Input(_) => return,
         }
     }
 
