@@ -18,7 +18,7 @@
     SET(result, f_ ## name(a[IDx])) \
   } \
   void map_ ## name(const Matrix *m, Matrix *result) { \
-    DEFAULT_LAUNCH(_ ## name, result, m->dev_array); \
+    DEFAULT_LAUNCH(_ ## name, result, m->array); \
   }
 
 #define BIN_BROADCAST(name, op) \
@@ -26,8 +26,17 @@
   void _ ## name ## _scalar(int len, float *result, const float *a, float val) { \
     SET(result, a[IDx] op val) \
   } \
-  void broadcast_ ## name(float val, const Matrix *m, Matrix *result) { \
-    DEFAULT_LAUNCH(_ ## name ## _scalar, result, m->dev_array, val); \
+  void broadcast_ ## name(const Matrix *m, float val, Matrix *result) { \
+    DEFAULT_LAUNCH(_ ## name ## _scalar, result, m->array, val); \
+  }
+
+#define BIN_BROADCAST_REV(name, op) \
+  __global__ \
+  void _ ## name ## _scalar_rev(int len, float *result, const float *a, float val) { \
+    SET(result, val op a[IDx]) \
+  } \
+  void broadcast_ ## name ## _rev(float val, const Matrix *m, Matrix *result) { \
+    DEFAULT_LAUNCH(_ ## name ## _scalar_rev, result, m->array, val); \
   }
 
 #define BIN_ELEMWISE(name, op) \
@@ -37,7 +46,7 @@
   } \
   void elemwise_ ## name (const Matrix *m1, const Matrix *m2, Matrix *result) { \
     check_all_eq(m1, m2, result); \
-    DEFAULT_LAUNCH(_ ## name, result, m1->dev_array, m2->dev_array); \
+    DEFAULT_LAUNCH(_ ## name, result, m1->array, m2->array); \
   }
 #define CHECK_EQUAL(side1, side2) \
   check(side1 != side2,  #side1 " must equal " #side2)
@@ -58,13 +67,17 @@ extern "C" {
   UN_MAP(tanh, tanh(x)) // map_tanh
   UN_MAP(one_minus, 1.0f - x) // map_one_minus
 
-  BIN_ELEMWISE(mul, *) // elemwise_mult
+  BIN_ELEMWISE(mul, *) // elemwise_mul
   BIN_ELEMWISE(add, +) // elemwise_add
   BIN_ELEMWISE(sub, -) // elemwise_sub
 
-  BIN_BROADCAST(mul, *) // broadcast_mult
+  BIN_BROADCAST(mul, *) // broadcast_mul
   BIN_BROADCAST(add, +) // broadcast_add
   BIN_BROADCAST(sub, -) // broadcast_sub
+
+  BIN_BROADCAST_REV(mul, *) // broadcast_mul_rev 
+  BIN_BROADCAST_REV(add, +) // broadcast_add_rev
+  BIN_BROADCAST_REV(sub, -) // broadcast_sub_rev
 
   void gemm(const Matrix *m1, bool trans1,
             const Matrix *m2, bool trans2,
@@ -99,12 +112,12 @@ extern "C" {
         result->width,      // n
         trans1 ? m1->height : m1->width,
         &alpha,             // alpha
-        m1->dev_array,      // A
+        m1->array,      // A
         m1->height,         // lda
-        m2->dev_array,      // B
+        m2->array,      // B
         m2->height,         // ldb
         &beta,              // beta
-        result->dev_array,  // C
+        result->array,  // C
         result->height);    // ldc
     switch (stat) {
       case CUBLAS_STATUS_NOT_INITIALIZED:
@@ -148,7 +161,7 @@ REDUCE_KERNEL(sum, atomicAdd, a[IDx], float *address)
 
     /*_reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>>*/
     _reduce_equal<<<4, 16>>>
-      (size(m), m->dev_array, dev_bool, x);
+      (size(m), m->array, dev_bool, x);
 
     cudaStat = device2host<unsigned int>(1, dev_bool, &t);
     check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
@@ -165,7 +178,7 @@ REDUCE_KERNEL(sum, atomicAdd, a[IDx], float *address)
     check(cudaStat != cudaSuccess, "host2device failed in reduce_eq");
 
     _reduce_lt<<<blockcount(size(m)), BLOCKSIZE>>>
-      (size(m), m->dev_array, dev_bool, x);
+      (size(m), m->array, dev_bool, x);
 
     cudaStat = device2host<unsigned int>(1, dev_bool, &t);
     check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
@@ -182,7 +195,7 @@ REDUCE_KERNEL(sum, atomicAdd, a[IDx], float *address)
     check(cudaStat != cudaSuccess, "host2device failed in reduce_sum");
 
     _reduce_sum<<<blockcount(size(m)), BLOCKSIZE>>>
-      (size(m), m->dev_array, dev_sum);
+      (size(m), m->array, dev_sum);
 
     cudaStat = device2host<float>(1, dev_sum, &sum);
     check(cudaStat != cudaSuccess, "device2host failed in reduce_sum");
@@ -191,21 +204,3 @@ REDUCE_KERNEL(sum, atomicAdd, a[IDx], float *address)
     return sum;
   }
 }
-
-/*
-#define REDUCE(name, init_address, ...) \
-  bool reduce_ ## name(const Matrix *m, __VA_ARGS__) { \
-    init_address; \
-    cudaError_t cudaStat = host2device(1, &address, dev_address); \
-    check(cudaStat != cudaSuccess, "host2device failed in reduce_eq"); \
- \
-    _reduce_equal<<<blockcount(size(m)), BLOCKSIZE>>> \
-      (size(m), m->dev_array, dev_address, __VA_ARGS__); \
- \
-    cudaStat = device2host(1, dev_bool, &t); \
-    check(cudaStat != cudaSuccess, "device2host failed in reduce_sum"); \
- \
-    cudaFree(dev_bool); \
-    return t == 1; \
-  } \
-*/

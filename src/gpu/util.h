@@ -9,7 +9,7 @@
 #define BLOCKSIZE2D dim3(16, 16)
 #define DEFAULT_LAUNCH(kernel, out, ...) \
   kernel<<<blockcount(size(out)), BLOCKSIZE>>> \
-      (size(out), out->dev_array, ##__VA_ARGS__) 
+      (size(out), out->array, ##__VA_ARGS__) 
 
 void check(int condition, const char *msg);
 dim3 blockcount(int count);
