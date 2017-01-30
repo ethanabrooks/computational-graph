@@ -47,8 +47,8 @@ mod tests {
          test less than $goal:expr) => {
             #[test]
             fn $test_name () {
-                let x = Function::param("x", Constant::Scalar(START));
-                let m = Function::param("m", Constant::single_val(vec![2, 2], START));
+                let x = Function::scalar_param("x", START);
+                let m = Function::single_val_param("m", vec![2, 2], START);
                 for f in &[$f(x), $f(m)] {
                     f.minimize(&HashMap::new(), $learn_rate, 10, 1);
                     assert!(f.all_less_than($goal), "F: {}", f);
@@ -63,8 +63,8 @@ mod tests {
             fn $test_name () {
                 let cx = Function::scalar($const_val);
                 let cm = Function::single_val_matrix(2, 2, $const_val);
-                let px = Function::param("x", Constant::Scalar(START));
-                let pm = Function::param("m", Constant::single_val(vec![2, 2], START));
+                let px = Function::scalar_param("x", START);
+                let pm = Function::single_val_param("m", vec![2, 2], START);
                 for f in &[$f(cx.clone(), px.clone()),
                            $f(cx.clone(), pm.clone()),
                            $f(cm.clone(), px.clone()),
@@ -127,6 +127,17 @@ mod tests {
           |x: Function| Function::single_val_matrix(2, 2, 1.) - x,
           learning rate: 1.,
           test less than -8.4);
+
+    test!(broadcast_test, |x: Function| {
+        let a = Function::scalar(10.);
+        let b = Function::matrix(2, 2, vec![
+                                1.2, -1.,
+                                0., 1.5
+                                ]);
+        (&x * &a) + b
+    }, 
+          learning rate: 0.04,
+          test less than -29.4);
 
     test!(complex_test, |x: Function| {
         let a = Function::scalar(2.);

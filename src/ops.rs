@@ -53,6 +53,11 @@ macro_rules! Function1 {
     }}
 }
 
+macro_rules! nonlinear_panic {
+    () => { panic!("The result of this operation yields a matrix. Can't place 
+                   a matrix result of a matrix operation in a scalar") }
+}
+
 macro_rules! Constant1 {
     ($op:ident, $c:expr, $scalar_fn:expr) => {{
         let matrix_fn = concat_idents!(map_, $op);
@@ -61,7 +66,8 @@ macro_rules! Constant1 {
             Constant::Matrix(ref mut m) => unsafe { matrix_fn(m, m) }
         }
     }};
-    ($op:ident, $result:expr, $arg:expr, $scalar_fn:expr) => {{
+
+    (linear: $op:ident, $result:expr, $arg:expr, $scalar_fn:expr) => {{
         let matrix_fn = concat_idents!(map_, $op);
         match ($result, $arg) {
             (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(x2)) => 
@@ -70,18 +76,23 @@ macro_rules! Constant1 {
                 m.fill($scalar_fn(x)),
             (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) => 
                 unsafe { matrix_fn(m2, m1) },
-            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(_)) => 
-                *x = $scalar_fn($arg.avg()),
+            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(ref m)) => 
+                *x = $scalar_fn(m.avg()),
         }
+    }};
+
+    (nonlinear: $op:ident, $result:expr, $arg:expr, $scalar_fn:expr) => {{
+        match (&$result, &$arg) {
+            (&&mut Constant::Scalar(_), &&Constant::Matrix(_)) => nonlinear_panic!(),
+            _ => {},
+        };
+        Constant1!(linear: $op, $result, $arg, $scalar_fn);
     }}
 }
 
 macro_rules! Constant2 {
-    ($op:ident, $result:expr, $other:expr, $scalar_scalar_fn:expr) => {{
+    (linear: $op:ident, $result:expr, $other:expr, $scalar_scalar_fn:expr) => {{
 
-        // TODO: break out nonlinear form
-        // Note: this function will resize values. If the operation is nonlinear, 
-        // this may cause some unexpected results
         let matrix_scalar_fn = concat_idents!(broadcast_, $op);
         let matrix_matrix_fn = concat_idents!(elemwise_, $op);
         match ($result, $other) {
@@ -89,14 +100,22 @@ macro_rules! Constant2 {
                 *result = $scalar_scalar_fn(result.clone(), x),
             (&mut Constant::Matrix(ref mut result), &Constant::Scalar(x)) => 
                 unsafe { matrix_scalar_fn(result, x, result) },
-            (&mut Constant::Scalar(ref mut result), &Constant::Matrix(_)) => 
-                *result = $scalar_scalar_fn(result.clone(), $other.avg()), // do not use with nonlinear functions
+            (&mut Constant::Scalar(ref mut result), &Constant::Matrix(ref m)) => 
+                *result = $scalar_scalar_fn(result.clone(), m.avg()), // do not use with nonlinear functions
             (&mut Constant::Matrix(ref mut result), &Constant::Matrix(ref m)) => 
                 unsafe { matrix_matrix_fn(result, m, result) },
         }
     }};
 
-    ($op:ident, $result:expr, $c1:expr, $c2:expr, $scalar_scalar_fn:expr) => {{
+    (nonlinear: $op:ident, $result:expr, $other:expr, $scalar_scalar_fn:expr) => {{
+        match (&$result, &$other) {
+            (&&mut Constant::Scalar(_), &&Constant::Matrix(_)) => nonlinear_panic!(),
+            _ => {}, 
+        };
+        Constant2!(linear: $op, $result, $other, $scalar_scalar_fn);
+    }};
+
+    (linear: $op:ident, $result:expr, $c1:expr, $c2:expr, $scalar_scalar_fn:expr) => {{
         let matrix_scalar_fn = concat_idents!(broadcast_, $op);
         let scalar_matrix_fn = concat_idents!(broadcast_, $op, _rev);
         let matrix_matrix_fn = concat_idents!(elemwise_, $op);
@@ -104,6 +123,15 @@ macro_rules! Constant2 {
             (&mut Constant::Scalar(ref mut result), 
                  &Constant::Scalar(x1), 
                  &Constant::Scalar(x2)) => *result = $scalar_scalar_fn(x1, x2),
+            (&mut Constant::Scalar(ref mut result), 
+                 &Constant::Matrix(ref m), 
+                 &Constant::Scalar(x)) => *result = $scalar_scalar_fn(m.avg(), x),
+            (&mut Constant::Scalar(ref mut result), 
+                 &Constant::Scalar(x), 
+                 &Constant::Matrix(ref m)) => *result = $scalar_scalar_fn(x, m.avg()),
+            (&mut Constant::Scalar(ref mut result), 
+                 &Constant::Matrix(ref m1), 
+                 &Constant::Matrix(ref m2)) => *result = $scalar_scalar_fn(m1.avg(), m2.avg()),
             (&mut Constant::Matrix(ref mut result), 
                  &Constant::Scalar(x1), 
                  &Constant::Scalar(x2)) => result.fill($scalar_scalar_fn(x1, x2)),
@@ -116,25 +144,32 @@ macro_rules! Constant2 {
             (&mut Constant::Matrix(ref mut result), 
                  &Constant::Matrix(ref m1), 
                  &Constant::Matrix(ref m2)) => unsafe { matrix_matrix_fn(m1, m2, result) },
-                 _ => panic!("The result of this operation yields a matrix. Can't place 
-                 a matrix result of a matrix operation in a scalar"),
         }
-    }}
+    }};
+
+    (nonlinear: $op:ident, $result:expr, $c1:expr, $c2:expr, $scalar_scalar_fn:expr) => {{
+        match (&$result, &$c1, &$c2) {
+            (&&mut Constant::Scalar(_), &&Constant::Matrix(_), _) => nonlinear_panic!(),
+            (&&mut Constant::Scalar(_), _, &&Constant::Matrix(_)) => nonlinear_panic!(),
+            _ => {}
+        };
+        Constant2!(linear: $op, $result, $c1, $c2, $scalar_scalar_fn),
+    }};
 }
 
 macro_rules! no_trait1 {
 
     // with identity
-    ($Op:ident, $op:ident, $equals_op: ident,
+    ($linearity:ident: $Op:ident, $op:ident, $equals_op: ident,
      placeholders: $n_placeholders:expr, identity: $identity:expr) => {
 
         // use default implementation for scalar_fn
-        no_trait1!($Op, $op, $equals_op, |x: f32| x.$op(),  // default implementation
+        no_trait1!($linearity: $Op, $op, $equals_op, |x: f32| x.$op(),  // default implementation
                    placeholders: $n_placeholders, identity: $identity);
     };
 
     // with identity
-    ($Op:ident, $op:ident, $equals_op: ident, $scalar_fn:expr, 
+    ($linearity:ident: $Op:ident, $op:ident, $equals_op: ident, $scalar_fn:expr, 
      placeholders: $n_placeholders:expr, identity: $identity:expr) => {
 
         impl Function {
@@ -145,15 +180,15 @@ macro_rules! no_trait1 {
             }
         }
 
-        // allocates result
         impl Constant {
             pub fn $equals_op(&mut self, other: &Constant) {
-                Constant1!($op, self, other, $scalar_fn);
+                Constant1!($linearity: $op, self, other, $scalar_fn);
             }
 
+            // allocates result
             pub fn $op(&self) -> Constant {
                 let mut result = Constant::empty_like(self);
-                Constant1!($op, &mut result, self, $scalar_fn);
+                Constant1!($linearity: $op, &mut result, self, $scalar_fn);
                 result
             }
         }
@@ -202,14 +237,16 @@ macro_rules! Function2 {
 
 
 macro_rules! trait2 {
-    ($Op:ident, $op:ident, $OpAssign:ident, $op_assign:ident, $equals_op:ident, 
-     placeholders: $n_placeholders:expr, identity: $identity:expr) => {
-        trait2!($Op, $op, $OpAssign, $op_assign, $equals_op, |x1: f32, x2:f32| x1.$op(x2),
+    ($linearity:ident: $Op:ident, $op:ident, $OpAssign:ident, $op_assign:ident, 
+     $equals_op:ident, placeholders: $n_placeholders:expr, identity: $identity:expr) => {
+        trait2!($linearity: $Op, $op, $OpAssign, $op_assign, $equals_op, 
+                |x1: f32, x2:f32| x1.$op(x2), // default implementation
                 placeholders: $n_placeholders, identity: $identity);
     };
 
-    ($Op:ident, $op:ident, $OpAssign:ident, $op_assign:ident, $equals_op:ident, 
-     $scalar_scalar_fn:expr, placeholders: $n_placeholders:expr, identity: $identity:expr) => {
+    ($linearity:ident: $Op:ident, $op:ident, $OpAssign:ident, $op_assign:ident, 
+     $equals_op:ident, $scalar_scalar_fn:expr, 
+     placeholders: $n_placeholders:expr, identity: $identity:expr) => {
 
         impl<'a> $Op for &'a Function {
             type Output = Function;
@@ -257,14 +294,14 @@ macro_rules! trait2 {
             // This 'companion' method allows us to perform the same operation but 
             // using a ref as an argument
             pub fn $op_assign(&mut self, other: &Constant) {
-                Constant2!($op, self, other, $scalar_scalar_fn)
+                Constant2!($linearity: $op, self, other, $scalar_scalar_fn)
             }
 
             // Like $op_assign in that it does not allocate, but instead of
             // performing the operation on self, it performs it on c1 and c2 and 
             // puts the result in self.
             pub fn $equals_op(&mut self, c1: &Constant, c2: &Constant) {
-                Constant2!($op, self, c1, c2, $scalar_scalar_fn)
+                Constant2!($linearity: $op, self, c1, c2, $scalar_scalar_fn)
             }
         }
     };
@@ -291,23 +328,23 @@ macro_rules! compare {
 compare!(all_equal, eq);
 compare!(all_less_than, lt);
 
-no_trait1!(Abs, abs, equals_abs, placeholders: 1, identity: 0.);
-no_trait1!(Signum, signum, equals_signum, placeholders: 0, identity: 0.);
-no_trait1!(Sq, sq, equals_sq, |x: f32| x * x, placeholders: 0, identity: 0.);
-no_trait1!(Tanh, tanh, equals_tanh, placeholders: 1, identity: 0.);
-no_trait1!(Sigmoid, sigmoid, equals_sigmoid, |x: f32| 1. / (1. + (-x).exp()), 
+no_trait1!(nonlinear: Abs, abs, equals_abs, placeholders: 1, identity: 0.);
+no_trait1!(nonlinear: Signum, signum, equals_signum, placeholders: 0, identity: 0.);
+no_trait1!(nonlinear: Sq, sq, equals_sq, |x: f32| x * x, placeholders: 0, identity: 0.);
+no_trait1!(nonlinear: Tanh, tanh, equals_tanh, placeholders: 1, identity: 0.);
+no_trait1!(nonlinear: Sigmoid, sigmoid, equals_sigmoid, |x: f32| 1. / (1. + (-x).exp()), 
            placeholders: 1, identity: 0.5);
 
-trait2!(Add, add, AddAssign, add_assign, equals_add, 
+trait2!(linear: Add, add, AddAssign, add_assign, equals_add, 
         placeholders: 1, identity: 0.);
-trait2!(Sub, sub, SubAssign, sub_assign, equals_sub, 
+trait2!(linear: Sub, sub, SubAssign, sub_assign, equals_sub, 
         placeholders: 1, identity: 0.);
-trait2!(Mul, mul, MulAssign, mul_assign, equals_mul, 
+trait2!(linear: Mul, mul, MulAssign, mul_assign, equals_mul, 
         placeholders: 1, identity: 1.);
 
 impl Constant {
     pub fn equals_one_minus(&mut self, other: &Constant) {
-        Constant1!(one_minus, self, other, |x: f32| 1. - x);
+        Constant1!(linear: one_minus, self, other, |x: f32| 1. - x);
     }
 
     pub fn assign_one_minus(&mut self) {
@@ -315,7 +352,7 @@ impl Constant {
     }
 
     pub fn equals_neg(&mut self, other: &Constant) {
-        Constant1!(neg, self, other, |x: f32| -x);
+        Constant1!(linear: neg, self, other, |x: f32| -x);
     }
 
     pub fn assign_neg(&mut self) {
@@ -343,7 +380,7 @@ impl<'a> Neg for &'a Constant {
     type Output = Constant;
     fn neg(self) -> Constant {
         let mut empty = Constant::empty_like(self);
-        Constant1!(neg, &mut empty, self, |x: f32| -x);
+        Constant1!(linear: neg, &mut empty, self, |x: f32| -x);
         empty
     }
 }
@@ -393,9 +430,13 @@ impl Constant {
     pub fn avg(&self) -> f32 {
         match self {
             &Constant::Scalar(x) => x,
-            &Constant::Matrix(ref m) => {
-                (unsafe { reduce_sum(m) }) / m.size() as f32
-            }
+            &Constant::Matrix(ref m) => m.avg(),
         }
+    }
+}
+
+impl Matrix {
+    pub fn avg(&self) -> f32 {
+        (unsafe { reduce_sum(self) }) / self.size() as f32
     }
 }

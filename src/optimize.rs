@@ -191,7 +191,17 @@ impl Function {
                 f2.backprop(placeholder!(), learn_rate);
             }
             Expr::Mul(ref f1, ref f2) => {
+
+                print!("f1 value: ");
+                f1.print();
+                print!("error: ");
+                error.print();
+
                 exec![(placeholder!()) = (value!(f1)) * (error)]; // if scalar = scalar * matrix, first reduce matrix to scalar.
+
+                print!("placeholder: ");
+                placeholder!().print();
+
                 exec![(error) *= (value!(f2))];
                 f1.backprop(error, learn_rate);
                 f2.backprop(placeholder!(), learn_rate);

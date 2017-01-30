@@ -44,6 +44,9 @@ pub struct Param {
 }
 
 macro_rules! hashset {
+    () => { 
+        HashSet::new() 
+    };
     ($( $val: expr ),*) => {{
          let mut set = HashSet::new();
          $( set.insert(String::from($val)); )*
@@ -96,7 +99,7 @@ impl Function {
     }
 
     pub fn constant(value: Constant) -> Function {
-        Function::new(value.clone(), HashSet::new(), Expr::Constant(value), 0)
+        Function::new(value.clone(), hashset!(), Expr::Constant(value), 0)
     }
 
     //#[allow(dead_code)]
@@ -112,6 +115,21 @@ impl Function {
     #[allow(dead_code)]
     pub fn param(s: &str, value: Constant) -> Function {
         Function::new(value, hashset![s], Expr::Param(Param { name: String::from(s) }), 0)
+    }
+
+    #[allow(dead_code)]
+    pub fn scalar_param(s: &str, value: f32) -> Function {
+        Function::param(s, Constant::Scalar(value)) 
+    }
+
+    #[allow(dead_code)]
+    pub fn matrix_param(s: &str, height: usize, width: usize, vals: Vec<f32>) -> Function {
+        Function::param(s, Constant::matrix(height, width, vals))
+    }
+
+    #[allow(dead_code)]
+    pub fn single_val_param(s: &str, dims: Vec<usize>, val: f32) -> Function {
+        Function::param(s, Constant::single_val(dims, val))
     }
 
     #[allow(dead_code)]
