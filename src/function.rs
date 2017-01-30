@@ -96,7 +96,7 @@ impl Function {
     }
 
     pub fn constant(value: Constant) -> Function {
-        Function::new(value.clone(), HashSet::new(), Expr::Constant(value), 0)
+        Function::new(value.clone(), hashset!(), Expr::Constant(value), 0)
     }
 
     //#[allow(dead_code)]

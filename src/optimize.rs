@@ -1,6 +1,6 @@
 use function::{Function, Expr};
 use constant::Constant;
-use ops::{one_minus, negate, sq, abs, tanh, sigmoid, signum};
+//use ops::{one_minus, negate, sq, abs, tanh, sigmoid, signum};
 //{mul_assign, sq_ref, signum_ref, add_assign, sub_assign, 
           //sigmoid_assign, signum_assign, tanh_assign, sq_assign, 
           //abs_assign, negate, one_minus};
@@ -88,6 +88,8 @@ impl Function {
 
     // assign final value to outputs
     pub fn assign_values(&self, args: &HashMap<&str, Constant>) {
+        print!("Value in assign_values: ");
+        self.value().print();
         match *self.body() {
             Expr::Constant(_) | Expr::Param(_) => return,
             //Expr::Input(ref i) =>
@@ -121,7 +123,7 @@ impl Function {
             Expr::Add(ref f1, ref f2) => {
                 f1.assign_values(args);
                 f2.assign_values(args);
-                exec![(value_mut!(self)) = (value!(f1)) + (value!(f2))]
+                exec![(value_mut!(self)) = (value!(f1)) + (value!(f2))];
             }
             Expr::Sub(ref f1, ref f2) => {
                 f1.assign_values(args);
@@ -166,30 +168,30 @@ impl Function {
         match *self.body() {
             Expr::Param(_) => {
 
-                //print!("\n\nerror: "); 
-                //error.print();
-                //println!("learn rate: {}", learn_rate); 
+                print!("\n\nerror: "); 
+                error.print();
+                println!("learn rate: {}", learn_rate); 
 
-                *error *= Constant::Scalar(learn_rate);
+                *error *= Constant::Scalar(learn_rate); // possibly matrix * scalar
 
-                //print!("error after multiplication with learn_rate: "); 
-                //error.print();
-                //print!("value: "); 
-                //self.value().print();
+                print!("error after multiplication with learn_rate: "); 
+                error.print();
+                print!("value: "); 
+                self.value().print();
 
-                exec![(self.value_mut()) -= (error)];
+                exec![(self.value_mut()) -= (error)]; // possibly scalar -= matrix
 
-                //print!("value after subtraction of error: "); 
-                //self.value().print();
-                //println!("\n");
+                print!("value after subtraction of error: "); 
+                self.value().print();
+                println!("\n");
             }
             Expr::Neg(ref f) => {
-                negate(error);
+                error.assign_neg();
                 f.backprop(error, learn_rate)
             }
             Expr::Sq(ref f) => {
                 exec![(error) *= (&Constant::Scalar(2.))];  // TODO: is this right??
-                exec![(error) *= (value!(f))];
+                exec![(error) *= (value!(f))];  // possibly scalar *= matrix
                 f.backprop(error, learn_rate)
             }
             Expr::Abs(ref f) => {
@@ -225,7 +227,7 @@ impl Function {
                 //f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             Expr::Tanh(ref f) => {
                 exec![(placeholder!()) = sq(value!(self))];
-                one_minus(placeholder!());
+                placeholder!().assign_one_minus();
                 exec![(error) *= (placeholder!())];
                 f.backprop(placeholder!(), learn_rate);
             }
@@ -239,7 +241,7 @@ impl Function {
 
                 //f.backprop(self.get_placeholder(0).deref_mut(), learn_rate);
             Expr::Add(ref f1, ref f2) => {
-                placeholder!().copy(error);
+                placeholder!().absorb(error); 
 
                 f1.backprop(error, learn_rate);
                 f2.backprop(placeholder!(), learn_rate);
@@ -251,7 +253,7 @@ impl Function {
                 f2.backprop(placeholder!(), learn_rate);
             }
             Expr::Mul(ref f1, ref f2) => {
-                exec![(placeholder!()) = (value!(f1)) * (error)];
+                exec![(placeholder!()) = (value!(f1)) * (error)]; // if scalar = scalar * matrix, first reduce matrix to scalar.
                 exec![(error) *= (value!(f2))];
 
                 f1.backprop(error, learn_rate);

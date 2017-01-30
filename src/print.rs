@@ -108,14 +108,13 @@ macro_rules! matrix_print {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
                 let mut result;
-                //let vec = self.as_vec();
                 let h = self.height() - 1;
                 result = if h == 0 { write!(f, "\n{:^2}", "[") }
                             else   { write!(f, "\n{:^2}", "⎡") };
                 if result.is_err() { return result }
                 for i in 0..self.height() {
                     for j in 0..self.width() {
-                        result = write!(f, "{:^10.3}", self.as_vec()[j * self.height() + i]);
+                        result = write!(f, "{:^10.3}", self.to_vec()[j * self.height() + i]);
                         if result.is_err() { return result }
                     }
 

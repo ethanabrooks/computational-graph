@@ -26,14 +26,20 @@ impl Matrix {
         self.width as usize
     }
 
+    pub fn dims(&self) -> Vec<usize> {
+        vec![self.height(), self.width()]
+    }
+
     pub fn size(&self) -> usize {
         self.height() * self.width()
     }
 
-    //pub fn as_slice<'a>(&self) -> &'a [c_float] {
-    pub fn as_vec(&self) -> Vec<c_float> {
-        //let clone = self.clone();
-        unsafe { slice::from_raw_parts(get_array(self), self.size()) }.to_vec()
+    pub fn to_slice<'a>(&self) -> &'a [c_float] {
+        unsafe { slice::from_raw_parts(get_array(self), self.size()) }
+    }
+
+    pub fn to_vec(&self) -> Vec<c_float> {
+        self.to_slice().to_vec()
     }
 
     pub fn empty(height: usize, width: usize) -> Matrix {
@@ -72,9 +78,13 @@ impl Matrix {
         }
     }
 
+    pub fn fill(&mut self, val: f32) {
+        unsafe { fill_matrix(self, val) };
+    }
+
     pub fn single_val(height: usize, width: usize, val: f32) -> Matrix {
         let mut matrix: Matrix = Matrix::empty(height, width);
-        unsafe { fill_matrix(&mut matrix, val) };
+        matrix.fill(val);
         matrix
     }
 

@@ -1,22 +1,15 @@
 macro_rules! exec {
     [($result:expr) = dot(($arg1:expr) T=$t1:expr, ($arg2:expr) T=$t2:expr)] => {{
-        $result.assign_dot($arg1, $t1, $arg2, $t2)
+        $result.equals_dot($arg1, $t1, $arg2, $t2)
     }};
     [($result:expr) = ($arg1:expr) + ($arg2:expr)] => {{
-        $result.copy($arg1);
-        $result.add_assign($arg2);
+        $result.equals_add($arg1, $arg2);
     }};
     [($result:expr) = ($arg1:expr) - ($arg2:expr)] => {{
-        $result.copy($arg1);
-        $result.sub_assign($arg2);
+        $result.equals_sub($arg1, $arg2);
     }};
     [($result:expr) = ($arg1:expr) * ($arg2:expr)] => {{
-        $result.copy($arg1);
-        $result.mul_assign($arg2);
-    }};
-    [($result:expr) = ($arg1:expr) $op:ident ($arg2:expr)] => {{
-        $result.copy($arg1);
-        ($result).op(($arg1), ($arg2));
+        $result.equals_mul($arg1, $arg2);
     }};
     [($result:expr) -= ($arg:expr)] => {
         ($result).sub_assign($arg);
@@ -25,17 +18,26 @@ macro_rules! exec {
         ($result).mul_assign($arg);
     };
     [($result:expr) = 1 - ($arg:expr)] => {
-        $result.copy($arg);
-        one_minus($result);
+        $result.equals_one_minus($arg);
     };
     [($result:expr) = -($arg:expr)] => {
-        $result.copy($arg);
-        negate($result);
+        $result.equals_neg($arg);
     };
-    [($result:expr) = $op:ident ($arg:expr)] => {
-        $result.copy($arg);
-        $op($result);
-    };
+    [($result:expr) = sq($arg:expr)] => {{
+        $result.equals_sq($arg);
+    }};
+    [($result:expr) = abs($arg:expr)] => {{
+        $result.equals_abs($arg);
+    }};
+    [($result:expr) = signum($arg:expr)] => {{
+        $result.equals_signum($arg);
+    }};
+    [($result:expr) = sigmoid($arg:expr)] => {{
+        $result.equals_sigmoid($arg);
+    }};
+    [($result:expr) = tanh($arg:expr)] => {{
+        $result.equals_tanh($arg);
+    }};
 }
 
 macro_rules! value {

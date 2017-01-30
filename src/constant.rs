@@ -61,13 +61,16 @@ impl Constant {
         }
     }
 
-    pub fn copy(&mut self, other: &Constant) {
+    pub fn absorb(&mut self, other: &Constant) {
         match (self, other) {
             (&mut Constant::Scalar(ref mut x1), &Constant::Scalar(ref x2)) =>
                 *x1 = *x2,
             (&mut Constant::Matrix(ref mut m1), &Constant::Matrix(ref m2)) => 
                 m1.copy(m2),
-            _ => panic!("Can't copy from mismatched constant type.")
+            (&mut Constant::Scalar(ref mut x), &Constant::Matrix(ref m)) =>
+                *x = other.avg(),
+            (&mut Constant::Matrix(ref mut m), &Constant::Scalar(ref x)) => 
+                m.fill(x.clone()),
         }
     }
 
@@ -100,7 +103,7 @@ impl Constant {
     pub fn dims(&self) -> Vec<usize> {
          match *self {
              Constant::Scalar(_) => vec![],
-             Constant::Matrix(ref m) => vec![m.height(), m.width()]
+             Constant::Matrix(ref m) => m.dims(),
          }
     }
 }

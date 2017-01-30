@@ -19,9 +19,13 @@ extern "C" {
   void elemwise_add(Matrix *m1, Matrix *m2, Matrix *result);
   void elemwise_sub(Matrix *m1, Matrix *m2, Matrix *result);
 
-  void broadcast_mul(float val, Matrix *m, Matrix *result); 
-  void broadcast_add(float val, Matrix *m, Matrix *result); 
-  void broadcast_sub(float val, Matrix *m, Matrix *result); // e.g. 1 - [ [1 1] [1 1] ]
+  void broadcast_mul(Matrix *m, float val, Matrix *result); 
+  void broadcast_add(Matrix *m, float val, Matrix *result); 
+  void broadcast_sub(Matrix *m, float val, Matrix *result); // e.g. [ [1 1] [1 1] ] - 1
+
+  void broadcast_mul_rev(float val, Matrix *m, Matrix *result); 
+  void broadcast_add_rev(float val, Matrix *m, Matrix *result); 
+  void broadcast_sub_rev(float val, Matrix *m, Matrix *result); // e.g. 1 - [ [1 1] [1 1] ]
 
   bool all_equal(const Matrix *m, float x);
   bool all_less_than(const Matrix *m, float x);
