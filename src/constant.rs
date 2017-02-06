@@ -9,6 +9,7 @@ pub enum Constant {
 }
 
 impl Constant {
+    /// Returns `1` if `Constant` is a `Scalar`. Otherwise, returns the width of the `Matrix`.
     pub fn width(&self) -> usize {
         match *self {
             Constant::Scalar(_) => 1,
@@ -16,6 +17,7 @@ impl Constant {
         }
     }
 
+    /// Returns `1` if `Constant` is a `Scalar`. Otherwise, returns the height of the `Matrix`.
     pub fn height(&self) -> usize {
         match *self {
             Constant::Scalar(_) => 1,
@@ -23,6 +25,14 @@ impl Constant {
         }
     }
 
+    /// Creates a `Constant` with all values equal to `val`.
+    /// # Examples
+    /// ```
+    /// assert_eq!(Constant::single_val(vec![], 2), Constant::Scalar(2))
+    /// let x = Constant::single_val(vec![2, 2], 4)
+    /// // x is the matrix [[4, 4],
+    /// //                  [4, 4]]
+    /// ```
     pub fn single_val(dims: Vec<usize>, val: f32) -> Constant {
         match dims.len() {
             0 => Constant::Scalar(val),
@@ -31,6 +41,7 @@ impl Constant {
         }
     }
 
+    /// Creates a `Constant` with values uniformly sampled between `lo` and `hi`.
     pub fn random(dims: Vec<usize>, lo: f32, hi: f32) -> Constant {
         let between = Range::new(lo, hi);
         let mut rng = rand::thread_rng();
@@ -48,11 +59,31 @@ impl Constant {
         }
     }
 
+    /// Creates a `Constant::Matrix` with values drawn from `vals`. Note that although matrices
+    /// store values in column-major order on the GPU, `vals` should take values in row-major
+    /// order.
+    ///
+    /// # Example
+    /// ```
+    /// let x = Constant::matrix(2, 3, vec![1, 2, 3,
+    ///                                     4, 5, 6])
+    /// // x == [[1, 2, 3],
+    /// //       [4, 5, 6]]
+    /// ```
     pub fn matrix(height: usize, width: usize, vals: Vec<f32>) -> Constant {
         Constant::Matrix(Matrix::new(height as usize, width as usize, vals))
     }
 
-    // allocates on device
+    /// Allocates a new matrix (on the GPU if available) with dimensions identical to `self`, but
+    /// with values all equal to `val`.
+    /// # Example
+    /// ```
+    /// let x = Constant::matrix(2, 3, vec![1, 2, 3,
+    ///                                     4, 5, 6])
+    /// let y = x.copy_and_fill(4)
+    /// // y == [[4, 4, 4],
+    /// //       [4, 4, 4]]
+    /// ```
     pub fn copy_and_fill(&self, val: f32) -> Constant {
         match *self {
             Constant::Scalar(_) => Constant::Scalar(val),
@@ -60,6 +91,7 @@ impl Constant {
                 Constant::single_val(vec![m.height(), m.width()], val),
         }
     }
+
 
     pub fn copy(&mut self, other: &Constant) {
         match (&self, &other) {
