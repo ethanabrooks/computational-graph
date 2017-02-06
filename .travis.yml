@@ -30,5 +30,5 @@ notifications:
     on_failure: never
 env:
   global:
-  - TRAVIS_CARGO_NIGHTLY_FEATURE=dev
+  #- TRAVIS_CARGO_NIGHTLY_FEATURE=dev
   - secure: # encrypted stuff
