@@ -19,9 +19,6 @@ mod optimize;
 mod print; 
 mod lstm; 
 
-use function::Function;
-use std::collections::HashMap;
-
 use matrix::Matrix;
 
 fn main() {
