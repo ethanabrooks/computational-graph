@@ -27,16 +27,16 @@ fn main() {
     if Command::new("nvcc").status().is_ok() {
         ext = "cu";
         compiler = "nvcc";
-        cublas_flag = "-lcublas";
-        xcompiler_flag = "-Xcompiler";
+        cublas_flag = true;
+        xcompiler_flag = true;
         dir = "src/gpu";
         println!("cargo:rustc-link-lib=dylib=cublas");
         println!("cargo:rustc-link-lib=dylib=cudart");
     } else {
         ext = "cpp";
         compiler = "gcc";
-        cublas_flag = "";
-        xcompiler_flag = "";
+        cublas_flag = false;
+        xcompiler_flag = false;
         dir = "src/cpu"
     };
     let c_names = vec!["matrix", "ops", "util"];
@@ -51,11 +51,16 @@ fn main() {
         let out_name = get_out_name(c_names[i]);
 
         if more_recent_than(&vec![String::from(src_name)], &out_name).unwrap() {
-            assert!(Command::new(compiler)
-                .arg(&src_name)
-                .args(&["-c", xcompiler_flag, "-fPIC", cublas_flag, "-o"]) 
-                .arg(&out_name)
-                .status().unwrap().success(), "{} {} failed", compiler, src_name);
+            let mut cmd = Command::new(compiler);
+            cmd.args(&[&src_name, "-c", "-fPIC", "-o", &out_name]);
+            if xcompiler_flag {
+                cmd.arg("-Xcompiler");
+            }
+            if cublas_flag {
+                cmd.arg("-lcublas");
+            }
+            println!("{:?}", cmd);
+            println!("{:?}", cmd.output().unwrap());
         }
     }
 
