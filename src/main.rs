@@ -21,6 +21,11 @@ mod lstm;
 
 use matrix::Matrix;
 
+// NOTE  These seem to cause warnings with rust nightly, but are necessary for
+//       the version of rust travis uses.
+use function::Function;
+use std::collections::HashMap;
+
 fn main() {
     Matrix::new(2, 2, vec![1., 2., 
                            3., 4.]).print();
