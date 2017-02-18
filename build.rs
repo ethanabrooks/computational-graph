@@ -52,7 +52,7 @@ fn main() {
 
         if more_recent_than(&vec![String::from(src_name)], &out_name).unwrap() {
             let mut cmd = Command::new(compiler);
-            cmd.args(&[&src_name, "-c", "-fPIC", "-o", &out_name]);
+            cmd.args(&[src_name, "-c", "-fPIC", "-o", &out_name]);
             if xcompiler_flag {
                 cmd.arg("-Xcompiler");
             }

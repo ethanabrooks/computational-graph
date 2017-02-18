@@ -23,7 +23,9 @@ use matrix::Matrix;
 
 // NOTE  These seem to cause warnings with rust nightly, but are necessary for
 //       the version of rust travis uses.
+#[allow(unused_imports)]
 use function::Function;
+#[allow(unused_imports)]
 use std::collections::HashMap;
 
 fn main() {
