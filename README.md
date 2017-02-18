@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/lobachevzky/pipes.svg?branch=gpu)](https://travis-ci.org/lobachevzky/pipes)
+![Build Status](https://api.travis-ci.org/lobachevzky/computational-graph.svg?branch=master)
 
 # Optimizing functions with computational graphs
 
