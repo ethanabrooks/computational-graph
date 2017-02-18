@@ -83,7 +83,10 @@ fn main() {
     println!("cargo:rustc-link-search=native={}", out_dir);
     if let Some(paths) = env::var_os("LD_LIBRARY_PATH") {
         for path in env::split_paths(&paths) {
-            println!("cargo:rustc-link-search=native={}", path.display());
+            let p = path.to_str().unwrap();
+            if !p.is_empty() {
+                println!("cargo:rustc-link-search=native={}", p);
+            }
         }
     }
     println!("cargo:rustc-link-lib=static=matrix");
